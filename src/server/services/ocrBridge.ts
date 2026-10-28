@@ -44,8 +44,14 @@ export async function executeOcrBridge(
 
   // 2. Subprocess fallback execution
   return new Promise((resolve) => {
-    const venvPython = path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3");
-    const pythonExecutable = fs.existsSync(venvPython) ? venvPython : "python3";
+    const venvPaths = [
+      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
+      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python"),
+      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python.exe"),
+      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python"),
+    ];
+    const foundVenv = venvPaths.find((p) => fs.existsSync(p));
+    const pythonExecutable = foundVenv || (process.platform === "win32" ? "python" : "python3");
     const scriptPath = path.resolve(process.cwd(), "python-services/ocr/main.py");
 
     const proc = spawn(

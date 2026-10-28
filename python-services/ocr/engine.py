@@ -4,12 +4,19 @@ from PIL import Image
 from preprocessor import preprocess_image
 
 # Auto-detect Tesseract binary path
-if os.path.exists("/opt/homebrew/bin/tesseract"):
-    pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"
-elif os.path.exists("/usr/bin/tesseract"):
-    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
-elif os.path.exists("/usr/local/bin/tesseract"):
-    pytesseract.pytesseract.tesseract_cmd = "/usr/local/bin/tesseract"
+possible_tesseract_paths = [
+    os.environ.get("TESSERACT_PATH", ""),
+    "/opt/homebrew/bin/tesseract",
+    "/usr/bin/tesseract",
+    "/usr/local/bin/tesseract",
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\Tesseract-OCR\tesseract.exe"),
+]
+for p in possible_tesseract_paths:
+    if p and os.path.exists(p):
+        pytesseract.pytesseract.tesseract_cmd = p
+        break
 
 def extract_text_from_image(img: Image.Image) -> str:
     """

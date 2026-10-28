@@ -98,13 +98,16 @@ export async function GET() {
   // 4. Check Python OCR Engine
   try {
     const ocrStart = Date.now();
-    const venvPython = path.resolve(
-      process.cwd(),
-      "python-services/ocr/venv/bin/python3"
-    );
-    const pythonExecutable = fs.existsSync(venvPython) ? venvPython : "python3";
+    const venvPaths = [
+      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
+      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python"),
+      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python.exe"),
+      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python"),
+    ];
+    const foundVenv = venvPaths.find((p) => fs.existsSync(p));
+    const pythonExecutable = foundVenv || (process.platform === "win32" ? "python" : "python3");
 
-    await execAsync(`${pythonExecutable} -c "import rapidfuzz, PIL; print('OK')"`, {
+    await execAsync(`"${pythonExecutable}" -c "import rapidfuzz, PIL; print('OK')"`, {
       timeout: 3000,
     });
     services.python_ocr = {

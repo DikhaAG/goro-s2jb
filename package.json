@@ -15,7 +15,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "worker:ocr": "tsx src/server/workers/ocrWorker.ts",
-    "worker:import": "tsx src/server/workers/importWorker.ts"
+    "worker:import": "tsx src/server/workers/importWorker.ts",
+    "setup:mac": "bash scripts/setup-mac.sh",
+    "start:mac": "bash scripts/start-mac.sh",
+    "setup:win": "powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1",
+    "start:win": "powershell -ExecutionPolicy Bypass -File scripts/start-windows.ps1"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
