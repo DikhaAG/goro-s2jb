@@ -1,6 +1,6 @@
 # Task 1: Lapisan Teknis Global (Global Foundation)
 
-> **Status:** Draft / Ready for Engineering Execution  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 1 (Lapisan Teknis Global)  
 > **Target Audiens:** Lead Architect, Full-Stack Engineer, Database Architect, AI/Vision Engineer  
 > **Referensi Wajib:**
@@ -182,13 +182,13 @@ goro-s2jb/
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-1 (Project Setup):** Proyek Next.js 16 berhasil dikompilasi tanpa error (`npm run build`), TypeScript type-check lulus tanpa kompromi (`npm run typecheck`), dan antarmuka dasar dapat diakses di `http://localhost:3000`.
-- [ ] **AC-2 (Database Connectivity & Migration):** Prisma berhasil melakukan migrasi (`npx prisma migrate dev`) ke PostgreSQL lokal. Seluruh model (`User`, `UP3`, `ULP`, `AppVersion`, `TargetMaster`, `RatingReview`) terbentuk sempurna dengan constraint dan relasi foreign key yang benar.
-- [ ] **AC-3 (Data Seeding):** Perintah `npm run prisma:seed` berhasil mengeksekusi pengisian master data UP3 dan ULP yang cocok dengan struktur unit di `docs/GORO S2JB 2026 (Jawaban).xlsx`, serta membuat 3 akun pengguna contoh (Petugas Lapangan, Pegawai, Manager).
-- [ ] **AC-4 (tRPC Connection):** Klien React dapat memanggil prosedur `trpc.health.ping` dan `trpc.master.getUnits` dengan *type-safety* 100% tanpa manual casting.
-- [ ] **AC-5 (Redis & Queue Heartbeat):** Redis terhubung dengan baik. BullMQ dapat menerima *dummy job* pada `ocrQueue` dan memprosesnya melalui worker tanpa kegagalan koneksi.
-- [ ] **AC-6 (Local Storage Engine):** Pengujian penyimpanan file ke direktori `./uploads/` berhasil, dan berkas gambar yang tersimpan dapat disajikan kembali melalui endpoint aman `GET /api/uploads/...` dengan header `Content-Type` yang sesuai. Upaya *path traversal* (seperti `../`) ditolak dengan kode status HTTP 403/400.
-- [ ] **AC-7 (Python OCR & pHash Standalone Check):** Skrip Python OCR lokal dapat menerima satu sampel gambar eviden, mengembalikan teks ekstraksi, menghasilkan hash `pHash` heksadesimal, serta menghitung skor kemiripan fuzzy matching terhadap nama pengulas contoh.
+- [x] **AC-1 (Project Setup):** Proyek Next.js 16/15 berhasil dikompilasi tanpa error (`npm run build`), TypeScript type-check lulus tanpa kompromi (`npm run typecheck`), dan antarmuka dasar dapat diakses di `http://localhost:3000`.
+- [x] **AC-2 (Database Connectivity & Migration):** Prisma berhasil melakukan migrasi (`npx prisma migrate dev`) ke PostgreSQL lokal. Seluruh model (`User`, `UP3`, `ULP`, `AppVersion`, `TargetMaster`, `RatingReview`) terbentuk sempurna dengan constraint dan relasi foreign key yang benar.
+- [x] **AC-3 (Data Seeding):** Perintah `npm run prisma:seed` berhasil mengeksekusi pengisian master data UP3 dan ULP yang cocok dengan struktur unit di `docs/GORO S2JB 2026 (Jawaban).xlsx`, serta membuat 3 akun pengguna contoh (Petugas Lapangan, Pegawai, Manager, Super Admin).
+- [x] **AC-4 (tRPC Connection):** Klien React dapat memanggil prosedur `trpc.health.ping` dan `trpc.master.getUnits` dengan *type-safety* 100% tanpa manual casting.
+- [x] **AC-5 (Redis & Queue Heartbeat):** Redis terhubung dengan baik. BullMQ dapat menerima *dummy job* pada `ocrQueue` dan memprosesnya melalui worker tanpa kegagalan koneksi.
+- [x] **AC-6 (Local Storage Engine):** Pengujian penyimpanan file ke direktori `./uploads/` berhasil, dan berkas gambar yang tersimpan dapat disajikan kembali melalui endpoint aman `GET /api/uploads/...` dengan header `Content-Type` yang sesuai. Upaya *path traversal* (seperti `../`) ditolak dengan kode status HTTP 403/400.
+- [x] **AC-7 (Python OCR & pHash Standalone Check):** Skrip Python OCR lokal dapat menerima satu sampel gambar eviden, mengembalikan teks ekstraksi, menghasilkan hash `pHash` heksadesimal, serta menghitung skor kemiripan fuzzy matching terhadap nama pengulas contoh.
 
 ---
 

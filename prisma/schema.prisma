@@ -1,0 +1,132 @@
+// Prisma schema for GORO S2JB 2026
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PETUGAS_LAPANGAN
+  PEGAWAI
+  MANAGER
+  SUPER_ADMIN
+}
+
+enum ValidationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_REVIEW
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(PETUGAS_LAPANGAN)
+  up3Id        String?
+  ulpId        String?
+  up3          UP3?     @relation(fields: [up3Id], references: [id])
+  ulp          ULP?     @relation(fields: [ulpId], references: [id])
+  
+  submittedReviews RatingReview[] @relation("SubmittedReviews")
+  verifiedReviews  RatingReview[] @relation("VerifiedReviews")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UP3 {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  ulps      ULP[]
+  reviews   RatingReview[]
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ULP {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  up3Id     String
+  up3       UP3      @relation(fields: [up3Id], references: [id])
+  reviews   RatingReview[]
+  targets   TargetMaster[]
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AppVersion {
+  id        String   @id @default(cuid())
+  version   String   @unique
+  isActive  Boolean  @default(true)
+  reviews   RatingReview[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TargetMaster {
+  id               String   @id @default(cuid())
+  ulpId            String
+  ulp              ULP      @relation(fields: [ulpId], references: [id])
+  targetDate       DateTime
+  dailyTarget      Float    @default(0)
+  cumulativeTarget Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([ulpId, targetDate])
+  @@index([targetDate])
+  @@index([ulpId])
+}
+
+model RatingReview {
+  id                    String           @id @default(cuid())
+  timestamp             DateTime         @default(now()) // Column 1
+  up3Id                 String                            // Column 2
+  ulpId                 String                            // Column 3
+  playstoreReviewerName String                            // Column 4
+  entryDate             DateTime                          // Column 5
+  evidenceImagePath     String                            // Column 6
+  evidenceImageHash     String?                           // Perceptual Hash (pHash 64-bit)
+  appVersionId          String                            // Column 7
+  originalReviewerName  String?                           // Column 8
+  reviewerCategory      String           @default("Pelanggan") // Column 9
+  fieldNotes            String?                           // Column 10
+  isDuplicate           Boolean          @default(false)  // Column 11
+  duplicateOfId         String?                           // Soft-flagging reference
+  validationStatus      ValidationStatus @default(PENDING) // Column 12
+  confidenceScore       Float?                            // 0.0 - 100.0%
+  extractedOcrText      String?          @db.Text
+  reviewRemarks         String?                           // Column 13
+  
+  submittedById         String?
+  verifiedById          String?
+  verifiedAt            DateTime?
+
+  up3                   UP3              @relation(fields: [up3Id], references: [id])
+  ulp                   ULP              @relation(fields: [ulpId], references: [id])
+  appVersion            AppVersion       @relation(fields: [appVersionId], references: [id])
+  duplicateOf           RatingReview?    @relation("ReviewDuplicates", fields: [duplicateOfId], references: [id])
+  duplicateChildren     RatingReview[]   @relation("ReviewDuplicates")
+  submittedBy           User?            @relation("SubmittedReviews", fields: [submittedById], references: [id])
+  verifiedBy            User?            @relation("VerifiedReviews", fields: [verifiedById], references: [id])
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([timestamp])
+  @@index([entryDate])
+  @@index([ulpId])
+  @@index([validationStatus])
+  @@index([evidenceImageHash])
+  @@index([isDuplicate])
+}
