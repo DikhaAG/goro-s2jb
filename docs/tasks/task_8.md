@@ -117,7 +117,8 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
      * *Super Administrator (`SUPER_ADMIN`):*
        - Akses seluruh modul operasional (`/intake`, `/operator/triage`, `/manager/reports`)
        - Manajemen Pengguna (`/admin/users`)
-       - Catatan Audit Sistem (`/admin/audit-logs`)
+       - Migrasi Data & Impor Eviden (`/admin/migration`)
+       - Catatan Audit Sistem (`/admin/audit-logs`) (Halaman baru yang akan dibangun di Task 8)
    * **Status Visual Item Menu:**
      * *Item Aktif:* Background pastel teal muda (`#e7eeff`), teks tebal Primary Teal `#006877`, border vertikal kiri 3px solid `#00a2b9`, dan lencana indikator status.
      * *Item Tidak Aktif:* Teks warna slate `#64748b`, transisi hover latar `#f8fafc` dan teks `#1e293b`.
@@ -175,8 +176,10 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
      * Kartu KPI (`ExecutiveKpiCards`) menggunakan kanvas putih berkontur halus `shadow-sm`, angka numerik Inter tebal `#0f172a`, dan persentase capaian target dengan indikator warna semantik.
      * Sesuaikan grafik pacing kumulatif (`CumulativePacingChart`) dan chart performa (`PerformanceChart`) agar selaras dengan palet teal dan oranye resmi PLN.
      * Format tabel laporan harian & bulanan dengan baris berkontras tinggi dan padding yang proporsional.
-   * **Tata Kelola Pengguna & Audit (`/admin/`):**
+   * **Tata Kelola Pengguna, Migrasi & Audit (`/admin/`):**
      * Menu admin dapat diakses langsung dari sidebar untuk pengguna bertaraf `SUPER_ADMIN`.
+     * Menghubungkan rute admin yang telah ada: Manajemen Pengguna (`/admin/users`) dan Migrasi Data Eviden (`/admin/migration`).
+     * Halaman Catatan Jejak Audit (`/admin/audit-logs`): Akan dibangun secara baru (*new page*) pada Task 8 untuk memvisualisasikan data tabel `AuditLog` yang telah direkam oleh sistem sejak Task 6.
      * Terapkan tabel data dengan border tipis bersih `#e2e8f0`, lencana peran (*role badge*) pastel solid, dan form modal tambah user yang ramah keyboard.
 
 ---
