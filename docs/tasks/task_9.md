@@ -16,13 +16,13 @@
 
 ## 1. Ringkasan & Tujuan Task
 
-Mengimplementasikan modul **Manajemen Pengguna (`/admin/users`)** secara penuh dengan standar **Modern Utility Minimalism** dan penegakan keamanan ketat berbasis peran (*Role-Based Access Control / RBAC*):
+Mengimplementasikan modul **Manajemen Pengguna (`/users`)** secara penuh dengan standar **Modern Utility Minimalism** dan penegakan keamanan ketat berbasis peran (*Role-Based Access Control / RBAC*):
 
 1. **Visibilitas Navigasi Eksklusif:**
-   * Menu **"Manajemen Pengguna"** (`/admin/users`) dan seluruh menu administratif hanya boleh tampil pada bilah navigasi (`GlobalSidebar` dan `MobileNavDrawer`) apabila pengguna telah terautentikasi dengan peran **`SUPER_ADMIN`**.
+   * Menu **"Manajemen Pengguna"** (`/users`) dan seluruh menu administratif hanya boleh tampil pada bilah navigasi (`GlobalSidebar` dan `MobileNavDrawer`) apabila pengguna telah terautentikasi dengan peran **`SUPER_ADMIN`**.
    * Menu ini tidak boleh dirender sama sekali untuk tamu (`GUEST`), petugas lapangan (`PETUGAS_LAPANGAN`), verifikator triase (`PEGAWAI`), maupun manajer (`MANAGER`).
 2. **Proteksi Rute & Server Prosedur Berlapis:**
-   * Di tingkat middleware Next.js (`middleware.ts`), seluruh akses menuju rute `/admin/*` diverifikasi via JSON Web Token (JWT). Akses tanpa sesi dialihkan ke `/login?redirect=/admin/users`, sedangkan pengguna terautentikasi non-admin dialihkan ke `/unauthorized?required=SUPER_ADMIN`.
+   * Di tingkat middleware Next.js (`middleware.ts`), seluruh akses menuju rute `/users` diverifikasi via JSON Web Token (JWT). Akses tanpa sesi dialihkan ke `/login?redirect=/users`, sedangkan pengguna terautentikasi non-admin dialihkan ke `/unauthorized?required=SUPER_ADMIN`.
    * Di tingkat API tRPC (`src/server/routers/user.ts`), seluruh prosedur mutasi dan kueri dilindungi oleh `adminProcedure` dengan penolakan `TRPCError({ code: "FORBIDDEN" })` jika peran bukan `SUPER_ADMIN`.
 3. **Penyelarasan Desain Utilitas (Modern Utility Minimalism):**
    * Menggantikan palet gelap lama pada tabel manajemen dan modal formulir dengan kanvas terang bersih (`#f9f9ff`), kartu putih `#ffffff`, batas tepi lembut `#e2e8f0`, dan tipografi teks tinta karbon `#0f172a`.
@@ -57,7 +57,7 @@ Mengimplementasikan modul **Manajemen Pengguna (`/admin/users`)** secara penuh d
      ```typescript
      {
        label: "Manajemen Pengguna",
-       href: "/admin/users",
+       href: "/users",
        icon: Users,
        roles: ["SUPER_ADMIN"],
      },
@@ -161,8 +161,8 @@ Mengimplementasikan modul **Manajemen Pengguna (`/admin/users`)** secara penuh d
 ## 4. Kriteria Keberhasilan & Verifikasi Penerimaan
 
 * [x] Menu **"Manajemen Pengguna"** pada `GlobalSidebar` dan `MobileNavDrawer` HANYA muncul jika pengguna yang login memiliki peran `SUPER_ADMIN`.
-* [x] Rute `/admin/users` menolak akses pengguna non-admin dan mengalihkannya ke halaman `/unauthorized`.
-* [x] Tampilan halaman `/admin/users`, tabel pengguna, dan formulir dialog modal menggunakan palet Modern Utility Minimalism (`bg-[#f9f9ff]`, kartu putih, border `#e2e8f0`, teks carbon `#0f172a`).
+* [x] Rute `/users` menolak akses pengguna non-admin dan mengalihkannya ke halaman `/unauthorized`.
+* [x] Tampilan halaman `/users`, tabel pengguna, dan formulir dialog modal menggunakan palet Modern Utility Minimalism (`bg-[#f9f9ff]`, kartu putih, border `#e2e8f0`, teks carbon `#0f172a`).
 * [x] Fitur pencarian, filter peran, filter status, tambah user, toggle aktif/nonaktif, dan reset password berfungsi mulus tanpa glitch visual.
 * [x] Seluruh aksi admin tercatat secara akurat di tabel `AuditLog`.
 * [x] Seluruh kontrol interaktif memiliki ukuran tap target minimal 44px dan lolos audit kontras WCAG AA (4.5:1).

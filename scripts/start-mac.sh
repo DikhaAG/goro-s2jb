@@ -94,7 +94,7 @@ echo -e "${BOLD}🔑 Akun Uji Coba Cepat (Password: password123):${NC}"
 echo -e "  • Petugas Lapangan:  ${YELLOW}petugas_rivai${NC}      -> /intake"
 echo -e "  • Pegawai Triase:    ${YELLOW}pegawai_operator${NC}   -> /operator/triage"
 echo -e "  • Manager UID S2JB:  ${YELLOW}manager_s2jb${NC}       -> /manager/reports"
-echo -e "  • Super Admin:       ${YELLOW}superadmin${NC}         -> /admin/users"
+echo -e "  • Super Admin:       ${YELLOW}superadmin${NC}         -> /users"
 echo -e "------------------------------------------------------------------"
 echo -e "${YELLOW}Tekan Ctrl+C untuk menghentikan semua layanan sekaligus.${NC}\n"
 

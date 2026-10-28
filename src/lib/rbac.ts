@@ -12,10 +12,10 @@ export interface RoutePermission {
  * Enforced across Edge Proxy, Server Layouts, Route Handlers, and UI Navigation.
  */
 export const ROUTE_PERMISSIONS: RoutePermission[] = [
-  // Admin module: exclusive to SUPER_ADMIN
+  // Admin module: exclusive to SUPER_ADMIN (/users, /migration, /audit-logs, /admin/*)
   {
-    pattern: /^\/admin(\/.*)?$/,
-    prefix: "/admin",
+    pattern: /^\/(users(\/.*)?|migration(\/.*)?|audit-logs(\/.*)?|admin(\/.*)?)$/,
+    prefix: "/users",
     allowedRoles: [Role.SUPER_ADMIN],
     description: "Modul Administrasi Sistem (Users, Migration, Audit Logs)",
   },

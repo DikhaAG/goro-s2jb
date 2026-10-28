@@ -29,7 +29,7 @@ Selain proteksi hak akses, modul ini mengimplementasikan mekanisme pertahanan ke
 
 * **Task 6.1:** Mesin Autentikasi Sesi & Antarmuka Login Terpadu (`/login`)
 * **Task 6.2:** Middleware Proteksi Rute (Next.js Middleware & tRPC RBAC Guards)
-* **Task 6.3:** Modul Manajemen Pengguna & Penugasan Wilayah Kerja (`/admin/users`)
+* **Task 6.3:** Modul Manajemen Pengguna & Penugasan Wilayah Kerja (`/users`)
 * **Task 6.4:** Pengamanan Infrastruktur (Rate Limiting Redis, Brute-Force Shield, dan Audit Logging)
 
 ---
@@ -57,7 +57,7 @@ Selain proteksi hak akses, modul ini mengimplementasikan mekanisme pertahanan ke
        - Role `PETUGAS_LAPANGAN` $\rightarrow$ langsung ke `/intake`.
        - Role `PEGAWAI` $\rightarrow$ langsung ke `/operator/triage`.
        - Role `MANAGER` $\rightarrow$ langsung ke `/manager/reports`.
-       - Role `SUPER_ADMIN` $\rightarrow$ ke `/admin/users` atau dasbor overview.
+       - Role `SUPER_ADMIN` $\rightarrow$ ke `/users` atau dasbor overview.
 
 ---
 

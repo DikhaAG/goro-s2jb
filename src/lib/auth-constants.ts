@@ -27,7 +27,7 @@ export function getDefaultRedirectForRole(role: Role): string {
     case Role.MANAGER:
       return "/manager/reports";
     case Role.SUPER_ADMIN:
-      return "/admin/users";
+      return "/users";
     default:
       return "/login";
   }

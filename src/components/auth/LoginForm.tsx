@@ -149,9 +149,6 @@ export function LoginForm() {
               >
                 Kata Sandi
               </label>
-              <span className="text-[11px] text-[#64748b] font-mono">
-                Salted PBKDF2
-              </span>
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94a3b8]">
@@ -204,7 +201,7 @@ export function LoginForm() {
         </div>
 
         {/* Quick Demo Role Selector */}
-        <div className="mt-6 pt-5 border-t border-[#f1f5f9]">
+        {/* <div className="mt-6 pt-5 border-t border-[#f1f5f9]">
           <p className="text-[11px] uppercase tracking-wider text-[#64748b] font-bold mb-2.5 text-center">
             Pilih Cepat Akun Simulasi:
           </p>
@@ -242,14 +239,14 @@ export function LoginForm() {
               <div className="text-[11px] text-[#64748b] font-mono truncate">superadmin</div>
             </button>
           </div>
-        </div>
+        </div> */}
       </form>
 
       {/* Security Footer Notice */}
-      <div className="mt-5 flex items-center justify-center space-x-2 text-xs text-[#64748b]">
+      {/* <div className="mt-5 flex items-center justify-center space-x-2 text-xs text-[#64748b]">
         <ShieldCheck className="w-4 h-4 text-[#00a2b9]" />
         <span>Sesi terenkripsi HTTP-Only & Proteksi Brute-Force Redis</span>
-      </div>
+      </div> */}
     </div>
   );
 }

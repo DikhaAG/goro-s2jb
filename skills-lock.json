@@ -43,6 +43,12 @@
       "skillPath": "skills/apple-design/SKILL.md",
       "computedHash": "0190417d092a0df447b000154e39733ea6d97efad6d3bec8a6ce3845aeb88914"
     },
+    "better-auth-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "skillPath": "better-auth/best-practices/SKILL.md",
+      "computedHash": "0c30be0e118c2b7a0c4c57bd9e63bf110c7e420a79ec6ce7997153f3b1e066ee"
+    },
     "caveman": {
       "source": "juliusbrussee/caveman",
       "sourceType": "github",
@@ -54,6 +60,12 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/diagnosing-bugs/SKILL.md",
       "computedHash": "ede7254edbd22fcab97a0941511f7d440d8f9a249348fea97c50987ad5501674"
+    },
+    "email-and-password-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "skillPath": "better-auth/emailAndPassword/SKILL.md",
+      "computedHash": "863886759f729081e265941f4f72c503835d55a1f34f6d63cebe6571159fff4a"
     },
     "frontend-design": {
       "source": "anthropics/skills",

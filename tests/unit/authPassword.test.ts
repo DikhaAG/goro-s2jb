@@ -74,6 +74,6 @@ describe("Authentication & Password Security Engine (AC-1, AC-2)", () => {
     expect(getDefaultRedirectForRole(Role.PETUGAS_LAPANGAN)).toBe("/intake");
     expect(getDefaultRedirectForRole(Role.PEGAWAI)).toBe("/operator/triage");
     expect(getDefaultRedirectForRole(Role.MANAGER)).toBe("/manager/reports");
-    expect(getDefaultRedirectForRole(Role.SUPER_ADMIN)).toBe("/admin/users");
+    expect(getDefaultRedirectForRole(Role.SUPER_ADMIN)).toBe("/users");
   });
 });

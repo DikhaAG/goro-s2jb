@@ -114,6 +114,21 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       request: { headers: requestHeaders },
     });
   }
+  if (pathname === "/admin/users") {
+    return NextResponse.rewrite(new URL("/users", request.url), {
+      request: { headers: requestHeaders },
+    });
+  }
+  if (pathname === "/admin/migration") {
+    return NextResponse.rewrite(new URL("/migration", request.url), {
+      request: { headers: requestHeaders },
+    });
+  }
+  if (pathname === "/admin/audit-logs") {
+    return NextResponse.rewrite(new URL("/audit-logs", request.url), {
+      request: { headers: requestHeaders },
+    });
+  }
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },

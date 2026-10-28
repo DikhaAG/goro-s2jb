@@ -32,7 +32,7 @@ export default function LoginPage() {
           Masuk ke Portal Operasional
         </h1>
         <p className="text-xs sm:text-sm text-[#64748b] mt-1.5 leading-relaxed">
-          Sistem Pengawalan Rating & Ulasan Aplikasi PLN Mobile Berbasis OCR & Verifikasi Berjenjang
+          Sistem Pengawalan Rating & Ulasan Aplikasi PLN Mobile
         </p>
       </div>
 

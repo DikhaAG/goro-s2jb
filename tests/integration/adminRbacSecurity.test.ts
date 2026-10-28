@@ -65,33 +65,33 @@ describe("Task 9: Super Admin Exclusive User Management Security & RBAC Enforcem
     return new NextRequest(url, { headers });
   }
 
-  describe("Middleware Route Protection for /admin/users", () => {
-    it("should redirect unauthenticated guest on /admin/users to login with redirect param", async () => {
-      const res = await middleware(createMockRequest("/admin/users"));
+  describe("Middleware Route Protection for /users", () => {
+    it("should redirect unauthenticated guest on /users to login with redirect param", async () => {
+      const res = await middleware(createMockRequest("/users"));
       expect(res.status).toBe(307);
-      expect(res.headers.get("location")).toContain("/login?redirect=%2Fadmin%2Fusers");
+      expect(res.headers.get("location")).toContain("/login?redirect=%2Fusers");
     });
 
-    it("should redirect PETUGAS_LAPANGAN on /admin/users to /unauthorized?required=SUPER_ADMIN", async () => {
-      const res = await middleware(createMockRequest("/admin/users", fieldToken));
-      expect(res.status).toBe(307);
-      expect(res.headers.get("location")).toContain("/unauthorized?required=SUPER_ADMIN");
-    });
-
-    it("should redirect PEGAWAI on /admin/users to /unauthorized?required=SUPER_ADMIN", async () => {
-      const res = await middleware(createMockRequest("/admin/users", operatorToken));
+    it("should redirect PETUGAS_LAPANGAN on /users to /unauthorized?required=SUPER_ADMIN", async () => {
+      const res = await middleware(createMockRequest("/users", fieldToken));
       expect(res.status).toBe(307);
       expect(res.headers.get("location")).toContain("/unauthorized?required=SUPER_ADMIN");
     });
 
-    it("should redirect MANAGER on /admin/users to /unauthorized?required=SUPER_ADMIN", async () => {
-      const res = await middleware(createMockRequest("/admin/users", managerToken));
+    it("should redirect PEGAWAI on /users to /unauthorized?required=SUPER_ADMIN", async () => {
+      const res = await middleware(createMockRequest("/users", operatorToken));
       expect(res.status).toBe(307);
       expect(res.headers.get("location")).toContain("/unauthorized?required=SUPER_ADMIN");
     });
 
-    it("should allow SUPER_ADMIN to access /admin/users without redirection", async () => {
-      const res = await middleware(createMockRequest("/admin/users", adminToken));
+    it("should redirect MANAGER on /users to /unauthorized?required=SUPER_ADMIN", async () => {
+      const res = await middleware(createMockRequest("/users", managerToken));
+      expect(res.status).toBe(307);
+      expect(res.headers.get("location")).toContain("/unauthorized?required=SUPER_ADMIN");
+    });
+
+    it("should allow SUPER_ADMIN to access /users without redirection", async () => {
+      const res = await middleware(createMockRequest("/users", adminToken));
       expect(res.status).toBe(200);
       expect(res.headers.get("location")).toBeNull();
     });

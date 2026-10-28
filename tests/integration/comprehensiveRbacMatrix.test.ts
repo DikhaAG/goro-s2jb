@@ -55,7 +55,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
     });
 
     it("should REDIRECT unauthenticated guests from protected internal modules to /login with redirect param", async () => {
-      const routes = ["/intake", "/operator/triage", "/manager/reports", "/admin/users"];
+      const routes = ["/intake", "/operator/triage", "/manager/reports", "/users"];
 
       for (const route of routes) {
         const req = new NextRequest(`http://localhost:3000${route}`);
@@ -83,7 +83,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
         { token: fieldToken, expected: "/intake" },
         { token: operatorToken, expected: "/operator/triage" },
         { token: managerToken, expected: "/manager/reports" },
-        { token: adminToken, expected: "/admin/users" },
+        { token: adminToken, expected: "/users" },
       ];
 
       for (const tc of testCases) {
@@ -121,8 +121,8 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       expect(resTriage.status).toBe(307);
       expect(resTriage.headers.get("location")).toContain("/unauthorized?required=PEGAWAI");
 
-      // 4. /admin/users (Forbidden for field officer)
-      const reqAdmin = new NextRequest("http://localhost:3000/admin/users", {
+      // 4. /users (Forbidden for field officer)
+      const reqAdmin = new NextRequest("http://localhost:3000/users", {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${fieldToken}` },
       });
       const resAdmin = await proxy(reqAdmin);
@@ -155,8 +155,8 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       const resReports = await proxy(reqReports);
       expect(resReports.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/reports");
 
-      // 2. /admin/users should be forbidden
-      const reqAdmin = new NextRequest("http://localhost:3000/admin/users", {
+      // 2. /users should be forbidden
+      const reqAdmin = new NextRequest("http://localhost:3000/users", {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${managerToken}` },
       });
       const resAdmin = await proxy(reqAdmin);
@@ -165,7 +165,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
     });
 
     it("should GRANT Super Admin complete access across all routes", async () => {
-      const routes = ["/", "/intake", "/operator/triage", "/manager/reports", "/admin/users", "/admin/migration", "/admin/audit-logs"];
+      const routes = ["/", "/intake", "/operator/triage", "/manager/reports", "/users", "/migration", "/audit-logs"];
 
       for (const route of routes) {
         const req = new NextRequest(`http://localhost:3000${route}`, {
@@ -309,14 +309,14 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       expect(isPublicRoute("/intake")).toBe(false);
       expect(isPublicRoute("/operator/triage")).toBe(false);
       expect(isPublicRoute("/manager/reports")).toBe(false);
-      expect(isPublicRoute("/admin/users")).toBe(false);
+      expect(isPublicRoute("/users")).toBe(false);
     });
 
     it("should return the exact required role for 403 reporting", () => {
       expect(getRequiredRoleForRoute("/intake")).toBe(Role.PETUGAS_LAPANGAN);
       expect(getRequiredRoleForRoute("/operator/triage")).toBe(Role.PEGAWAI);
       expect(getRequiredRoleForRoute("/manager/reports")).toBe(Role.MANAGER);
-      expect(getRequiredRoleForRoute("/admin/users")).toBe(Role.SUPER_ADMIN);
+      expect(getRequiredRoleForRoute("/users")).toBe(Role.SUPER_ADMIN);
       expect(getRequiredRoleForRoute("/admin/migration")).toBe(Role.SUPER_ADMIN);
       expect(getRequiredRoleForRoute("/admin/audit-logs")).toBe(Role.SUPER_ADMIN);
     });
@@ -332,14 +332,14 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       expect(isRouteAllowed("/", Role.PETUGAS_LAPANGAN)).toBe(true);
       expect(isRouteAllowed("/intake", Role.PETUGAS_LAPANGAN)).toBe(true);
       expect(isRouteAllowed("/operator/triage", Role.PETUGAS_LAPANGAN)).toBe(false);
-      expect(isRouteAllowed("/admin/users", Role.PETUGAS_LAPANGAN)).toBe(false);
+      expect(isRouteAllowed("/users", Role.PETUGAS_LAPANGAN)).toBe(false);
 
       // Super Admin
       expect(isRouteAllowed("/", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/intake", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/operator/triage", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/manager/reports", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/admin/users", Role.SUPER_ADMIN)).toBe(true);
+      expect(isRouteAllowed("/users", Role.SUPER_ADMIN)).toBe(true);
     });
   });
 });

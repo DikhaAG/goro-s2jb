@@ -80,7 +80,7 @@ describe("Design System & Antislop Compliance", () => {
       },
       {
         label: "Manajemen Pengguna",
-        href: "/admin/users",
+        href: "/users",
         roles: ["SUPER_ADMIN"],
       },
       {

@@ -58,7 +58,7 @@ const NAV_ITEMS: NavMenuItem[] = [
   },
   {
     label: "Manajemen Pengguna",
-    href: "/admin/users",
+    href: "/users",
     icon: Users,
     roles: ["SUPER_ADMIN"],
   },
@@ -158,7 +158,8 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
                 ? pathname === "/"
                 : pathname.startsWith(item.href) ||
                   (item.href === "/operator/triage" && pathname.startsWith("/triage")) ||
-                  (item.href === "/manager/reports" && pathname.startsWith("/reports"));
+                  (item.href === "/manager/reports" && pathname.startsWith("/reports")) ||
+                  (item.href === "/users" && pathname.startsWith("/admin/users"));
 
             return (
               <Link

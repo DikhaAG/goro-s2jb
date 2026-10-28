@@ -19,7 +19,7 @@
 Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a69/Desktop/goro-s2jb/DESIGN.md) ke seluruh antarmuka aplikasi GORO S2JB, dengan memadukan filosofi **Modern Utility Minimalism**:
 1. Menghadirkan kesan visual yang tenang (*calm*), jelas (*operational clarity*), dan memiliki beban kognitif rendah (*low cognitive overhead*) bagi petugas lapangan, operator triase, dan pimpinan manajemen PLN UID S2JB.
 2. Menggantikan tampilan gelap taktis generik dengan palet kanvas terang yang bersih (`#f9f9ff`), kartu status pastel datar (*zero elevation*), lencana ikon solid sirkular berwibawa, dan aksen *Primary Teal* (`#00A2B9` / `#0097A7`).
-3. **Arsitektur Layout Global Berbasis Sidebar (Kecuali Halaman Login):** Menghadirkan kerangka kerja antarmuka terpadu (*Global App Shell*) dengan navigasi sidebar permanen pada layar desktop dan drawer geser (*slide-over*) yang ramah sentuhan pada perangkat seluler/tablet untuk seluruh halaman terautentikasi (`/`, `/intake`, `/operator/triage`, `/manager/reports`, `/admin/users`, `/admin/audit-logs`). Halaman publik login (`/login`) secara khusus dikecualikan agar tetap fokus dan bebas distraksi.
+3. **Arsitektur Layout Global Berbasis Sidebar (Kecuali Halaman Login):** Menghadirkan kerangka kerja antarmuka terpadu (*Global App Shell*) dengan navigasi sidebar permanen pada layar desktop dan drawer geser (*slide-over*) yang ramah sentuhan pada perangkat seluler/tablet untuk seluruh halaman terautentikasi (`/`, `/intake`, `/operator/triage`, `/manager/reports`, `/users`, `/admin/audit-logs`). Halaman publik login (`/login`) secara khusus dikecualikan agar tetap fokus dan bebas distraksi.
 4. Menerapkan disiplin ketat **antislop-ai** (*Mode: DURING*): melarang em dash (`—`), mengeliminasi efek neon glow atau glassmorphism berlebihan, memastikan ukuran tap target minimal 44px, mematuhi rasio kontras WCAG AA (4.5:1), serta menjamin navigasi keyboard penuh (C-1 s/d C-5).
 
 ---
@@ -116,7 +116,7 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
        - Laporan & Intelijen Kinerja (`/manager/reports`)
      * *Super Administrator (`SUPER_ADMIN`):*
        - Akses seluruh modul operasional (`/intake`, `/operator/triage`, `/manager/reports`)
-       - Manajemen Pengguna (`/admin/users`)
+       - Manajemen Pengguna (`/users`)
        - Migrasi Data & Impor Eviden (`/admin/migration`)
        - Catatan Audit Sistem (`/admin/audit-logs`) (Halaman baru yang akan dibangun di Task 8)
    * **Status Visual Item Menu:**
@@ -178,7 +178,7 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
      * Format tabel laporan harian & bulanan dengan baris berkontras tinggi dan padding yang proporsional.
    * **Tata Kelola Pengguna, Migrasi & Audit (`/admin/`):**
      * Menu admin dapat diakses langsung dari sidebar untuk pengguna bertaraf `SUPER_ADMIN`.
-     * Menghubungkan rute admin yang telah ada: Manajemen Pengguna (`/admin/users`) dan Migrasi Data Eviden (`/admin/migration`).
+     * Menghubungkan rute admin yang telah ada: Manajemen Pengguna (`/users`) dan Migrasi Data Eviden (`/admin/migration`).
      * Halaman Catatan Jejak Audit (`/admin/audit-logs`): Akan dibangun secara baru (*new page*) pada Task 8 untuk memvisualisasikan data tabel `AuditLog` yang telah direkam oleh sistem sejak Task 6.
      * Terapkan tabel data dengan border tipis bersih `#e2e8f0`, lencana peran (*role badge*) pastel solid, dan form modal tambah user yang ramah keyboard.
 
@@ -223,7 +223,7 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
 
 - [ ] **AC-1 (Design System Fidelity):** Seluruh palet warna, skala tipografi Inter, dan bentuk sudut dari `DESIGN.md` terimplementasi 100% pada variabel global CSS dan tema aplikasi.
 - [ ] **AC-2 (Zero Slop / Clean Aesthetics):** Tidak ada gradien generik, tidak ada efek neon glow, dan tidak ada glassmorphism berlebih. Kartu notifikasi semantik berkarakter datar pastel (*zero elevation*) dengan lencana ikon bulat solid.
-- [ ] **AC-3 (Global Sidebar Integration & Login Exclusion):** Sidebar global aktif pada seluruh rute terautentikasi (`/`, `/intake`, `/operator/triage`, `/manager/reports`, `/admin/users`, `/admin/audit-logs`) dengan menu terfilter otomatis berdasarkan peran pengguna, dan secara eksklusif TIDAK muncul pada halaman login publik (`/login`).
+- [ ] **AC-3 (Global Sidebar Integration & Login Exclusion):** Sidebar global aktif pada seluruh rute terautentikasi (`/`, `/intake`, `/operator/triage`, `/manager/reports`, `/users`, `/admin/audit-logs`) dengan menu terfilter otomatis berdasarkan peran pengguna, dan secara eksklusif TIDAK muncul pada halaman login publik (`/login`).
 - [ ] **AC-4 (Responsive Navigation Drawer):** Pada layar desktop ($\ge 1024\text{px}$), sidebar tampil tetap di sisi kiri (`w-64`). Pada layar seluler/tablet ($< 1024\text{px}$), sidebar bertransisi menjadi drawer geser yang dapat dibuka via tombol pemicu 44px dan ditutup via tombol silang, backdrop click, atau tombol `Escape` (R-03, R-32).
 - [ ] **AC-5 (Anti-Slop Hard Gate Compliance):**
   - Bebas em dash (`—`) di seluruh teks antarmuka pengguna (R-02).

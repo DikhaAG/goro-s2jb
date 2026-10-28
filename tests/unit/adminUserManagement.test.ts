@@ -31,7 +31,7 @@ const NAV_ITEMS: NavMenuItem[] = [
   },
   {
     label: "Manajemen Pengguna",
-    href: "/admin/users",
+    href: "/users",
     roles: ["SUPER_ADMIN"],
   },
   {
@@ -53,37 +53,37 @@ function getVisibleNavItems(userRole: string): NavMenuItem[] {
 describe("Task 9.1: Exclusive Super Admin Navigation Filtering", () => {
   it("should include 'Manajemen Pengguna' in navigation ONLY for SUPER_ADMIN", () => {
     const adminNav = getVisibleNavItems("SUPER_ADMIN");
-    const userMgmtItem = adminNav.find((item) => item.href === "/admin/users");
+    const userMgmtItem = adminNav.find((item) => item.href === "/users");
     expect(userMgmtItem).toBeDefined();
     expect(userMgmtItem?.label).toBe("Manajemen Pengguna");
   });
 
   it("should NOT include 'Manajemen Pengguna' in navigation for GUEST", () => {
     const guestNav = getVisibleNavItems("GUEST");
-    const userMgmtItem = guestNav.find((item) => item.href === "/admin/users");
+    const userMgmtItem = guestNav.find((item) => item.href === "/users");
     expect(userMgmtItem).toBeUndefined();
   });
 
   it("should NOT include 'Manajemen Pengguna' in navigation for PETUGAS_LAPANGAN", () => {
     const fieldNav = getVisibleNavItems("PETUGAS_LAPANGAN");
-    const userMgmtItem = fieldNav.find((item) => item.href === "/admin/users");
+    const userMgmtItem = fieldNav.find((item) => item.href === "/users");
     expect(userMgmtItem).toBeUndefined();
   });
 
   it("should NOT include 'Manajemen Pengguna' in navigation for PEGAWAI", () => {
     const operatorNav = getVisibleNavItems("PEGAWAI");
-    const userMgmtItem = operatorNav.find((item) => item.href === "/admin/users");
+    const userMgmtItem = operatorNav.find((item) => item.href === "/users");
     expect(userMgmtItem).toBeUndefined();
   });
 
   it("should NOT include 'Manajemen Pengguna' in navigation for MANAGER", () => {
     const managerNav = getVisibleNavItems("MANAGER");
-    const userMgmtItem = managerNav.find((item) => item.href === "/admin/users");
+    const userMgmtItem = managerNav.find((item) => item.href === "/users");
     expect(userMgmtItem).toBeUndefined();
   });
 
-  it("should ensure all administrative routes (/admin/*) are strictly locked to SUPER_ADMIN", () => {
-    const adminRoutes = NAV_ITEMS.filter((item) => item.href.startsWith("/admin"));
+  it("should ensure all administrative routes (/users, /admin/*) are strictly locked to SUPER_ADMIN", () => {
+    const adminRoutes = NAV_ITEMS.filter((item) => item.href.startsWith("/admin") || item.href === "/users");
     expect(adminRoutes.length).toBe(3);
     adminRoutes.forEach((route) => {
       expect(route.roles).toEqual(["SUPER_ADMIN"]);

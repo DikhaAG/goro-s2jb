@@ -146,7 +146,7 @@ export function HomePageClient() {
 
           {isSuperAdmin && (
             <Link
-              href="/admin/users"
+              href="/users"
               className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#16a34a] hover:shadow-xs transition duration-150 focus-utility-ring"
             >
               <div className="w-10 h-10 rounded-xl bg-[#ecfdf5] text-[#15803d] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">

@@ -111,7 +111,7 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       expect(intakeRes.status).toBe(307);
       expect(intakeRes.headers.get("location")).toContain("/unauthorized");
 
-      const adminRes = await middleware(createMockRequest("/admin/users", managerToken));
+      const adminRes = await middleware(createMockRequest("/users", managerToken));
       expect(adminRes.status).toBe(307);
       expect(adminRes.headers.get("location")).toContain("/unauthorized");
     });
@@ -126,7 +126,7 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       const reportRes = await middleware(createMockRequest("/reports", adminToken));
       expect(reportRes.status).toBe(200);
 
-      const adminRes = await middleware(createMockRequest("/admin/users", adminToken));
+      const adminRes = await middleware(createMockRequest("/users", adminToken));
       expect(adminRes.status).toBe(200);
     });
   });

@@ -169,7 +169,7 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
    * `tests/integration/comprehensiveRbacMatrix.test.ts`
 2. **Cakupan Skenario Pengujian:**
    * **Pengujian 1 (Guest Matrix):** Menguji akses tamu ke seluruh rute (halaman `/`, `/intake`, `/operator/triage`, `/manager/reports`, `/admin/*`, API export, API upload). Memverifikasi bahwa akses tamu ke `/` dan rute internal LANGSUNG menghasilkan redirect status 307 ke `/login`, serta penolakan status 401 pada endpoint API.
-   * **Pengujian 2 (Petugas Lapangan Matrix):** Memverifikasi akses sukses ke `/` dan `/intake`, serta penolakan saat mencoba membuka `/triage`, `/reports`, `/admin/users`, atau API ekspor.
+   * **Pengujian 2 (Petugas Lapangan Matrix):** Memverifikasi akses sukses ke `/` dan `/intake`, serta penolakan saat mencoba membuka `/triage`, `/reports`, `/users`, atau API ekspor.
    * **Pengujian 3 (Pegawai Triase Matrix):** Memverifikasi akses sukses ke `/` dan `/operator/triage`, serta penolakan pada modul lapangan, manajerial, dan admin.
    * **Pengujian 4 (Manager Matrix):** Memverifikasi akses sukses ke `/`, `/manager/reports`, dan endpoint ekspor Excel/PDF, serta penolakan pada modul admin dan entri lapangan.
    * **Pengujian 5 (Super Admin Matrix):** Memverifikasi akses penuh tanpa hambatan ke seluruh rute sistem.
