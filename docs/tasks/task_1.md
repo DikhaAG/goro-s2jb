@@ -89,14 +89,14 @@ goro-s2jb/
    * Inisialisasi Prisma ORM dengan penyedia basis data PostgreSQL (`provider = "postgresql"`).
    * Konfigurasi koneksi `DATABASE_URL` pada `.env`.
 2. **Pemodelan Data Master & Relasi Operasional (Mengacu ke Excel):**
-   Berdasarkan lembar *Form Responses 1*, *note*, dan *Laporan Harian/Bulanan*:
+   Berdasarkan lembar *Form Responses 1* dan *Laporan Harian/Bulanan*:
    * **`enum Role`:** `PETUGAS_LAPANGAN`, `PEGAWAI`, `MANAGER`, `SUPER_ADMIN`.
    * **`enum ValidationStatus`:** `PENDING`, `APPROVED`, `REJECTED`, `NEEDS_REVIEW`.
    * **`model User`:** Akun pengguna, username/email, password hash, role, relasi ke UP3/ULP penugasan.
    * **`model UP3`:** Kode UP3, nama UP3 (misal: "UP3 PALEMBANG", "UP3 OGAN ILIR"), relasi ke banyak ULP.
    * **`model ULP`:** Kode ULP, nama ULP (misal: "ULP RIVAI", "ULP KENTEN", "ULP CURUP"), foreign key ke UP3.
    * **`model AppVersion`:** Versi PLN Mobile (misal: "V5.2.79", "V5.2.75", "V5.2.70"), status aktif.
-   * **`model TargetMaster`:** Master target harian dan kumulatif per ULP per tanggal (mereplikasi sheet *note*):
+   * **`model TargetMaster`:** Master target harian dan kumulatif per ULP per tanggal:
      - `ulpId`, `targetDate`, `dailyTarget` (Float/Int), `cumulativeTarget` (Float/Int).
    * **`model RatingReview` (Tabel Inti 13 Kolom):**
      - `id`: CUID / UUID Primary Key

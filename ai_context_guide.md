@@ -21,7 +21,7 @@ goro-s2jb/
 
 * **Isi & Komponen Utama:**
   * [`docs/PRD.md`](file:///Users/a69/Desktop/goro-s2jb/docs/PRD.md): *Product Requirements Document* resmi yang memuat latar belakang masalah, titik lemah (*pain points*), arsitektur *tech stack* (Next.js 16, PostgreSQL, Prisma, Python OCR, Redis/BullMQ, tRPC), spesifikasi modul (4.1 hingga 4.4), matriks hak akses RBAC (Petugas Lapangan, Pegawai, Manager), dan tahapan roadmap MVP.
-  * [`docs/GORO S2JB 2026 (Jawaban).xlsx`](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx): Data spreadsheet acuan riil yang memuat struktur lembar kerja asli (*Form Responses 1*, *note*, *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*) beserta pemetaan 13 kolom operasional.
+  * [`docs/GORO S2JB 2026 (Jawaban).xlsx`](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx): Data spreadsheet acuan riil yang memuat struktur lembar kerja asli (*Form Responses 1*, *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*) beserta pemetaan 13 kolom operasional.
   * Dokumen teknis, skema arsitektur, diagram data, dan spesifikasi API lain yang ditambahkan ke repositori.
 * **Kapan AI Wajib Mengakses `docs/`:**
   * Sebelum merancang skema database, model Prisma, rute API, form UI, alur OCR, atau logika pelaporan.

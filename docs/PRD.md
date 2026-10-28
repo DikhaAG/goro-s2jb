@@ -25,7 +25,7 @@ Sistem pelaporan sebelumnya mengandalkan alur kerja semi-manual multi-peran deng
 
 1. **Beban Validasi Manual Pegawai:** Pegawai harus membuka tautan Google Drive pada *Column 6 (Foto Eviden)* satu per satu, membaca nama pengulas pada tangkapan layar, memverifikasinya secara visual dengan *Column 4 (Nama Pengulas Playstore)*, lalu mencentang atau memberi nilai TRUE/FALSE secara manual pada *Column 12*.
 2. **Kerapuhan Pengecekan Duplikasi Teks:** Mengandalkan Timestamp (*Column 1*) dan Nama Pengulas untuk deteksi duplikasi sering memicu *false positive* atau *false negative*. "Display name" pada Play Store bersifat non-unik dan publik (hanya ada sekitar 24.500 nama unik dari 143.000+ data). Mengunci keunikan mutlak pada nama pengulas berisiko membuang data yang sebenarnya valid.
-3. **Inkonsistensi Historis Target Kinerja:** Pada laporan manual (CSV/Spreadsheet), jika ada penyesuaian target harian ULP di tengah periode (seperti pada sheet *note*), hal ini berisiko menimpa dan merusak perhitungan capaian persentase kumulatif di bulan-bulan sebelumnya pada sheet *Laporan Harian* dan *Laporan Bulanan*.
+3. **Inkonsistensi Historis Target Kinerja:** Pada laporan manual (CSV/Spreadsheet), jika ada penyesuaian target harian ULP di tengah periode pada formula manual spreadsheet, hal ini berisiko menimpa dan merusak perhitungan capaian persentase kumulatif di bulan-bulan sebelumnya pada sheet *Laporan Harian* dan *Laporan Bulanan*.
 4. **Izin Berkas Eksternal:** Tautan bukti (URL) di Google Drive sering mengalami kendala izin akses publik (*access denied*), yang melumpuhkan kemampuan sistem membaca data gambar secara otomatis.
 
 ---
@@ -57,7 +57,7 @@ Sistem pelaporan sebelumnya mengandalkan alur kerja semi-manual multi-peran deng
 **4.1 Modul Ingesti & Akuisisi Data (Garis Depan)**
 
 * **Web Intake Engine (Formulir Internal Petugas Lapangan):** Menggantikan fungsi Google Form untuk pihak lapangan saat mendata rating pelanggan di Play Store. Input form langsung mengunggah "Foto Eviden" ke **Penyimpanan Lokal (*Local Storage*)** pada *server*. Tampilan antarmuka (*UI*) formulir dirancang adaptif dan intuitif dengan mempertahankan kesesuaian atribut data operasional lama (UP3, ULP, Nama Pengulas, Tanggal Entri, Versi PLN Mobile, dll.) yang secara otomatis terpetakan ke dalam model basis data relasional.
-* **Sistem Migrasi Historis:** Fitur *drag-and-drop* untuk mengimpor fail `.csv` dan `.xlsx` secara masif (mencakup data mentah *Form Responses 1*, data referensi target *note*, serta laporan monitoring *Laporan Harian H-1*, *Laporan Harian*, dan *Laporan Bulanan*).
+* **Sistem Migrasi Historis:** Fitur *drag-and-drop* untuk mengimpor fail `.csv` dan `.xlsx` secara masif (mencakup data mentah *Form Responses 1*, serta laporan monitoring *Laporan Harian H-1*, *Laporan Harian*, dan *Laporan Bulanan*).
 * **Proses Impor Asinkron:** Penggunaan *queue worker* (Redis + BullMQ) untuk mem-parsing ratusan ribu baris CSV/XLSX di latar belakang (*background thread*) agar mencegah kelumpuhan memori *server* (*Out of Memory*).
 
 **4.2 Mesin AI & Logika Probabilitas (Inti Eksekusi)**
@@ -84,7 +84,7 @@ Sistem pelaporan sebelumnya mengandalkan alur kerja semi-manual multi-peran deng
 
 **4.4 Modul Laporan Eksekutif (Pusat Agregasi)**
 
-* **Otomatisasi Kalkulasi (Real-time):** Menggantikan beban penyusunan manual *Laporan Harian*, *Laporan Harian H-1*, *Laporan Bulanan*, dan referensi master target pada *note*. Sistem secara otonom mengunci dan mengakumulasikan parameter dari laporan historis tanpa risiko kerusakan target masa lalu:
+* **Otomatisasi Kalkulasi (Real-time):** Menggantikan beban penyusunan manual *Laporan Harian*, *Laporan Harian H-1*, dan *Laporan Bulanan*. Sistem secara otonom mengunci dan mengakumulasikan parameter dari laporan historis tanpa risiko kerusakan target masa lalu:
   * Realisasi Harian (per ULP/UP3)
   * Target Harian & Target Kumulatif
   * Realisasi Kumulatif

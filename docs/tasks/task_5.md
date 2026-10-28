@@ -5,7 +5,7 @@
 > **Target Audiens:** Data Engineer, Backend Engineer, Frontend Engineer  
 > **Referensi Wajib:**
 > - [`docs/PRD.md`](file:///Users/a69/Desktop/goro-s2jb/docs/PRD.md) (Bagian 1.2: Inkonsistensi Historis Target Kinerja, Bagian 4.4: Modul Laporan Eksekutif, Bagian 5: RBAC Role Manager)
-> - [`docs/GORO S2JB 2026 (Jawaban).xlsx`](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx) (Sheet *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, *LAPORAN BULANAN*, dan *note*)
+> - [`docs/GORO S2JB 2026 (Jawaban).xlsx`](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx) (Sheet *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*)
 > - [`.agents/skills/working-with-spreadsheets/`](file:///Users/a69/Desktop/goro-s2jb/.agents/skills/working-with-spreadsheets/)
 > - [`.agents/skills/xlsx/`](file:///Users/a69/Desktop/goro-s2jb/.agents/skills/xlsx/)
 > - [`.agents/skills/frontend-design/`](file:///Users/a69/Desktop/goro-s2jb/.agents/skills/frontend-design/)
@@ -19,7 +19,7 @@ Membangun **Modul Laporan Eksekutif (Pusat Agregasi)** yang berfungsi sebagai pu
 
 Modul ini bertugas menggantikan seluruh beban penyusunan manual lembar kerja *Laporan Harian*, *Laporan Harian H-1*, dan *Laporan Bulanan* yang sebelumnya harus dibuat sendiri oleh pegawai dari lembar mentah *Form Responses 1*.
 
-Selain mengotomatisasi kalkulasi agregasi secara *real-time*, modul ini **mengatasi titik lemah kritis nomor 3 pada sistem lama (PRD Bagian 1.2)**: pada spreadsheet lama, jika ada penyesuaian target harian ULP di tengah periode pada sheet *note*, formula spreadsheet manual sering menimpa (*overwrite*) dan merusak riwayat persentase capaian kumulatif di bulan-bulan sebelumnya. Sistem baru menerapkan prinsip **Immutabilitas Riwayat Target (Target History Immutability)** sehingga rekapitulasi performa lampau terkunci secara permanen dan mutlak akurat.
+Selain mengotomatisasi kalkulasi agregasi secara *real-time*, modul ini **mengatasi titik lemah kritis nomor 3 pada sistem lama (PRD Bagian 1.2)**: pada spreadsheet lama, jika ada penyesuaian target harian ULP di tengah periode pada formula spreadsheet manual, formula spreadsheet manual sering menimpa (*overwrite*) dan merusak riwayat persentase capaian kumulatif di bulan-bulan sebelumnya. Sistem baru menerapkan prinsip **Immutabilitas Riwayat Target (Target History Immutability)** sehingga rekapitulasi performa lampau terkunci secara permanen dan mutlak akurat.
 
 ---
 

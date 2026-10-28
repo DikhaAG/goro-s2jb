@@ -5,7 +5,7 @@
 > **Target Audiens:** Frontend Engineer, Backend Engineer, Database Architect  
 > **Referensi Wajib:**
 > - [`docs/PRD.md`](file:///Users/a69/Desktop/goro-s2jb/docs/PRD.md) (Bagian 1.1: Alur Kerja Lama, Bagian 4.1: Modul Ingesti & Akuisisi Data, Bagian 6: Roadmap MVP)
-> - [`docs/GORO S2JB 2026 (Jawaban).xlsx`](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx) (Skema 13 Kolom *Form Responses 1* & Master Sheet *note*)
+> - [`docs/GORO S2JB 2026 (Jawaban).xlsx`](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx) (Skema 13 Kolom *Form Responses 1*)
 > - [`.agents/skills/working-with-spreadsheets/`](file:///Users/a69/Desktop/goro-s2jb/.agents/skills/working-with-spreadsheets/)
 > - [`.agents/skills/xlsx/`](file:///Users/a69/Desktop/goro-s2jb/.agents/skills/xlsx/)
 > - [`.agents/skills/frontend-design/`](file:///Users/a69/Desktop/goro-s2jb/.agents/skills/frontend-design/)
@@ -81,11 +81,11 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
 ### 3.3 Task 2.3: Dasbor Migrasi Berkas Historis CSV / XLSX (`/admin/migration`)
 1. **Target Rute:** `src/app/(admin)/migration/page.tsx`
 2. **Karakteristik Antarmuka:**
-   * Didedikasikan untuk operator atau super-admin untuk mengimpor berkas lama (*Form Responses 1*, *note*, *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*).
+   * Didedikasikan untuk operator atau super-admin untuk mengimpor berkas lama (*Form Responses 1*, *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*).
    * Komponen Dropzone interaktif dengan indikasi *drag-and-drop*.
    * Dropdown pemilihan target skema:
      - `FORM_RESPONSES_RAW`: Mengimpor data ulasan mentah 13 kolom (*Form Responses 1*).
-     - `TARGET_MASTER_NOTE`: Mengimpor data target harian/kumulatif dan versi dari lembar *note*.
+     - `HISTORICAL_REPORTS`: Mengimpor riwayat data laporan operasional (*Laporan Harian / Bulanan*).
    * Panel pemantau status progres impor aktif (BullMQ job progress via SSE / polling query `trpc.migration.getStatus`).
 
 ---
@@ -101,8 +101,8 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
    * **Implementasi Streaming Parser CSV:**
      - Gunakan stream parser berbasis event (seperti `fast-csv` atau modul streaming Node.js `readline`).
      - Terapkan mekanisme *chunking/batching*: Kumpulkan baris per batch (misal 1.000 baris per batch), lalu eksekusi operasi batch insert ke PostgreSQL menggunakan `prisma.ratingReview.createMany({ data: chunk, skipDuplicates: true })`.
-   * **Implementasi Parser Lembar Master XLSX (`note`):**
-     - Mengikuti panduan `.agents/skills/xlsx/SKILL.md` dan `.agents/skills/working-with-spreadsheets/`: gunakan openpyxl mode `read_only=True` via script Python helper atau `exceljs` streaming reader untuk mengekstrak master target per tanggal, versi PLN Mobile, serta pemetaan UP3 dan ULP.
+   * **Implementasi Parser Lembar Laporan XLSX:**
+     - Mengikuti panduan `.agents/skills/xlsx/SKILL.md` dan `.agents/skills/working-with-spreadsheets/`: gunakan openpyxl mode `read_only=True` via script Python helper atau `exceljs` streaming reader untuk mengekstrak data ulasan dan riwayat laporan secara efisien.
    * **Isolasi Error & Logging:**
      - Jika terdapat baris data yang cacat atau kolom hilang, catat baris tersebut ke tabel `MigrationErrorLog` dan lanjutkan pemrosesan batch baris lainnya tanpa menghentikan worker.
    * **Pelaporan Progres:**
@@ -118,7 +118,7 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
 - [ ] **AC-4 (Database Record & Pending State):** Data formulir berhasil masuk ke tabel `RatingReview` dengan `validationStatus = "PENDING"`, timestamp tercatat akurat, dan relasi foreign key tersambung dengan benar.
 - [ ] **AC-5 (Asynchronous Job Dispatch):** Pengiriman form berhasil menambahkan job baru ke antrean BullMQ `ocrQueue` beserta payload ID review dan path gambar lokal.
 - [ ] **AC-6 (Bulk Import Streaming & No OOM):** Pengujian impor file CSV/XLSX berukuran >140.000 baris melalui `/admin/migration` berhasil diselesaikan oleh worker BullMQ dalam beberapa menit dengan penggunaan memori proses Node.js tetap stabil (< 512 MB).
-- [ ] **AC-7 (Target Master Import):** Data dari sheet *note* pada berkas `GORO S2JB 2026 (Jawaban).xlsx` berhasil dipetakan ke dalam model `TargetMaster` dan `AppVersion`.
+- [ ] **AC-7 (Historical Data Import):** Data ulasan dan riwayat laporan pada berkas `GORO S2JB 2026 (Jawaban).xlsx` berhasil dipetakan ke dalam basis data dengan benar.
 - [ ] **AC-8 (Error Tolerant Migration):** Baris data impor yang tidak valid tidak mematikan seluruh proses, melainkan dicatat ke tabel log error untuk ditinjau.
 
 ---
@@ -138,7 +138,7 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
 | `src/server/queues/importQueue.ts` | Dibuat | Antrean BullMQ khusus untuk tugas pemrosesan impor massal |
 | `src/server/workers/importWorker.ts` | Dibuat | Worker BullMQ untuk mengeksekusi streaming parser dan batch insert DB |
 | `src/lib/parsers/csvStreamParser.ts` | Dibuat | Engine streaming CSV dengan batch chunking (1.000-2.500 baris/batch) |
-| `src/lib/parsers/xlsxStreamParser.ts` | Dibuat | Parser memori-ringan untuk mengekstrak sheet Form Responses dan sheet note |
+| `src/lib/parsers/xlsxStreamParser.ts` | Dibuat | Parser memori-ringan untuk mengekstrak sheet Form Responses dan sheet laporan |
 | `src/server/routers/_app.ts` | Diubah | Mendaftarkan sub-router `intake` dan `migration` ke root router |
 | `prisma/schema.prisma` | Diubah | Menambahkan model `MigrationLog` dan `MigrationErrorLog` jika belum ada |
 
