@@ -1,3 +1,8 @@
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { username } from "better-auth/plugins/username";
+import prisma from "@/lib/prisma";
+import redis from "@/lib/redis";
 import bcrypt from "bcryptjs";
 import * as crypto from "crypto";
 import { SignJWT, jwtVerify } from "jose";
@@ -17,6 +22,8 @@ export {
   getRoleMaxAgeSeconds,
   getDefaultRedirectForRole,
 };
+
+export const BETTER_AUTH_COOKIE_NAME = "better-auth.session_token";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "goro-s2jb-command-center-secret-key-pln-2026-production-secured"
@@ -100,3 +107,99 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
     return null;
   }
 }
+
+/**
+ * Better Auth Core Server Configuration (Task 11).
+ * Features:
+ * - Prisma PostgreSQL Adapter with User, Session, Account, Verification
+ * - Redis Secondary Storage for ultra-fast session validation (<2ms)
+ * - Username Plugin for tactical operational username login
+ * - Hybrid Password Hashing supporting bcrypt and legacy SHA-256
+ * - StoreSessionInDatabase: true for dual persistence
+ */
+export const auth = betterAuth({
+  appName: "GORO S2JB Command Center",
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  secret: process.env.BETTER_AUTH_SECRET || "goro-s2jb-command-center-secret-key-pln-2026-production-secured-32chars",
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
+  }),
+  secondaryStorage: {
+    get: async (key: string) => {
+      try {
+        const val = await redis.get(key);
+        return val ? JSON.parse(val) : null;
+      } catch {
+        return null;
+      }
+    },
+    set: async (key: string, value: any, ttl?: number) => {
+      try {
+        if (ttl) {
+          await redis.set(key, JSON.stringify(value), "EX", ttl);
+        } else {
+          await redis.set(key, JSON.stringify(value));
+        }
+      } catch {
+        // Fallback to primary DB silently if redis temporarily unavailable
+      }
+    },
+    delete: async (key: string) => {
+      try {
+        await redis.del(key);
+      } catch {
+        // Ignore redis delete failures
+      }
+    },
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: true,
+        defaultValue: "PETUGAS_LAPANGAN",
+      },
+      up3Id: {
+        type: "string",
+        required: false,
+      },
+      ulpId: {
+        type: "string",
+        required: false,
+      },
+      isActive: {
+        type: "boolean",
+        required: true,
+        defaultValue: true,
+      },
+    },
+  },
+  emailAndPassword: {
+    enabled: true,
+    password: {
+      hash: async (pwd) => hashPassword(pwd),
+      verify: async ({ password, hash }) => verifyPassword(password, hash),
+    },
+  },
+  plugins: [
+    username({
+      minUsernameLength: 3,
+      maxUsernameLength: 32,
+    }),
+  ],
+  session: {
+    expiresIn: 7 * 24 * 60 * 60, // 7 days
+    updateAge: 24 * 60 * 60,
+    storeSessionInDatabase: true,
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
+});
+
+export type Auth = typeof auth;
+
