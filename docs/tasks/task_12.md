@@ -1,6 +1,6 @@
 # Task 12: Pengujian Penetrasi & Verifikasi Menyeluruh Matriks RBAC Multi-Layer pada Seluruh Rute Sistem
 
-> **Status:** Ready for Execution 📋  
+> **Status:** Completed ✅  
 > **Fase:** 3 (Jaminan Mutu Keamanan, Verifikasi Pertahanan Berlapis & Otomasi Pengujian E2E)  
 > **Target Audiens:** Security Engineer, QA Automation Engineer, Full-Stack Lead, Backend Architect  
 > **Referensi Wajib:**
@@ -211,11 +211,11 @@ Langkah 6: Registrasi Skrip & Verifikasi Penuh
 
 ## 6. Kriteria Keberhasilan & Verifikasi Penerimaan
 
-* [ ] Seluruh 80 titik uji penetrasi (5 peran $\times$ 16 target rute/endpoint kanonikal) teruji otomatis dalam suite pengujian.
-* [ ] Rute `/` terverifikasi 100% terkunci dari akses publik (tamu unauthenticated dialihkan ke `/login`).
-* [ ] Rute `/login` terverifikasi mengalihkan pengguna yang sudah terautentikasi ke dasbor kanonikal perannya (`/intake`, `/triage`, `/reports`, `/users`).
-* [ ] Seluruh rute kanonikal (`/intake`, `/triage`, `/reports`, `/users`, `/migration`, `/audit-logs`) terverifikasi terlindungi sesuai matriks RBAC.
-* [ ] Seluruh HTTP Route Handlers (`upload`, `uploads`, `export/excel`, `export/pdf`) menolak akses tidak berizin dengan status HTTP 401 atau 403 yang tepat.
-* [ ] Seluruh prosedur tRPC menolak pemanggilan peran yang tidak berwenang dengan error code `FORBIDDEN`.
-* [ ] Bilah samping navigasi (`GlobalSidebar`) bersih tanpa kebocoran tautan modul terlarang pada mode tamu atau antar-peran.
-* [ ] Perintah `npm run test:rbac` berhasil dieksekusi dengan tingkat kelulusan 100% tanpa regresi.
+* [x] Seluruh 80 titik uji penetrasi (5 peran $\times$ 16 target rute/endpoint kanonikal) teruji otomatis dalam suite pengujian.
+* [x] Rute `/` terverifikasi 100% terkunci dari akses publik (tamu unauthenticated dialihkan ke `/login`).
+* [x] Rute `/login` terverifikasi mengalihkan pengguna yang sudah terautentikasi ke dasbor kanonikal perannya (`/intake`, `/triage`, `/reports`, `/users`).
+* [x] Seluruh rute kanonikal (`/intake`, `/triage`, `/reports`, `/users`, `/migration`, `/audit-logs`) terverifikasi terlindungi sesuai matriks RBAC.
+* [x] Seluruh HTTP Route Handlers (`upload`, `uploads`, `export/excel`, `export/pdf`) menolak akses tidak berizin dengan status HTTP 401 atau 403 yang tepat.
+* [x] Seluruh prosedur tRPC menolak pemanggilan peran yang tidak berwenang dengan error code `FORBIDDEN`.
+* [x] Bilah samping navigasi (`GlobalSidebar`) bersih tanpa kebocoran tautan modul terlarang pada mode tamu atau antar-peran.
+* [x] Perintah `npm run test:rbac` berhasil dieksekusi dengan tingkat kelulusan 100% tanpa regresi.

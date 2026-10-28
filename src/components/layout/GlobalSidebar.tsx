@@ -24,14 +24,14 @@ interface GlobalSidebarProps {
   className?: string;
 }
 
-interface NavMenuItem {
+export interface NavMenuItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   roles: string[];
 }
 
-const NAV_ITEMS: NavMenuItem[] = [
+export const NAV_ITEMS: NavMenuItem[] = [
   {
     label: "Beranda Komando",
     href: "/",
@@ -76,6 +76,10 @@ const NAV_ITEMS: NavMenuItem[] = [
   },
 ];
 
+export function filterNavItemsByRole(role: string): NavMenuItem[] {
+  return NAV_ITEMS.filter((item) => item.roles.includes(role));
+}
+
 export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -85,9 +89,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
   const userRole = user?.role || "GUEST";
 
   // Filter menu items by RBAC
-  const visibleItems = NAV_ITEMS.filter((item) =>
-    item.roles.includes(userRole)
-  );
+  const visibleItems = filterNavItemsByRole(userRole);
 
   const handleLogout = async () => {
     try {
