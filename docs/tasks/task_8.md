@@ -258,9 +258,10 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
 | `src/app/(field)/intake/page.tsx` | Diubah | Penyelarasan antarmuka formulir input eviden petugas lapangan |
 | `src/app/(operator)/triage/page.tsx` | Diubah | Penyelarasan antarmuka triase 3 zona dengan kartu status pastel |
 | `src/app/(manager)/reports/page.tsx` | Diubah | Penyelarasan dasbor laporan manajer dan kartu metrik KPI |
-| `src/components/manager/ExecutiveKpiCards.tsx` | Diubah | Kartu KPI manajer berbasis Modern Utility Minimalism |
 | `src/app/(admin)/users/page.tsx` | Diubah | Penyelarasan tabel manajemen pengguna dengan token desain |
-| `src/app/(admin)/audit-logs/page.tsx` | Diubah | Penyelarasan tabel catatan audit keamanan |
+| `src/app/(admin)/migration/page.tsx` | Diubah | Penyelarasan antarmuka migrasi eviden dengan token desain |
+| `src/app/(admin)/audit-logs/page.tsx` | Dibuat | Halaman antarmuka penampil catatan jejak audit keamanan |
+| `src/components/admin/AuditLogTable.tsx` | Dibuat | Komponen tabel interaktif pencarian dan filter log audit |
 | `tests/unit/globalSidebar.test.tsx` | Dibuat | Pengujian unit komponen sidebar, filtering peran RBAC & drawer |
 | `tests/unit/designSystemTokens.test.ts` | Dibuat | Pengujian unit integritas token warna dan separator titik tengah |
 | `tests/unit/colorContrastWcag.test.ts` | Dibuat | Pengujian unit rasio kontras WCAG AA palet desain sistem |
