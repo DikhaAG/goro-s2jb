@@ -17,6 +17,21 @@ export interface EdgeSessionUser {
   ulpId?: string | null;
 }
 
+/**
+ * Declarative operational alias rewrite mapping.
+ * Maps legacy or user-friendly route aliases to internal Next.js App Router route groups.
+ */
+const REWRITE_MAP: Readonly<Record<string, string>> = Object.freeze({
+  "/operator/triage": "/triage",
+  "/manager/reports": "/reports",
+  "/admin/users": "/users",
+  "/admin/migration": "/migration",
+  "/admin/audit-logs": "/audit-logs",
+});
+
+/**
+ * Verifies JWT session token at the Edge Runtime using Web Crypto API.
+ */
 export async function verifyTokenEdge(token: string): Promise<EdgeSessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
@@ -35,9 +50,17 @@ export async function verifyTokenEdge(token: string): Promise<EdgeSessionUser | 
 }
 
 /**
- * Next.js Edge Network Proxy (Layer 1).
- * Intercepts incoming network traffic before hitting application code.
- * Handles boundary security: optimistic redirection, route aliases, and header enrichment.
+ * Next.js Edge Network Proxy (Layer 1 Security Boundary).
+ *
+ * Enforces edge-level perimeter defense:
+ * 1. Bypasses static assets and internal Next.js build files.
+ * 2. Authenticates session token via cryptographically signed JWT.
+ * 3. Sanitizes downstream request headers (prevents header spoofing).
+ * 4. Redirects authenticated users attempting to access guest-only routes (/login).
+ * 5. Strictly protects the root dashboard (/) from unauthenticated visitors.
+ * 6. Enforces Role-Based Access Control (RBAC) across all protected routes.
+ * 7. Enriches downstream headers with verified user credentials.
+ * 8. Executes declarative URL rewrites for operational route aliases.
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
@@ -55,7 +78,13 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const user = sessionCookie ? await verifyTokenEdge(sessionCookie) : null;
 
-  // 3. Handle Login page (guest only)
+  // 3. Prevent client header spoofing by sanitizing internal context headers
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete("x-user-id");
+  requestHeaders.delete("x-user-role");
+  requestHeaders.delete("x-user-name");
+
+  // 4. Handle Login page (guest only)
   if (pathname === "/login") {
     if (user) {
       const redirectUrl = getDefaultRedirectForRole(user.role);
@@ -64,23 +93,25 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
-  // 4. Handle Unauthorized 403 page
+  // 5. Handle Unauthorized 403 page
   if (pathname === "/unauthorized") {
     return NextResponse.next();
   }
 
-  // 5. Root Dashboard (/) - STRICTLY PROTECTED: unauthenticated visitors are redirected to /login
+  // 6. Root Dashboard (/) - STRICTLY PROTECTED: unauthenticated visitors are redirected to /login
   if (pathname === "/") {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 
-  // 6. Enforce RBAC for all protected application routes
+  // 7. Enforce RBAC for all protected application routes
   if (!isPublicRoute(pathname)) {
     if (!user) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      if (pathname !== "/") {
+        loginUrl.searchParams.set("redirect", pathname);
+      }
       return NextResponse.redirect(loginUrl);
     }
 
@@ -95,41 +126,27 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // 7. Header Enrichment: inject secure user context into downstream request headers
-  const requestHeaders = new Headers(request.headers);
+  // 8. Header Enrichment: inject verified user context into downstream request headers
   if (user) {
     requestHeaders.set("x-user-id", user.id);
     requestHeaders.set("x-user-role", user.role);
     requestHeaders.set("x-user-name", encodeURIComponent(user.name));
   }
 
-  // 8. Handle friendly URL rewrites for operational aliases
-  if (pathname === "/operator/triage") {
-    return NextResponse.rewrite(new URL("/triage", request.url), {
+  // 9. Declarative operational URL rewrites
+  const rewriteTarget = REWRITE_MAP[pathname];
+  if (rewriteTarget) {
+    const rewriteResponse = NextResponse.rewrite(new URL(rewriteTarget, request.url), {
       request: { headers: requestHeaders },
     });
-  }
-  if (pathname === "/manager/reports") {
-    return NextResponse.rewrite(new URL("/reports", request.url), {
-      request: { headers: requestHeaders },
-    });
-  }
-  if (pathname === "/admin/users") {
-    return NextResponse.rewrite(new URL("/users", request.url), {
-      request: { headers: requestHeaders },
-    });
-  }
-  if (pathname === "/admin/migration") {
-    return NextResponse.rewrite(new URL("/migration", request.url), {
-      request: { headers: requestHeaders },
-    });
-  }
-  if (pathname === "/admin/audit-logs") {
-    return NextResponse.rewrite(new URL("/audit-logs", request.url), {
-      request: { headers: requestHeaders },
-    });
+    if (user) {
+      rewriteResponse.headers.set("x-user-role", user.role);
+      rewriteResponse.headers.set("x-user-id", user.id);
+    }
+    return rewriteResponse;
   }
 
+  // 10. Pass-through response with enriched downstream context
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
@@ -140,14 +157,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
+/**
+ * Universal export conventions for Edge Proxy.
+ * Supports Next.js conventions as well as test harness imports.
+ */
+export { proxy as middleware };
+export default proxy;
+
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * Match all request paths except for static files:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - Static asset file extensions
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

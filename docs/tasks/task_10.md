@@ -67,7 +67,8 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 ## 3. Struktur Sub-Task Hierarkis
 
 * **Task 10.1:** Modul Definisi Matriks RBAC Tunggal & Helper Autentikasi Server (`src/lib/rbac.ts`, `src/lib/server-auth.ts`)
-* **Task 10.2:** Implementasi Next.js Edge Proxy Terpadu (`src/proxy.ts`) & Bridge Kompatibilitas Runtime (`src/middleware.ts`)
+* **Task 10.1:** Modul Definisi Matriks RBAC Tunggal & Helper Autentikasi Server (`src/lib/rbac.ts`, `src/lib/server-auth.ts`)
+* **Task 10.2:** Implementasi Next.js Edge Proxy Terpadu (`src/proxy.ts`)
 * **Task 10.3:** Penegakan Pertahanan Berlapis pada Server Layouts & Root Page Guard (`src/app/page.tsx`, `(field)`, `(operator)`, `(manager)`, `(admin)`)
 * **Task 10.4:** Pengamanan Mandiri HTTP Route Handlers (`upload`, `export/excel`, `export/pdf`, `uploads`)
 * **Task 10.5:** Pembersihan & Penyelarasan Navigasi Bilah Samping (`GlobalSidebar.tsx`, `MobileNavDrawer.tsx`, `page.tsx`)
@@ -94,7 +95,6 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 ### 4.2 Task 10.2: Implementasi Next.js Edge Proxy Terpadu (`src/proxy.ts`)
 1. **Target File:**
    * `src/proxy.ts` (Implementasi utama modern Next.js Edge Proxy)
-   * `src/middleware.ts` (Bridge kompatibilitas runtime Next.js 15)
 2. **Spesifikasi Teknis:**
    * **Implementasi Utama (`src/proxy.ts`):**
      * Ekspor fungsi `export async function proxy(request: NextRequest): Promise<NextResponse>`.
@@ -102,20 +102,13 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
      * Bertindak sebagai *boundary reverse proxy*:
        1. Mengabaikan aset statis (`/_next`, favicon, gambar).
        2. Membaca cookie sesi `goro_session` dan memverifikasi token JWT di edge.
-       3. Mengalihkan pengguna terautentikasi yang mengakses `/login` ke dasbor peran masing-masing.
-       4. Mengizinkan rute terbuka HANYA `/unauthorized` dan `/login`.
-       5. **Penguncian Rute `/`:** Jika pengguna belum login (tidak ada cookie atau token tidak valid) dan mengakses `/`, Edge Proxy langsung mengalihkan (*redirect 307*) ke `/login`.
-       6. Untuk rute terproteksi lainnya: mengalihkan tamu ke `/login?redirect=...` dan pengguna tanpa hak akses ke `/unauthorized?required=...`.
-       7. Menjalankan *URL rewriting* bersih untuk rute alias (`/operator/triage` $\rightarrow$ `/triage`, `/manager/reports` $\rightarrow$ `/reports`).
-       8. Melakukan *header enrichment* (`x-user-role`, `x-user-id`) untuk mempercepat konsumsi downstream di Server Components.
-   * **Bridge Runtime Next.js 15 (`src/middleware.ts`):**
-     * Berisi delegasi re-export tipis:
-       ```typescript
-       // Bridge kompatibilitas runtime: mendelegasikan eksekusi ke Next.js Edge Proxy
-       import { proxy, config } from "./proxy";
-       export { proxy as middleware, config };
-       ```
-     * Pola ini memastikan kode 100% *future-proof* sesuai konvensi Next.js terbaru sekaligus berjalan tanpa kendala pada runtime Next.js 15.
+       3. Membersihkan header internal (`x-user-*`) dari request klien untuk mencegah injeksi header (spoofing).
+       4. Mengalihkan pengguna terautentikasi yang mengakses `/login` ke dasbor peran masing-masing.
+       5. Mengizinkan rute terbuka HANYA `/unauthorized` dan `/login`.
+       6. **Penguncian Rute `/`:** Jika pengguna belum login (tidak ada cookie atau token tidak valid) dan mengakses `/`, Edge Proxy langsung mengalihkan (*redirect 307*) ke `/login`.
+       7. Untuk rute terproteksi lainnya: mengalihkan tamu ke `/login?redirect=...` dan pengguna tanpa hak akses ke `/unauthorized?required=...`.
+       8. Menjalankan *declarative URL rewriting* (`REWRITE_MAP`) untuk rute operasional (`/operator/triage` $\rightarrow$ `/triage`, `/manager/reports` $\rightarrow$ `/reports`, `/admin/users` $\rightarrow$ `/users`, dll).
+       9. Melakukan *header enrichment* (`x-user-role`, `x-user-id`) untuk mempercepat konsumsi downstream di Server Components.
 
 ---
 
@@ -181,7 +174,7 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 
 * [x] Rute `/` (Beranda Komando) terkunci mutlak dari akses publik: seluruh pengguna yang belum terautentikasi langsung dialihkan ke `/login`.
 * [x] Modul `src/lib/rbac.ts` dan `src/lib/server-auth.ts` terimplementasi sebagai sumber kebenaran tunggal (*Single Source of Truth*).
-* [x] Edge Proxy modern terimplementasi di `src/proxy.ts` dengan bridge kompatibilitas di `src/middleware.ts`.
+* [x] Edge Proxy modern terimplementasi di `src/proxy.ts` secara mandiri tanpa ketergantungan pada `src/middleware.ts`.
 * [x] Seluruh Server Layouts (`(field)`, `(operator)`, `(manager)`, `(admin)`) dan `src/app/page.tsx` menerapkan pertahanan berlapis dengan verifikasi sesi mandiri.
 * [x] Seluruh Route Handlers (`upload`, `export/excel`, `export/pdf`, `uploads`) terkunci mutlak dengan verifikasi JWT dan penolakan 401/403.
 * [x] Bilah samping navigasi (`GlobalSidebar`) bersih tanpa kebocoran tautan modul terlarang pada mode tamu atau antar-peran.

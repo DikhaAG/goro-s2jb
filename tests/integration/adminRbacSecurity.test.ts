@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
-import { middleware } from "@/middleware";
+import { proxy as middleware } from "@/proxy";
 import { appRouter } from "@/server/routers/_app";
 import { Role } from "@prisma/client";
 import { signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
