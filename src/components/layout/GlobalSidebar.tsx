@@ -60,7 +60,7 @@ const NAV_ITEMS: NavMenuItem[] = [
     label: "Manajemen Pengguna",
     href: "/admin/users",
     icon: Users,
-    roles: ["GUEST", "SUPER_ADMIN"],
+    roles: ["SUPER_ADMIN"],
   },
   {
     label: "Migrasi Data Eviden",
