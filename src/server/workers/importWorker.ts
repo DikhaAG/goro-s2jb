@@ -62,6 +62,16 @@ export function createImportWorker() {
             ? startRowNumber
             : existingBatch?.lastProcessedRow || 0;
 
+        // Verify submittedById exists in User table
+        let validUserId: string | null = null;
+        if (userId) {
+          const userRecord = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+          });
+          if (userRecord) validUserId = userRecord.id;
+        }
+
         const onBatchInsert = async (batchRows: any[]) => {
           const ratingData = batchRows.map((row) => {
             const ulpEntry =
@@ -92,7 +102,7 @@ export function createImportWorker() {
               isDuplicate: row.isDuplicate || false,
               validationStatus: row.validationStatus || "PENDING",
               reviewRemarks: row.reviewRemarks || null,
-              submittedById: userId || null,
+              submittedById: validUserId,
             };
           });
 

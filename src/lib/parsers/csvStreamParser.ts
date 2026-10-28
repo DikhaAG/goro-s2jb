@@ -30,6 +30,74 @@ export function parseExcelOrStandardDate(val: any): Date {
   }
 
   const str = String(val).trim();
+
+  // 1. ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
+  const isoMatch = str.match(
+    /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/
+  );
+  if (isoMatch) {
+    const [, y, m, d, hh, mm, ss] = isoMatch;
+    return new Date(
+      parseInt(y, 10),
+      parseInt(m, 10) - 1,
+      parseInt(d, 10),
+      hh ? parseInt(hh, 10) : 0,
+      mm ? parseInt(mm, 10) : 0,
+      ss ? parseInt(ss, 10) : 0
+    );
+  }
+
+  // 2. Date only: DD/MM/YYYY or D/M/YYYY (Indonesian Google Sheets date format)
+  const dateOnlyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dateOnlyMatch) {
+    const p1 = parseInt(dateOnlyMatch[1], 10);
+    const p2 = parseInt(dateOnlyMatch[2], 10);
+    const year = parseInt(dateOnlyMatch[3], 10);
+
+    let day: number;
+    let month: number;
+    if (p1 > 12) {
+      day = p1;
+      month = p2;
+    } else if (p2 > 12) {
+      month = p1;
+      day = p2;
+    } else {
+      // In Indonesian Google Form spreadsheets, date-only column is DD/MM/YYYY
+      day = p1;
+      month = p2;
+    }
+    return new Date(year, month - 1, day);
+  }
+
+  // 3. Date with time: e.g. 7/2/2026 11:02:22 or 25/7/2026 11:02:22
+  const dateTimeMatch = str.match(
+    /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/
+  );
+  if (dateTimeMatch) {
+    const p1 = parseInt(dateTimeMatch[1], 10);
+    const p2 = parseInt(dateTimeMatch[2], 10);
+    const year = parseInt(dateTimeMatch[3], 10);
+    const hh = parseInt(dateTimeMatch[4], 10);
+    const mm = parseInt(dateTimeMatch[5], 10);
+    const ss = dateTimeMatch[6] ? parseInt(dateTimeMatch[6], 10) : 0;
+
+    let day: number;
+    let month: number;
+    if (p1 > 12) {
+      day = p1;
+      month = p2;
+    } else if (p2 > 12) {
+      month = p1;
+      day = p2;
+    } else {
+      // Google Sheets default timestamp format is M/D/YYYY
+      month = p1;
+      day = p2;
+    }
+    return new Date(year, month - 1, day, hh, mm, ss);
+  }
+
   const parsed = new Date(str);
   if (!isNaN(parsed.getTime())) return parsed;
 
