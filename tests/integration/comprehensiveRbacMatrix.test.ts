@@ -152,6 +152,13 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       const resIntake = await proxy(reqIntake);
       expect(resIntake.status).toBe(307);
       expect(resIntake.headers.get("location")).toContain("/unauthorized?required=PETUGAS_LAPANGAN");
+
+      // 4. /migration should be permitted
+      const reqMigration = new NextRequest("http://localhost:3000/migration", {
+        headers: { cookie: `${SESSION_COOKIE_NAME}=${operatorToken}` },
+      });
+      const resMigration = await proxy(reqMigration);
+      expect(resMigration.status).toBe(200);
     });
 
     it("should ENFORCE RBAC on Manager: permit /, /reports, and rewrite /manager/reports; reject /intake, /admin", async () => {
@@ -299,6 +306,22 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
         const data = await res.json();
         expect(data.success).toBe(true);
       });
+
+      it("should allow Pegawai Triase to upload migration files", async () => {
+        const formData = new FormData();
+        formData.append("file", new Blob(["sample,csv"], { type: "text/csv" }), "test_migration_pegawai.csv");
+        formData.append("type", "migration");
+
+        const req = new NextRequest("http://localhost:3000/api/upload", {
+          method: "POST",
+          body: formData,
+          headers: { cookie: `${SESSION_COOKIE_NAME}=${operatorToken}` },
+        });
+        const res = await postUpload(req);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.success).toBe(true);
+      });
     });
 
     describe("GET /api/uploads/[...path]", () => {
@@ -331,7 +354,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       expect(getRequiredRoleForRoute("/triage")).toBe(Role.PEGAWAI);
       expect(getRequiredRoleForRoute("/reports")).toBe(Role.MANAGER);
       expect(getRequiredRoleForRoute("/users")).toBe(Role.SUPER_ADMIN);
-      expect(getRequiredRoleForRoute("/migration")).toBe(Role.SUPER_ADMIN);
+      expect(getRequiredRoleForRoute("/migration")).toBe(Role.PEGAWAI);
       expect(getRequiredRoleForRoute("/audit-logs")).toBe(Role.SUPER_ADMIN);
     });
 
@@ -348,12 +371,20 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       expect(isRouteAllowed("/triage", Role.PETUGAS_LAPANGAN)).toBe(false);
       expect(isRouteAllowed("/users", Role.PETUGAS_LAPANGAN)).toBe(false);
 
+      // Pegawai Triase
+      expect(isRouteAllowed("/", Role.PEGAWAI)).toBe(true);
+      expect(isRouteAllowed("/triage", Role.PEGAWAI)).toBe(true);
+      expect(isRouteAllowed("/migration", Role.PEGAWAI)).toBe(true);
+      expect(isRouteAllowed("/intake", Role.PEGAWAI)).toBe(false);
+      expect(isRouteAllowed("/users", Role.PEGAWAI)).toBe(false);
+
       // Super Admin
       expect(isRouteAllowed("/", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/intake", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/triage", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/reports", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/users", Role.SUPER_ADMIN)).toBe(true);
+      expect(isRouteAllowed("/migration", Role.SUPER_ADMIN)).toBe(true);
     });
   });
 });

@@ -173,7 +173,7 @@ describe("Task 12.4: Layer 4 tRPC RBAC Procedure Matrix Verification Suite", () 
     });
   });
 
-  describe("4. Administrative Procedure Guard (adminProcedure: user.* & migration.*)", () => {
+  describe("4. Administrative & Migration Procedure Guards", () => {
     it("should reject unauthenticated guest with UNAUTHORIZED", async () => {
       await expect(guestCaller.user.listUsers({})).rejects.toMatchObject({
         code: "UNAUTHORIZED",
@@ -184,7 +184,7 @@ describe("Task 12.4: Layer 4 tRPC RBAC Procedure Matrix Verification Suite", () 
       });
     });
 
-    it("should strictly reject Petugas Lapangan, Pegawai Triase, and Manager with FORBIDDEN", async () => {
+    it("should strictly reject non-admin callers from user management with FORBIDDEN", async () => {
       const callers = [fieldCaller, operatorCaller, managerCaller];
 
       for (const caller of callers) {
@@ -195,14 +195,28 @@ describe("Task 12.4: Layer 4 tRPC RBAC Procedure Matrix Verification Suite", () 
         await expect(caller.user.getAuditLogs({})).rejects.toMatchObject({
           code: "FORBIDDEN",
         });
+      }
+    });
 
+    it("should reject Petugas Lapangan and Manager from migration procedures with FORBIDDEN", async () => {
+      const nonMigrationCallers = [fieldCaller, managerCaller];
+
+      for (const caller of nonMigrationCallers) {
         await expect(caller.migration.listBatches()).rejects.toMatchObject({
           code: "FORBIDDEN",
         });
       }
     });
 
-    it("should permit Super Admin to access all administrative procedures", async () => {
+    it("should permit Pegawai Triase and Super Admin to access migration procedures", async () => {
+      const operatorBatchesRes = await operatorCaller.migration.listBatches();
+      expect(Array.isArray(operatorBatchesRes)).toBe(true);
+
+      const adminBatchesRes = await adminCaller.migration.listBatches();
+      expect(Array.isArray(adminBatchesRes)).toBe(true);
+    });
+
+    it("should permit Super Admin to access all administrative user procedures", async () => {
       const usersRes = await adminCaller.user.listUsers({ limit: 5 });
       expect(usersRes).toHaveProperty("users");
       expect(Array.isArray(usersRes.users)).toBe(true);
@@ -210,9 +224,6 @@ describe("Task 12.4: Layer 4 tRPC RBAC Procedure Matrix Verification Suite", () 
       const auditLogsRes = await adminCaller.user.getAuditLogs({ limit: 5 });
       expect(auditLogsRes).toHaveProperty("logs");
       expect(Array.isArray(auditLogsRes.logs)).toBe(true);
-
-      const batchesRes = await adminCaller.migration.listBatches();
-      expect(Array.isArray(batchesRes)).toBe(true);
     });
   });
 });

@@ -26,6 +26,8 @@ import {
 export function HomePageClient() {
   const sessionQuery = trpc.auth.getSession.useQuery();
   const isSuperAdmin = sessionQuery.data?.role === "SUPER_ADMIN";
+  const canAccessMigration =
+    sessionQuery.data?.role === "PEGAWAI" || sessionQuery.data?.role === "SUPER_ADMIN";
 
   const healthQuery = trpc.health.ping.useQuery(undefined, {
     refetchInterval: 10000,
@@ -140,6 +142,24 @@ export function HomePageClient() {
               Agregasi capaian harian, H-1, bulanan, dan ekspor spreadsheet terenkripsi.
             </p>
           </Link>
+
+          {canAccessMigration && (
+            <Link
+              href="/migration"
+              className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#00a2b9] hover:shadow-xs transition duration-150 focus-utility-ring"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <Database className="w-5 h-5" />
+              </div>
+              <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#006877] transition-colors flex items-center justify-between">
+                <span>Migrasi Data Eviden</span>
+                <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#00a2b9] group-hover:translate-x-0.5 transition-all" />
+              </h2>
+              <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
+                Unggah dan sinkronisasi berkas spreadsheet historis (Form Responses dan rekapan).
+              </p>
+            </Link>
+          )}
 
           {isSuperAdmin && (
             <Link

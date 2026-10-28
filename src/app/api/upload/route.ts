@@ -25,9 +25,10 @@ export async function POST(req: NextRequest) {
 
     // 2. Layer 3 Authorization Guard: Check role permissions per upload category
     if (uploadType === "migration") {
-      if (user.role !== Role.SUPER_ADMIN) {
+      const allowedRoles: Role[] = [Role.PEGAWAI, Role.SUPER_ADMIN];
+      if (!allowedRoles.includes(user.role)) {
         return NextResponse.json(
-          { error: "Akses ditolak. Hanya Super Admin yang diizinkan mengunggah berkas migrasi." },
+          { error: "Akses ditolak. Hanya Pegawai Triase atau Super Admin yang diizinkan mengunggah berkas migrasi." },
           { status: 403 }
         );
       }

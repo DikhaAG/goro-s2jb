@@ -1,6 +1,6 @@
 # Task 13: Refaktorisasi Otorisasi Fitur Migrasi Data Eviden (/migration) ke Peran Pegawai Triase & Hardening RBAC Multi-Peran
 
-> **Status:** Ready for Execution 📋  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 3 (Otorisasi RBAC Multi-Peran, Manajemen Migrasi Data Historis & Arsitektur App Router)  
 > **Target Audiens:** Full-Stack Engineer, Security/RBAC Specialist, Frontend Engineer, QA Automation Engineer  
 > **Referensi Wajib:**
@@ -147,9 +147,9 @@ Memindahkan wewenang operasional fitur **Migrasi Data Eviden Historis (`/migrati
 
 ## 5. Kriteria Keberhasilan & Verifikasi Penerimaan
 
-* [ ] Halaman migrasi telah dipindahkan ke `src/app/(operator)/migration/page.tsx`.
-* [ ] Rute kanonikal `/migration` dapat dibuka langsung oleh peran `PEGAWAI` dan `SUPER_ADMIN`.
-* [ ] Pengguna dengan peran `PETUGAS_LAPANGAN` dan `MANAGER` ditolak secara aman (`403 Forbidden` / redirect `/unauthorized`).
-* [ ] Menu navigasi "Migrasi Data Eviden" muncul pada sidebar pengguna `PEGAWAI` dan `SUPER_ADMIN`.
-* [ ] Upload berkas migrasi melalui `POST /api/upload` dengan `type="migration"` berhasil untuk `PEGAWAI`.
-* [ ] Seluruh pengujian unit dan integrasi RBAC (`npm test`) lulus 100% tanpa ada regresi.
+* [x] Halaman migrasi telah dipindahkan ke `src/app/(operator)/migration/page.tsx`.
+* [x] Rute kanonikal `/migration` dapat dibuka langsung oleh peran `PEGAWAI` dan `SUPER_ADMIN`.
+* [x] Pengguna dengan peran `PETUGAS_LAPANGAN` dan `MANAGER` ditolak secara aman (`403 Forbidden` / redirect `/unauthorized`).
+* [x] Menu navigasi "Migrasi Data Eviden" muncul pada sidebar pengguna `PEGAWAI` dan `SUPER_ADMIN`.
+* [x] Upload berkas migrasi melalui `POST /api/upload` dengan `type="migration"` berhasil untuk `PEGAWAI`.
+* [x] Seluruh pengujian unit dan integrasi RBAC (`npm test`) lulus 100% tanpa ada regresi (207 passing tests across 33 suites).

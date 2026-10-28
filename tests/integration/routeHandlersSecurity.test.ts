@@ -116,7 +116,7 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
       expect(resAdmin.status).toBe(400);
     });
 
-    it("should strictly restrict type='migration' uploads to SUPER_ADMIN", async () => {
+    it("should restrict type='migration' uploads to PEGAWAI and SUPER_ADMIN", async () => {
       const formData = new FormData();
       formData.append("type", "migration");
       formData.append("file", new Blob(["col1,col2"], { type: "text/csv" }), "test.csv");
@@ -125,6 +125,13 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
       const reqField = createRequest("http://localhost:3000/api/upload", "POST", fieldToken, formData);
       const resField = await postUpload(reqField);
       expect(resField.status).toBe(403);
+
+      // Pegawai Triase trying migration upload -> 200
+      const reqOperator = createRequest("http://localhost:3000/api/upload", "POST", operatorToken, formData);
+      const resOperator = await postUpload(reqOperator);
+      expect(resOperator.status).toBe(200);
+      const dataOperator = await resOperator.json();
+      expect(dataOperator.success).toBe(true);
 
       // Super admin trying migration upload -> 200
       const reqAdmin = createRequest("http://localhost:3000/api/upload", "POST", adminToken, formData);

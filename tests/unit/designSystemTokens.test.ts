@@ -86,7 +86,7 @@ describe("Design System & Antislop Compliance", () => {
       {
         label: "Migrasi Data Eviden",
         href: "/migration",
-        roles: ["SUPER_ADMIN"],
+        roles: ["PEGAWAI", "SUPER_ADMIN"],
       },
       {
         label: "Catatan Audit Log",
@@ -99,9 +99,9 @@ describe("Design System & Antislop Compliance", () => {
     const fieldItems = NAV_ITEMS.filter((i) => i.roles.includes("PETUGAS_LAPANGAN"));
     expect(fieldItems.map((i) => i.href)).toEqual(["/", "/intake"]);
 
-    // Operator Verifikator sees 2 items
+    // Operator Verifikator sees 3 items
     const operatorItems = NAV_ITEMS.filter((i) => i.roles.includes("PEGAWAI"));
-    expect(operatorItems.map((i) => i.href)).toEqual(["/", "/triage"]);
+    expect(operatorItems.map((i) => i.href)).toEqual(["/", "/triage", "/migration"]);
 
     // Manager sees 2 items
     const managerItems = NAV_ITEMS.filter((i) => i.roles.includes("MANAGER"));

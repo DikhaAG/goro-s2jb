@@ -12,12 +12,19 @@ export interface RoutePermission {
  * Enforced across Edge Proxy, Server Layouts, Route Handlers, and UI Navigation.
  */
 export const ROUTE_PERMISSIONS: RoutePermission[] = [
-  // Admin module: exclusive to SUPER_ADMIN (/users, /migration, /audit-logs, /admin/*)
+  // Migration module: Pegawai (Operator Triase) and Super Admin
   {
-    pattern: /^\/(users(\/.*)?|migration(\/.*)?|audit-logs(\/.*)?|admin(\/.*)?)$/,
+    pattern: /^\/migration(\/.*)?$/,
+    prefix: "/migration",
+    allowedRoles: [Role.PEGAWAI, Role.SUPER_ADMIN],
+    description: "Modul Migrasi Data Eviden Historis",
+  },
+  // Admin module: exclusive to SUPER_ADMIN (/users, /audit-logs, /admin/*)
+  {
+    pattern: /^\/(users(\/.*)?|audit-logs(\/.*)?|admin(\/.*)?)$/,
     prefix: "/users",
     allowedRoles: [Role.SUPER_ADMIN],
-    description: "Modul Administrasi Sistem (Users, Migration, Audit Logs)",
+    description: "Modul Administrasi Sistem (Users, Audit Logs)",
   },
   // Field intake: Petugas Lapangan and Super Admin
   {

@@ -1,10 +1,10 @@
-import { router, adminProcedure } from "../trpc";
+import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
 import { importQueue } from "../queues/importQueue";
 import { TRPCError } from "@trpc/server";
 
 export const migrationRouter = router({
-  startMigration: adminProcedure
+  startMigration: operatorProcedure
     .input(
       z.object({
         filePath: z.string().min(1),
@@ -47,7 +47,7 @@ export const migrationRouter = router({
       }
     }),
 
-  getBatchStatus: adminProcedure
+  getBatchStatus: operatorProcedure
     .input(z.object({ batchId: z.string() }))
     .query(async ({ ctx, input }) => {
       const batch = await ctx.prisma.migrationBatch.findUnique({
@@ -70,7 +70,7 @@ export const migrationRouter = router({
       return batch;
     }),
 
-  listBatches: adminProcedure.query(async ({ ctx }) => {
+  listBatches: operatorProcedure.query(async ({ ctx }) => {
     return ctx.prisma.migrationBatch.findMany({
       take: 10,
       orderBy: { createdAt: "desc" },

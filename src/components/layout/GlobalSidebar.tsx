@@ -66,7 +66,7 @@ export const NAV_ITEMS: NavMenuItem[] = [
     label: "Migrasi Data Eviden",
     href: "/migration",
     icon: Database,
-    roles: ["SUPER_ADMIN"],
+    roles: ["PEGAWAI", "SUPER_ADMIN"],
   },
   {
     label: "Catatan Audit Log",

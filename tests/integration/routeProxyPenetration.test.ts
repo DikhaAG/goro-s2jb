@@ -131,7 +131,7 @@ describe("Task 12.1: Layer 1 Edge Proxy Penetration Test Suite", () => {
           { path: "/triage", required: "PEGAWAI" },
           { path: "/reports", required: "MANAGER" },
           { path: "/users", required: "SUPER_ADMIN" },
-          { path: "/migration", required: "SUPER_ADMIN" },
+          { path: "/migration", required: "PEGAWAI" },
           { path: "/audit-logs", required: "SUPER_ADMIN" },
         ];
 
@@ -146,13 +146,16 @@ describe("Task 12.1: Layer 1 Edge Proxy Penetration Test Suite", () => {
     });
 
     describe("2. Pegawai Triase (PEGAWAI)", () => {
-      it("should permit access to / and /triage", async () => {
+      it("should permit access to /, /triage, and /migration", async () => {
         const resHome = await proxy(createRequest("/", operatorToken));
         expect(resHome.status).toBe(200);
         expect(resHome.headers.get("x-user-role")).toBe(Role.PEGAWAI);
 
         const resTriage = await proxy(createRequest("/triage", operatorToken));
         expect(resTriage.status).toBe(200);
+
+        const resMigration = await proxy(createRequest("/migration", operatorToken));
+        expect(resMigration.status).toBe(200);
       });
 
       it("should reject and redirect unauthorized routes to /unauthorized", async () => {
@@ -160,7 +163,6 @@ describe("Task 12.1: Layer 1 Edge Proxy Penetration Test Suite", () => {
           { path: "/intake", required: "PETUGAS_LAPANGAN" },
           { path: "/reports", required: "MANAGER" },
           { path: "/users", required: "SUPER_ADMIN" },
-          { path: "/migration", required: "SUPER_ADMIN" },
           { path: "/audit-logs", required: "SUPER_ADMIN" },
         ];
 
@@ -189,7 +191,7 @@ describe("Task 12.1: Layer 1 Edge Proxy Penetration Test Suite", () => {
           { path: "/intake", required: "PETUGAS_LAPANGAN" },
           { path: "/triage", required: "PEGAWAI" },
           { path: "/users", required: "SUPER_ADMIN" },
-          { path: "/migration", required: "SUPER_ADMIN" },
+          { path: "/migration", required: "PEGAWAI" },
           { path: "/audit-logs", required: "SUPER_ADMIN" },
         ];
 

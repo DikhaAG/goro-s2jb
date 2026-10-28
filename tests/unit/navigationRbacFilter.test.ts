@@ -59,18 +59,18 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/audit-logs");
     });
 
-    it("should return exactly 2 items for Pegawai Triase: ['/', '/triage']", () => {
+    it("should return exactly 3 items for Pegawai Triase: ['/', '/triage', '/migration']", () => {
       const operatorItems = filterNavItemsByRole(Role.PEGAWAI);
       const hrefs = getHrefs(operatorItems);
 
-      expect(operatorItems).toHaveLength(2);
-      expect(hrefs).toEqual(["/", "/triage"]);
+      expect(operatorItems).toHaveLength(3);
+      expect(hrefs).toEqual(["/", "/triage", "/migration"]);
 
       // Verify strict isolation
       expect(hrefs).not.toContain("/intake");
       expect(hrefs).not.toContain("/reports");
       expect(hrefs).not.toContain("/users");
-      expect(hrefs).not.toContain("/migration");
+      expect(hrefs).toContain("/migration");
       expect(hrefs).not.toContain("/audit-logs");
     });
 
