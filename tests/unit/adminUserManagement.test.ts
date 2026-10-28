@@ -36,12 +36,12 @@ const NAV_ITEMS: NavMenuItem[] = [
   },
   {
     label: "Migrasi Data Eviden",
-    href: "/admin/migration",
+    href: "/migration",
     roles: ["SUPER_ADMIN"],
   },
   {
     label: "Catatan Audit Log",
-    href: "/admin/audit-logs",
+    href: "/audit-logs",
     roles: ["SUPER_ADMIN"],
   },
 ];
@@ -82,8 +82,10 @@ describe("Task 9.1: Exclusive Super Admin Navigation Filtering", () => {
     expect(userMgmtItem).toBeUndefined();
   });
 
-  it("should ensure all administrative routes (/users, /admin/*) are strictly locked to SUPER_ADMIN", () => {
-    const adminRoutes = NAV_ITEMS.filter((item) => item.href.startsWith("/admin") || item.href === "/users");
+  it("should ensure all administrative routes (/users, /migration, /audit-logs) are strictly locked to SUPER_ADMIN", () => {
+    const adminRoutes = NAV_ITEMS.filter((item) =>
+      ["/users", "/migration", "/audit-logs"].includes(item.href)
+    );
     expect(adminRoutes.length).toBe(3);
     adminRoutes.forEach((route) => {
       expect(route.roles).toEqual(["SUPER_ADMIN"]);

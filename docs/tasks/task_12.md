@@ -16,20 +16,20 @@
 
 ## 1. Ringkasan & Tujuan Task
 
-Membangun dan mengeksekusi **Rangkaian Pengujian Penetrasi Matriks RBAC Komprehensif** untuk menguji ketahanan setiap rute aplikasi (halaman frontend, operational alias rewrite, HTTP Route Handlers, dan prosedur tRPC backend). 
+Membangun dan mengeksekusi **Rangkaian Pengujian Penetrasi Matriks RBAC Komprehensif** untuk menguji ketahanan setiap rute aplikasi kanonikal yang ada pada `src/app` (halaman frontend, HTTP Route Handlers, dan prosedur tRPC backend). 
 
 Pengujian ini memastikan tidak ada celah keamanan (*privilege escalation*), kebocoran data antar-wilayah, atau kegagalan isolasi peran di seluruh 5 lapisan pertahanan:
-1. **Layer 1 (Network Edge Proxy - `src/proxy.ts`):** Menguji intersepsi perimeter, redirect instan bagi tamu unauthenticated dari rute `/` dan seluruh rute terproteksi, redirect pasca-login berdasarkan peran, serta URL rewriting bersih dari alias lama (`/operator/triage` $\rightarrow$ `/triage`, `/manager/reports` $\rightarrow$ `/reports`, `/admin/users` $\rightarrow$ `/users`).
+1. **Layer 1 (Network Edge Proxy - `src/proxy.ts`):** Menguji intersepsi perimeter, redirect instan bagi tamu unauthenticated dari rute `/` dan seluruh rute terproteksi, serta redirect pasca-login berdasarkan peran.
 2. **Layer 2 (Server Component Layout Guards - `src/lib/server-auth.ts`):** Menguji verifikasi sesi di tingkat layout React Server Components (`(field)`, `(operator)`, `(manager)`, `(admin)`) guna memastikan perlindungan tetap aktif bahkan jika proxy di-bypass.
 3. **Layer 3 (HTTP Route Handlers - `/api/*`):** Menguji proteksi mandiri endpoint upload gambar, pengunduhan file evidensi (`/api/uploads/*`), dan ekspor data (`/api/export/excel`, `/api/export/pdf`).
 4. **Layer 4 (tRPC Procedure Guards - `src/server/trpc.ts`):** Menguji prosedur tRPC (`fieldProcedure`, `operatorProcedure`, `executiveProcedure`, `adminProcedure`) agar menolak pemanggilan tanpa izin dengan status `UNAUTHORIZED` (401) atau `FORBIDDEN` (403).
-5. **Layer 5 (Client Navigation & App Shell - `GlobalSidebar.tsx`, `HomePageClient.tsx`):** Menguji bahwa item navigasi dan tombol aksi yang tampil secara eksklusif hanya sesuai dengan peran pengguna aktif.
+5. **Layer 5 (Client Navigation & App Shell - `GlobalSidebar.tsx`, `HomePageClient.tsx`):** Menguji bahwa item navigasi dan tautan modul yang tampil secara eksklusif hanya sesuai dengan peran pengguna aktif.
 
 ---
 
-## 2. Matriks Uji Lengkap: 5 Peran vs Seluruh Rute Aplikasi
+## 2. Matriks Uji Kanonikal: 5 Peran vs Seluruh Rute Aplikasi
 
-Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi peran dan rute (Total: 5 peran $\times$ 18 target rute/endpoint = 90 titik uji penetrasi):
+Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi peran dan rute kanonikal (Total: 5 peran $\times$ 16 target rute/endpoint kanonikal = 80 titik uji penetrasi):
 
 | No | Target Rute / Endpoint | Tamu (`GUEST`) | Petugas Lapangan (`PETUGAS_LAPANGAN`) | Pegawai Triase (`PEGAWAI`) | Manager UID (`MANAGER`) | Super Admin (`SUPER_ADMIN`) |
 |:---|:---|:---:|:---:|:---:|:---:|:---:|
@@ -39,26 +39,24 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
 | 3 | `/unauthorized` (Halaman 403) | 200 OK | 200 OK | 200 OK | 200 OK | 200 OK |
 | 4 | `/intake` (Entri Eviden) | 307 $\rightarrow$ `/login` | 200 OK | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
 | 5 | `/triage` (Dasbor Triase) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 200 OK | 307 $\rightarrow$ 403 | 200 OK |
-| 6 | `/operator/triage` (Alias Lama) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | Rewrite $\rightarrow$ `/triage` (200) | 307 $\rightarrow$ 403 | Rewrite $\rightarrow$ `/triage` (200) |
-| 7 | `/reports` (Laporan Eksekutif) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK | 200 OK |
-| 8 | `/manager/reports` (Alias Lama) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | Rewrite $\rightarrow$ `/reports` (200) | Rewrite $\rightarrow$ `/reports` (200) |
-| 9 | `/users` (Manajemen Pengguna) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
-| 10 | `/admin/users` (Alias Lama) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | Rewrite $\rightarrow$ `/users` (200) |
-| 11 | `/migration` (Migrasi Data) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
-| 12 | `/audit-logs` (Audit Trail) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
+| 6 | `/reports` (Laporan Eksekutif) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK | 200 OK |
+| 7 | `/users` (Manajemen Pengguna) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
+| 8 | `/migration` (Migrasi Data) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
+| 9 | `/audit-logs` (Audit Trail) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
 | **B** | **HTTP Route Handlers (/api/*)** | | | | | |
-| 13 | `POST /api/upload` | 401 Unauthorized | 200 / 400 (Allowed) | 403 Forbidden | 403 Forbidden | 200 / 400 (Allowed) |
-| 14 | `GET /api/uploads/[...path]` | 401 Unauthorized | 200 OK (Served) | 200 OK (Served) | 200 OK (Served) | 200 OK (Served) |
-| 15 | `GET /api/export/excel` | 401 Unauthorized | 403 Forbidden | 403 Forbidden | 200 OK (Spreadsheet) | 200 OK (Spreadsheet) |
-| 16 | `GET /api/export/pdf` | 401 Unauthorized | 403 Forbidden | 403 Forbidden | 200 OK (PDF Stream) | 200 OK (PDF Stream) |
-| 17 | `GET /api/health` | 200 OK (Public) | 200 OK | 200 OK | 200 OK | 200 OK |
-| 18 | `POST /api/auth/login` | Rate-limited auth | Rate-limited auth | Rate-limited auth | Rate-limited auth | Rate-limited auth |
+| 10 | `POST /api/upload` | 401 Unauthorized | 200 / 400 (Allowed) | 403 Forbidden | 403 Forbidden | 200 / 400 (Allowed) |
+| 11 | `GET /api/uploads/[...path]` | 401 Unauthorized | 200 OK (Served) | 200 OK (Served) | 200 OK (Served) | 200 OK (Served) |
+| 12 | `GET /api/export/excel` | 401 Unauthorized | 403 Forbidden | 403 Forbidden | 200 OK (Spreadsheet) | 200 OK (Spreadsheet) |
+| 13 | `GET /api/export/pdf` | 401 Unauthorized | 403 Forbidden | 403 Forbidden | 200 OK (PDF Stream) | 200 OK (PDF Stream) |
+| 14 | `GET /api/health` | 200 OK (Public) | 200 OK | 200 OK | 200 OK | 200 OK |
+| 15 | `POST /api/auth/login` | Rate-limited auth | Rate-limited auth | Rate-limited auth | Rate-limited auth | Rate-limited auth |
+| 16 | `POST /api/auth/logout` | 200 OK (Session cleared) | 200 OK (Session cleared) | 200 OK (Session cleared) | 200 OK (Session cleared) | 200 OK (Session cleared) |
 
 ---
 
 ## 3. Struktur Sub-Task Hierarkis
 
-* **Task 12.1:** Otomasi Pengujian Penetrasi Rute Halaman & Aliases pada Edge Proxy (`tests/integration/routeProxyPenetration.test.ts`)
+* **Task 12.1:** Otomasi Pengujian Penetrasi Rute Halaman pada Edge Proxy (`tests/integration/routeProxyPenetration.test.ts`)
 * **Task 12.2:** Pengujian Keamanan Mandiri HTTP Route Handlers (`tests/integration/routeHandlersSecurity.test.ts`)
 * **Task 12.3:** Pengujian Isolasi Server Component Layouts (`tests/integration/serverLayoutGuards.test.ts`)
 * **Task 12.4:** Verifikasi Matriks RBAC pada tRPC Backend Router (`tests/integration/trpcRbacFullMatrix.test.ts`)
@@ -69,7 +67,7 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
 
 ## 4. Instruksi Teknis Rinci
 
-### 4.1 Task 12.1: Otomasi Pengujian Penetrasi Rute Halaman & Aliases pada Edge Proxy
+### 4.1 Task 12.1: Otomasi Pengujian Penetrasi Rute Halaman pada Edge Proxy
 1. **Target File:**
    * `tests/integration/routeProxyPenetration.test.ts`
 2. **Spesifikasi Pengujian:**
@@ -83,17 +81,15 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
      - Tamu tanpa sesi mengakses `/` wajib mendapatkan status `307` mengarah ke `http://localhost:3000/login` tanpa parameter redirect.
      - Setiap pengguna terautentikasi mengakses `/` wajib mendapatkan status `200` dan header `x-user-role` terinjeksi.
    * **Pengujian 2 (Pengalihan Halaman Login `/login`):**
-     - Pengguna yang sudah login mengakses `/login` wajib dialihkan langsung ke rute dasbor spesifik perannya:
+     - Pengguna yang sudah login mengakses `/login` wajib dialihkan langsung ke rute kanonikal perannya:
        - Petugas Lapangan $\rightarrow$ `/intake`
        - Pegawai Triase $\rightarrow$ `/triage`
        - Manager UID $\rightarrow$ `/reports`
        - Super Admin $\rightarrow$ `/users`
    * **Pengujian 3 (Matriks Penolakan & Pengalihan Unauthorized):**
      - Saat peran mencoba mengakses modul terlarang, proxy harus mengalihkan ke `/unauthorized?required=<ROLE>` dengan status 307.
-   * **Pengujian 4 (Verifikasi URL Rewriting Transparan):**
-     - Request ke alias lama `/operator/triage` wajib menghasilkan header `x-middleware-rewrite: http://localhost:3000/triage`.
-     - Request ke alias lama `/manager/reports` wajib menghasilkan header `x-middleware-rewrite: http://localhost:3000/reports`.
-     - Request ke alias lama `/admin/users` wajib menghasilkan header `x-middleware-rewrite: http://localhost:3000/users`.
+   * **Pengujian 4 (Akses Penuh Super Admin):**
+     - Memverifikasi bahwa Super Admin dapat membuka seluruh rute (`/`, `/intake`, `/triage`, `/reports`, `/users`, `/migration`, `/audit-logs`) dengan status 200.
 
 ---
 
@@ -175,7 +171,7 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
                     tests/integration/serverLayoutGuards.test.ts \
                     tests/integration/trpcRbacFullMatrix.test.ts \
                     tests/unit/navigationRbacFilter.test.ts
-     echo "✅ Seluruh 90 Titik Uji Penetrasi RBAC Lulus 100%!"
+     echo "✅ Seluruh 80 Titik Uji Penetrasi RBAC Kanonikal Lulus 100%!"
      ```
    * Daftarkan perintah ke `package.json`: `"test:rbac": "bash scripts/verify-rbac-matrix.sh"`.
 
@@ -190,7 +186,7 @@ Langkah 1: Setup Test Fixtures & Utilities
 
 Langkah 2: Implementasi Pengujian Edge Proxy (Layer 1)
 ├── Buat tests/integration/routeProxyPenetration.test.ts
-└── Jalankan verifikasi 307 redirect, 200 pass-through, dan transparent rewrites
+└── Jalankan verifikasi 307 redirect dan 200 pass-through pada rute kanonikal
 
 Langkah 3: Implementasi Pengujian HTTP Route Handlers (Layer 3)
 ├── Buat tests/integration/routeHandlersSecurity.test.ts
@@ -215,10 +211,10 @@ Langkah 6: Registrasi Skrip & Verifikasi Penuh
 
 ## 6. Kriteria Keberhasilan & Verifikasi Penerimaan
 
-* [ ] Seluruh 90 titik uji penetrasi (5 peran $\times$ 18 target rute/endpoint) teruji otomatis dalam suite pengujian.
+* [ ] Seluruh 80 titik uji penetrasi (5 peran $\times$ 16 target rute/endpoint kanonikal) teruji otomatis dalam suite pengujian.
 * [ ] Rute `/` terverifikasi 100% terkunci dari akses publik (tamu unauthenticated dialihkan ke `/login`).
-* [ ] Rute `/login` terverifikasi mengalihkan pengguna yang sudah terautentikasi ke dasbor perannya masing-masing (`/intake`, `/triage`, `/reports`, `/users`).
-* [ ] Seluruh URL alias operasional (`/operator/triage`, `/manager/reports`, `/admin/users`) terverifikasi di-rewrite secara transparan ke rute kanonikalnya (`/triage`, `/reports`, `/users`).
+* [ ] Rute `/login` terverifikasi mengalihkan pengguna yang sudah terautentikasi ke dasbor kanonikal perannya (`/intake`, `/triage`, `/reports`, `/users`).
+* [ ] Seluruh rute kanonikal (`/intake`, `/triage`, `/reports`, `/users`, `/migration`, `/audit-logs`) terverifikasi terlindungi sesuai matriks RBAC.
 * [ ] Seluruh HTTP Route Handlers (`upload`, `uploads`, `export/excel`, `export/pdf`) menolak akses tidak berizin dengan status HTTP 401 atau 403 yang tepat.
 * [ ] Seluruh prosedur tRPC menolak pemanggilan peran yang tidak berwenang dengan error code `FORBIDDEN`.
 * [ ] Bilah samping navigasi (`GlobalSidebar`) bersih tanpa kebocoran tautan modul terlarang pada mode tamu atau antar-peran.

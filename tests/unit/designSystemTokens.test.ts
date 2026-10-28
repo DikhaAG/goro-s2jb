@@ -85,12 +85,12 @@ describe("Design System & Antislop Compliance", () => {
       },
       {
         label: "Migrasi Data Eviden",
-        href: "/admin/migration",
+        href: "/migration",
         roles: ["SUPER_ADMIN"],
       },
       {
         label: "Catatan Audit Log",
-        href: "/admin/audit-logs",
+        href: "/audit-logs",
         roles: ["SUPER_ADMIN"],
       },
     ];
@@ -110,6 +110,6 @@ describe("Design System & Antislop Compliance", () => {
     // Super Admin sees all 7 items
     const adminItems = NAV_ITEMS.filter((i) => i.roles.includes("SUPER_ADMIN"));
     expect(adminItems).toHaveLength(7);
-    expect(adminItems.map((i) => i.href)).toContain("/admin/audit-logs");
+    expect(adminItems.map((i) => i.href)).toContain("/audit-logs");
   });
 });

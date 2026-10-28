@@ -64,13 +64,13 @@ const NAV_ITEMS: NavMenuItem[] = [
   },
   {
     label: "Migrasi Data Eviden",
-    href: "/admin/migration",
+    href: "/migration",
     icon: Database,
     roles: ["SUPER_ADMIN"],
   },
   {
     label: "Catatan Audit Log",
-    href: "/admin/audit-logs",
+    href: "/audit-logs",
     icon: ShieldAlert,
     roles: ["SUPER_ADMIN"],
   },
