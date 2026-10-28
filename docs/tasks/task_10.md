@@ -16,16 +16,24 @@
 
 Mengaudit dan mengimplementasikan arsitektur keamanan **Pertahanan Berlapis (*Defense-in-Depth*)** untuk sistem **Role-Based Access Control (RBAC)** di seluruh rute aplikasi GORO S2JB menggunakan standar resmi **Next.js Edge Proxy Pattern (`proxy.ts`)**.
 
+### Aturan Utama Akses Publik vs Terautentikasi:
+* **Rute `/` (Beranda Komando) TIDAK BOLEH diakses oleh pengguna tanpa autentikasi (*unauthenticated user* / *guest*).** Jika pengguna belum masuk sesi, sistem wajib langsung mengalihkan (*redirect*) ke `/login`.
+* Rute publik yang dapat diakses tanpa sesi **HANYA**:
+  1. `/login` (Formulir Masuk; jika sudah login, dialihkan ke dasbor sesuai peran).
+  2. `/unauthorized` (Halaman Peringatan 403).
+  3. Aset internal Next.js & berkas statis (`/_next/*`, favicon, dsb.).
+* Seluruh rute aplikasi lainnya (termasuk Beranda Komando `/`, entri lapangan `/intake`, triase `/operator/triage`, laporan `/manager/reports`, administrasi `/admin/*`, serta API ekspor dan upload) terkunci mutlak dan membutuhkan autentikasi serta otorisasi peran yang valid.
+
 ### Mengapa Menggunakan Proxy, Bukan Middleware Tradisional?
 Dalam standar dan evolusi arsitektur *Next.js App Router* terkini (resmi distandardisasi pada Next.js 16 melalui konvensi file `proxy.ts` dan fungsi `proxy()`), tim inti Next.js merekomendasikan peralihan dari istilah lama *middleware* menuju **Network Edge Proxy**:
 1. **Pemisahan Tanggung Jawab (*Separation of Concerns*):** Istilah *middleware* kerap disalahpahami seperti middleware Express/Node.js di mana pengembang menaruh seluruh logika otorisasi bisnis di satu tempat.
-2. **Peran Sejati Edge Proxy:** Proxy bertindak di lapisan terluar batas jaringan (*network boundary*) untuk melakukan *request interception*, penulisan ulang URL (*URL rewrites*), penyuntikan header identitas (*header enrichment*), dan pengalihan dini (*early optimistic redirects*).
-3. **Pertahanan Berlapis (*Defense-in-Depth*):** Sesuai panduan keamanan resmi Next.js (*Next.js Security Architecture*), proxy **bukan** pengganti otorisasi data (*Data Access Layer / DAL*). Otorisasi mutlak wajib ditegakkan di Server Layouts, Server Actions, tRPC Procedures, dan Route Handlers.
+2. **Peran Sejati Edge Proxy:** Proxy bertindak di lapisan terluar batas jaringan (*network boundary*) untuk melakukan *request interception*, penulisan ulang URL (*URL rewrites*), penyuntikan header identitas (*header enrichment*), dan pengalihan dini (*early optimistic redirects* seperti pengalihan tamu dari `/` langsung ke `/login`).
+3. **Pertahanan Berlapis (*Defense-in-Depth*):** Sesuai panduan keamanan resmi Next.js (*Next.js Security Architecture*), proxy **bukan** pengganti otorisasi data (*Data Access Layer / DAL*). Otorisasi mutlak wajib ditegakkan di Server Components / Server Layouts, Server Actions, tRPC Procedures, dan Route Handlers.
 
 ```
 [Layer 1: Network Edge Proxy (src/proxy.ts)] -> Intersepsi batas jaringan, URL rewrites & pengalihan sesi dini (/login & /unauthorized)
           │
-[Layer 2: Server Layouts & DAL (src/lib/server-auth.ts)] -> Verifikasi sesi mandiri sebelum render Server Component
+[Layer 2: Server Layouts & Root Guard (src/lib/server-auth.ts)] -> Verifikasi sesi mandiri sebelum render Server Component
           │
 [Layer 3: HTTP Route Handlers] -> Proteksi endpoint API unduh Excel/PDF & upload berkas bukti
           │
@@ -33,8 +41,6 @@ Dalam standar dan evolusi arsitektur *Next.js App Router* terkini (resmi distand
           │
 [Layer 5: Client UI & Navigation] -> Pemfilteran ketat menu sidebar & tombol aksi berbasis peran
 ```
-
-Task ini memastikan tidak ada celah *bypass*, tidak ada kebocoran menu operasional kepada pengunjung tanpa izin, dan seluruh akses data terlindungi secara konsisten.
 
 ---
 
@@ -44,8 +50,8 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 
 | Rute / Modul / Endpoint | Deskripsi Akses | Hak Akses Peran yang Diizinkan | Tindakan Jika Tidak Memiliki Izin |
 | :--- | :--- | :--- | :--- |
-| `/` | Beranda Komando | `GUEST`, `PETUGAS_LAPANGAN`, `PEGAWAI`, `MANAGER`, `SUPER_ADMIN` | Dapat diakses publik (fitur terbatas) |
-| `/login` | Formulir Masuk Sesi | Khusus `GUEST` (belum terautentikasi) | Jika sudah login, redirect ke dasbor peran |
+| `/` | Beranda Komando | `PETUGAS_LAPANGAN`, `PEGAWAI`, `MANAGER`, `SUPER_ADMIN` | Tamu belum login $\rightarrow$ Langsung redirect ke `/login` |
+| `/login` | Formulir Masuk Sesi | Khusus `GUEST` (belum terautentikasi) | Jika sudah login, redirect ke dasbor peran terkait |
 | `/unauthorized` | Halaman Peringatan 403 | Terbuka untuk seluruh peran | Memberikan info peran yang dibutuhkan |
 | `/intake` | Entri Eviden Lapangan | `PETUGAS_LAPANGAN`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
 | `/operator/triage` (`/triage`) | Dasbor Triase Ulasan Kuning | `PEGAWAI`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
@@ -62,7 +68,7 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 
 * **Task 10.1:** Modul Definisi Matriks RBAC Tunggal & Helper Autentikasi Server (`src/lib/rbac.ts`, `src/lib/server-auth.ts`)
 * **Task 10.2:** Implementasi Next.js Edge Proxy Terpadu (`src/proxy.ts`) & Bridge Kompatibilitas Runtime (`src/middleware.ts`)
-* **Task 10.3:** Penegakan Pertahanan Berlapis pada Server Layouts (`(field)`, `(operator)`, `(manager)`, `(admin)`)
+* **Task 10.3:** Penegakan Pertahanan Berlapis pada Server Layouts & Root Page Guard (`src/app/page.tsx`, `(field)`, `(operator)`, `(manager)`, `(admin)`)
 * **Task 10.4:** Pengamanan Mandiri HTTP Route Handlers (`upload`, `export/excel`, `export/pdf`, `uploads`)
 * **Task 10.5:** Pembersihan & Penyelarasan Navigasi Bilah Samping (`GlobalSidebar.tsx`, `MobileNavDrawer.tsx`, `page.tsx`)
 * **Task 10.6:** Otomasi Pengujian Penetrasi Matriks RBAC Komprehensif (Integration & Unit Test Suite)
@@ -76,10 +82,12 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
    * `src/lib/rbac.ts`
    * `src/lib/server-auth.ts`
 2. **Spesifikasi Teknis:**
-   * Buat konstanta `ROUTE_PERMISSIONS` yang memetakan pola rute regex/awalan ke array `Role[]`.
+   * Buat konstanta `ROUTE_PERMISSIONS` yang memetakan pola rute regex/awalan ke array `Role[]`:
+     * Pola rute `/` dipetakan ke seluruh peran terautentikasi: `[Role.PETUGAS_LAPANGAN, Role.PEGAWAI, Role.MANAGER, Role.SUPER_ADMIN]`.
+     * Tamu (`GUEST` / `null`) ditolak dari rute `/`.
    * Sediakan fungsi `isRouteAllowed(pathname: string, userRole?: Role | null): boolean`.
    * Sediakan fungsi `getRequiredRoleForRoute(pathname: string): Role | null`.
-   * Buat helper server-side `requireServerAuth(allowedRoles: Role[])` yang membaca cookie sesi via `next/headers`, memverifikasi payload JWT, dan memanggil `redirect()` secara instan jika otorisasi gagal.
+   * Buat helper server-side `requireServerAuth(allowedRoles?: Role[])` yang membaca cookie sesi via `next/headers`, memverifikasi payload JWT, dan memanggil `redirect("/login")` secara instan jika unauthenticated, atau `redirect("/unauthorized?required=...")` jika peran tidak mencukupi.
 
 ---
 
@@ -95,10 +103,11 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
        1. Mengabaikan aset statis (`/_next`, favicon, gambar).
        2. Membaca cookie sesi `goro_session` dan memverifikasi token JWT di edge.
        3. Mengalihkan pengguna terautentikasi yang mengakses `/login` ke dasbor peran masing-masing.
-       4. Mengizinkan rute terbuka `/` dan `/unauthorized`.
-       5. Untuk rute terproteksi: mengalihkan tamu ke `/login?redirect=...` dan pengguna tanpa hak akses ke `/unauthorized?required=...`.
-       6. Menjalankan *URL rewriting* bersih untuk rute alias (`/operator/triage` $\rightarrow$ `/triage`, `/manager/reports` $\rightarrow$ `/reports`).
-       7. Melakukan *header enrichment* (`x-user-role`, `x-user-id`) untuk mempercepat konsumsi downstream di Server Components.
+       4. Mengizinkan rute terbuka HANYA `/unauthorized` dan `/login`.
+       5. **Penguncian Rute `/`:** Jika pengguna belum login (tidak ada cookie atau token tidak valid) dan mengakses `/`, Edge Proxy langsung mengalihkan (*redirect 307*) ke `/login`.
+       6. Untuk rute terproteksi lainnya: mengalihkan tamu ke `/login?redirect=...` dan pengguna tanpa hak akses ke `/unauthorized?required=...`.
+       7. Menjalankan *URL rewriting* bersih untuk rute alias (`/operator/triage` $\rightarrow$ `/triage`, `/manager/reports` $\rightarrow$ `/reports`).
+       8. Melakukan *header enrichment* (`x-user-role`, `x-user-id`) untuk mempercepat konsumsi downstream di Server Components.
    * **Bridge Runtime Next.js 15 (`src/middleware.ts`):**
      * Berisi delegasi re-export tipis:
        ```typescript
@@ -110,20 +119,21 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 
 ---
 
-### 4.3 Task 10.3: Pertahanan Berlapis pada Server Layouts
+### 4.3 Task 10.3: Pertahanan Berlapis pada Server Layouts & Root Page Guard
 1. **Target File:**
+   * `src/app/page.tsx` (Beranda Komando Server Component)
    * `src/app/(field)/layout.tsx`
    * `src/app/(operator)/layout.tsx`
    * `src/app/(manager)/layout.tsx`
    * `src/app/(admin)/layout.tsx`
 2. **Spesifikasi Teknis:**
    * Sesuai prinsip *Defense-in-Depth*, Edge Proxy hanya menangani *optimistic routing*. Otorisasi hakiki wajib ditegakkan di Server Components / Data Access Layer.
-   * Jadikan setiap layout sebagai async Server Component.
-   * Panggil `await requireServerAuth([Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN])` di `FieldLayout`.
-   * Panggil `await requireServerAuth([Role.PEGAWAI, Role.SUPER_ADMIN])` di `OperatorLayout`.
-   * Panggil `await requireServerAuth([Role.MANAGER, Role.SUPER_ADMIN])` di `ManagerLayout`.
-   * Panggil `await requireServerAuth([Role.SUPER_ADMIN])` di `AdminLayout`.
-   * Ini menjamin bahwa bahkan jika proxy dimatikan atau mengalami kebocoran rute, Server Component tidak akan pernah merender data kepada pihak yang tidak berhak.
+   * **Di `src/app/page.tsx`:** Tambahkan pemanggilan `await requireServerAuth()` di baris paling awal komponen server. Jika tidak ada sesi aktif, langsung alihkan ke `/login`. Ini menjamin data Beranda Komando tidak dapat bocor bahkan jika request melewati proxy.
+   * **Di Server Layouts:**
+     * Panggil `await requireServerAuth([Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN])` di `FieldLayout`.
+     * Panggil `await requireServerAuth([Role.PEGAWAI, Role.SUPER_ADMIN])` di `OperatorLayout`.
+     * Panggil `await requireServerAuth([Role.MANAGER, Role.SUPER_ADMIN])` di `ManagerLayout`.
+     * Panggil `await requireServerAuth([Role.SUPER_ADMIN])` di `AdminLayout`.
 
 ---
 
@@ -147,10 +157,10 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
    * `src/app/page.tsx`
 2. **Spesifikasi Teknis:**
    * Bersihkan `roles` pada `NAV_ITEMS`:
-     * Hapus `"GUEST"` dari seluruh menu operasional (`/intake`, `/operator/triage`, `/manager/reports`, `/admin/*`).
-     * Tamu (`GUEST`) HANYA melihat "Beranda Komando" (`/`) dan tombol login di footer.
+     * Hapus peran `"GUEST"` dari seluruh menu navigasi.
+     * Karena pengguna belum login langsung dialihkan ke `/login`, tamu tidak akan pernah melihat bilah navigasi maupun beranda.
      * Pengguna terautentikasi hanya melihat menu yang perannya tercantum dalam `item.roles`.
-   * Di `src/app/page.tsx`, sembunyikan atau sesuaikan kartu pintasan operasional berdasarkan peran pengguna yang sedang aktif.
+   * Di `src/app/page.tsx`, sesuaikan kartu pintasan operasional berdasarkan peran pengguna yang sedang aktif.
 
 ---
 
@@ -158,10 +168,10 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 1. **Target File:**
    * `tests/integration/comprehensiveRbacMatrix.test.ts`
 2. **Cakupan Skenario Pengujian:**
-   * **Pengujian 1 (Guest Matrix):** Menguji akses tamu ke seluruh rute (halaman, API export, API upload, static uploads) dan memverifikasi pengalihan atau penolakan status 401/307.
-   * **Pengujian 2 (Petugas Lapangan Matrix):** Memverifikasi akses sukses ke `/intake` dan penolakan saat mencoba membuka `/triage`, `/reports`, `/admin/users`, atau API ekspor.
-   * **Pengujian 3 (Pegawai Triase Matrix):** Memverifikasi akses sukses ke `/operator/triage` dan penolakan pada modul lapangan, manajerial, dan admin.
-   * **Pengujian 4 (Manager Matrix):** Memverifikasi akses sukses ke `/manager/reports` dan endpoint ekspor Excel/PDF, serta penolakan pada modul admin dan entri lapangan.
+   * **Pengujian 1 (Guest Matrix):** Menguji akses tamu ke seluruh rute (halaman `/`, `/intake`, `/operator/triage`, `/manager/reports`, `/admin/*`, API export, API upload). Memverifikasi bahwa akses tamu ke `/` dan rute internal LANGSUNG menghasilkan redirect status 307 ke `/login`, serta penolakan status 401 pada endpoint API.
+   * **Pengujian 2 (Petugas Lapangan Matrix):** Memverifikasi akses sukses ke `/` dan `/intake`, serta penolakan saat mencoba membuka `/triage`, `/reports`, `/admin/users`, atau API ekspor.
+   * **Pengujian 3 (Pegawai Triase Matrix):** Memverifikasi akses sukses ke `/` dan `/operator/triage`, serta penolakan pada modul lapangan, manajerial, dan admin.
+   * **Pengujian 4 (Manager Matrix):** Memverifikasi akses sukses ke `/`, `/manager/reports`, dan endpoint ekspor Excel/PDF, serta penolakan pada modul admin dan entri lapangan.
    * **Pengujian 5 (Super Admin Matrix):** Memverifikasi akses penuh tanpa hambatan ke seluruh rute sistem.
    * **Pengujian 6 (Edge Proxy & Server Layout Guard):** Memverifikasi fungsi `proxy()` dan Server Component layout menghentikan rendering jika cookie sesi tidak valid.
 
@@ -169,9 +179,10 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 
 ## 5. Kriteria Keberhasilan & Verifikasi Penerimaan
 
+* [ ] Rute `/` (Beranda Komando) terkunci mutlak dari akses publik: seluruh pengguna yang belum terautentikasi langsung dialihkan ke `/login`.
 * [ ] Modul `src/lib/rbac.ts` dan `src/lib/server-auth.ts` terimplementasi sebagai sumber kebenaran tunggal (*Single Source of Truth*).
 * [ ] Edge Proxy modern terimplementasi di `src/proxy.ts` dengan bridge kompatibilitas di `src/middleware.ts`.
-* [ ] Seluruh Server Layouts (`(field)`, `(operator)`, `(manager)`, `(admin)`) menerapkan pertahanan berlapis dengan verifikasi sesi mandiri.
+* [ ] Seluruh Server Layouts (`(field)`, `(operator)`, `(manager)`, `(admin)`) dan `src/app/page.tsx` menerapkan pertahanan berlapis dengan verifikasi sesi mandiri.
 * [ ] Seluruh Route Handlers (`upload`, `export/excel`, `export/pdf`, `uploads`) terkunci mutlak dengan verifikasi JWT dan penolakan 401/403.
 * [ ] Bilah samping navigasi (`GlobalSidebar`) bersih tanpa kebocoran tautan modul terlarang pada mode tamu atau antar-peran.
 * [ ] Seluruh skenario pengujian penetrasi matriks RBAC lulus 100% tanpa regresi.
