@@ -1,12 +1,23 @@
 import { NextRequest } from "next/server";
 import fs from "fs";
 import { resolveEvidencePath } from "@/lib/storage";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
   props: { params: Promise<{ path: string[] }> }
 ) {
   try {
+    // 1. Layer 3 Authentication Guard: Block public scraping of sensitive evidence files
+    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const user = token ? await verifySessionToken(token) : null;
+
+    if (!user) {
+      return new Response("Unauthorized: Sesi autentikasi diperlukan untuk mengakses berkas bukti.", {
+        status: 401,
+      });
+    }
+
     const { path: pathSegments } = await props.params;
 
     if (!pathSegments || pathSegments.length === 0) {
@@ -34,7 +45,7 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
+        "Cache-Control": "private, max-age=86400",
         "X-Content-Type-Options": "nosniff",
       },
     });

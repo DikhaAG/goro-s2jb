@@ -1,6 +1,6 @@
 # Task 10: Pengerasan Otorisasi RBAC End-to-End dengan Next.js Edge Proxy Pattern, Standar Best Practice Autentikasi & Pertahanan Berlapis (Defense-in-Depth)
 
-> **Status:** Drafted / Ready for Execution 📋  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 3 (Arsitektur Keamanan, Otorisasi Multi-Layer & Pencegahan Kerentanan Akses)  
 > **Target Audiens:** Security Engineer, Backend Lead, Full-Stack Engineer, QA Automation Engineer  
 > **Referensi Wajib:**
@@ -179,10 +179,10 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 
 ## 5. Kriteria Keberhasilan & Verifikasi Penerimaan
 
-* [ ] Rute `/` (Beranda Komando) terkunci mutlak dari akses publik: seluruh pengguna yang belum terautentikasi langsung dialihkan ke `/login`.
-* [ ] Modul `src/lib/rbac.ts` dan `src/lib/server-auth.ts` terimplementasi sebagai sumber kebenaran tunggal (*Single Source of Truth*).
-* [ ] Edge Proxy modern terimplementasi di `src/proxy.ts` dengan bridge kompatibilitas di `src/middleware.ts`.
-* [ ] Seluruh Server Layouts (`(field)`, `(operator)`, `(manager)`, `(admin)`) dan `src/app/page.tsx` menerapkan pertahanan berlapis dengan verifikasi sesi mandiri.
-* [ ] Seluruh Route Handlers (`upload`, `export/excel`, `export/pdf`, `uploads`) terkunci mutlak dengan verifikasi JWT dan penolakan 401/403.
-* [ ] Bilah samping navigasi (`GlobalSidebar`) bersih tanpa kebocoran tautan modul terlarang pada mode tamu atau antar-peran.
-* [ ] Seluruh skenario pengujian penetrasi matriks RBAC lulus 100% tanpa regresi.
+* [x] Rute `/` (Beranda Komando) terkunci mutlak dari akses publik: seluruh pengguna yang belum terautentikasi langsung dialihkan ke `/login`.
+* [x] Modul `src/lib/rbac.ts` dan `src/lib/server-auth.ts` terimplementasi sebagai sumber kebenaran tunggal (*Single Source of Truth*).
+* [x] Edge Proxy modern terimplementasi di `src/proxy.ts` dengan bridge kompatibilitas di `src/middleware.ts`.
+* [x] Seluruh Server Layouts (`(field)`, `(operator)`, `(manager)`, `(admin)`) dan `src/app/page.tsx` menerapkan pertahanan berlapis dengan verifikasi sesi mandiri.
+* [x] Seluruh Route Handlers (`upload`, `export/excel`, `export/pdf`, `uploads`) terkunci mutlak dengan verifikasi JWT dan penolakan 401/403.
+* [x] Bilah samping navigasi (`GlobalSidebar`) bersih tanpa kebocoran tautan modul terlarang pada mode tamu atau antar-peran.
+* [x] Seluruh skenario pengujian penetrasi matriks RBAC lulus 100% tanpa regresi.

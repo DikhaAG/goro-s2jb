@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { Role } from "@prisma/client";
 import { generatePrintableHtmlReport } from "@/lib/export/pdfExporter";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. RBAC Guard check
-    let userId = request.headers.get("x-user-id") || request.cookies.get("goro_user_id")?.value;
+    // 1. Layer 3 Authentication Guard: Verify active session token
+    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const user = token ? await verifySessionToken(token) : null;
 
-    if (userId) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-      });
+    if (!user) {
+      return NextResponse.json(
+        { error: "Autentikasi diperlukan untuk mengunduh dokumen laporan." },
+        { status: 401 }
+      );
+    }
 
-      if (!user || (user.role !== "MANAGER" && user.role !== "SUPER_ADMIN")) {
-        return NextResponse.json(
-          { error: "Akses ditolak. Hanya Manajer atau Super Admin yang diizinkan." },
-          { status: 403 }
-        );
-      }
+    // 2. Layer 3 Authorization Guard: Restrict strictly to MANAGER and SUPER_ADMIN
+    if (user.role !== Role.MANAGER && user.role !== Role.SUPER_ADMIN) {
+      return NextResponse.json(
+        { error: "Akses ditolak. Hanya Manajer atau Super Admin yang diizinkan." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
