@@ -6,11 +6,13 @@ import { intakeRouter } from "./intake";
 import { migrationRouter } from "./migration";
 import { triageRouter } from "./triage";
 import { reportRouter } from "./report";
+import { userRouter } from "./user";
 
 export const appRouter = router({
   health: healthRouter,
   master: masterRouter,
   auth: authRouter,
+  user: userRouter,
   intake: intakeRouter,
   migration: migrationRouter,
   triage: triageRouter,

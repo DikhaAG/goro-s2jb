@@ -50,21 +50,44 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/intake"
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/40 text-xs font-semibold transition"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/40 text-xs font-semibold transition"
           >
             <Zap className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Form Entri Eviden</span>
+            <span>Entri Eviden</span>
           </Link>
 
           <Link
-            href="/migration"
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-semibold transition"
+            href="/triage"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-semibold transition"
           >
-            <Database className="w-3.5 h-3.5 text-amber-400" />
-            <span>Migrasi Data</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <span>Triase Kuning</span>
+          </Link>
+
+          <Link
+            href="/reports"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25 border border-indigo-500/40 text-xs font-semibold transition"
+          >
+            <Activity className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Laporan Manajer</span>
+          </Link>
+
+          <Link
+            href="/admin/users"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/40 text-xs font-semibold transition"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Pengguna</span>
+          </Link>
+
+          <Link
+            href="/login"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition"
+          >
+            <span>Masuk / Ganti Akun</span>
           </Link>
 
           <div className="flex items-center space-x-2 text-xs pl-2 border-l border-slate-800">

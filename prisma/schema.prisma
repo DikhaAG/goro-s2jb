@@ -28,6 +28,7 @@ model User {
   name         String
   passwordHash String
   role         Role     @default(PETUGAS_LAPANGAN)
+  isActive     Boolean  @default(true)
   up3Id        String?
   ulpId        String?
   up3          UP3?     @relation(fields: [up3Id], references: [id])
@@ -36,6 +37,7 @@ model User {
   submittedReviews RatingReview[] @relation("SubmittedReviews")
   verifiedReviews  RatingReview[] @relation("VerifiedReviews")
   migrations       MigrationBatch[]
+  auditLogs        AuditLog[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -171,5 +173,22 @@ model MigrationErrorLog {
   createdAt   DateTime       @default(now())
 
   @@index([batchId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
 

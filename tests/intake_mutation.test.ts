@@ -17,7 +17,20 @@ describe("Intake Mutation Procedure (trpc.intake.submitReview)", () => {
   let createdFilePath: string | null = null;
 
   beforeAll(async () => {
+    const fieldUser = await prisma.user.findFirst({
+      where: { role: "PETUGAS_LAPANGAN" },
+    });
     const ctx = await createContext();
+    if (fieldUser) {
+      ctx.user = {
+        id: fieldUser.id,
+        username: fieldUser.username,
+        name: fieldUser.name,
+        role: fieldUser.role,
+        up3Id: fieldUser.up3Id,
+        ulpId: fieldUser.ulpId,
+      };
+    }
     caller = appRouter.createCaller(ctx);
 
     const ulp = await prisma.uLP.findFirst({

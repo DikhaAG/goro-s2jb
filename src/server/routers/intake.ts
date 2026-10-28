@@ -1,13 +1,24 @@
-import { router, publicProcedure } from "../trpc";
+import { router, fieldProcedure } from "../trpc";
 import { intakeReviewSchema } from "@/lib/validators/intake";
 import { saveEvidenceFile } from "@/lib/storage";
 import { ocrQueue } from "../queues/ocrQueue";
 import { TRPCError } from "@trpc/server";
+import { checkUploadRateLimit } from "@/lib/rateLimit";
+import { logAuditEvent } from "../services/auditService";
 
 export const intakeRouter = router({
-  submitReview: publicProcedure
+  submitReview: fieldProcedure
     .input(intakeReviewSchema)
     .mutation(async ({ ctx, input }) => {
+      // 1. Anti-Flooding Upload Rate Limiter (max 60/min per field officer)
+      const rateLimitRes = await checkUploadRateLimit(ctx.user.id);
+      if (!rateLimitRes.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Batas frekuensi unggahan terlampaui (maksimal 60 berkas per menit).",
+        });
+      }
+
       const startTime = Date.now();
 
       try {

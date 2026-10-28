@@ -1,6 +1,6 @@
 # Task 6: Sistem Keamanan, Autentikasi & Otorisasi RBAC Terpadu
 
-> **Status:** Draft / Ready for Engineering Execution  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 2 (Lapisan Keamanan & Tata Kelola Pengguna - Modul 5 PRD)  
 > **Target Audiens:** Security Engineer, Backend Engineer, Full-Stack Engineer  
 > **Referensi Wajib:**
@@ -134,13 +134,13 @@ Selain proteksi hak akses, modul ini mengimplementasikan mekanisme pertahanan ke
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-1 (Secure Authentication):** Pengguna dapat login menggunakan kredensial yang sah, password diverifikasi menggunakan hashing satu arah (Bcrypt/Argon2), dan sesi tersimpan di cookie HTTP-only yang aman.
-- [ ] **AC-2 (Role-Based Redirection):** Setelah login sukses, sistem secara otonom mengarahkan pengguna ke dasbor spesifik peran masing-masing (Lapangan $\rightarrow$ `/intake`, Pegawai $\rightarrow$ `/operator/triage`, Manager $\rightarrow$ `/manager/reports`).
-- [ ] **AC-3 (Impenetrable Route Middleware):** Upaya mengakses URL rute di luar wewenang peran (misal: petugas lapangan mencoba membuka `/manager/reports` atau `/operator/triage`) langsung diblokir oleh Next.js Middleware dan dialihkan dengan notifikasi penolakan.
-- [ ] **AC-4 (Backend Procedure Shielding):** Upaya pemanggilan mutasi atau query tRPC tanpa role yang berhak secara konsisten menghasilkan respon error `FORBIDDEN` (HTTP 403).
-- [ ] **AC-5 (User Management CRUD):** Administrator dapat membuat akun pengguna baru, menentukan peran RBAC, serta mengaitkan petugas lapangan ke UP3 dan ULP penugasan.
-- [ ] **AC-6 (Anti Brute-Force Rate Limiting):** Percobaan login dengan password salah sebanyak 5 kali berturut-turut memicu penguncian akun sementara selama 15 menit via Redis rate limiter.
-- [ ] **AC-7 (Tamper-Proof Audit Logging):** Setiap peristiwa krusial (login, verifikasi ulasan, ekspor laporan, pembuatan akun) tercatat secara persisten ke tabel `AuditLog` dengan metadata IP dan timestamp.
+- [x] **AC-1 (Secure Authentication):** Pengguna dapat login menggunakan kredensial yang sah, password diverifikasi menggunakan hashing satu arah (Bcrypt/Argon2), dan sesi tersimpan di cookie HTTP-only yang aman.
+- [x] **AC-2 (Role-Based Redirection):** Setelah login sukses, sistem secara otonom mengarahkan pengguna ke dasbor spesifik peran masing-masing (Lapangan $\rightarrow$ `/intake`, Pegawai $\rightarrow$ `/operator/triage`, Manager $\rightarrow$ `/manager/reports`).
+- [x] **AC-3 (Impenetrable Route Middleware):** Upaya mengakses URL rute di luar wewenang peran (misal: petugas lapangan mencoba membuka `/manager/reports` atau `/operator/triage`) langsung diblokir oleh Next.js Middleware dan dialihkan dengan notifikasi penolakan.
+- [x] **AC-4 (Backend Procedure Shielding):** Upaya pemanggilan mutasi atau query tRPC tanpa role yang berhak secara konsisten menghasilkan respon error `FORBIDDEN` (HTTP 403).
+- [x] **AC-5 (User Management CRUD):** Administrator dapat membuat akun pengguna baru, menentukan peran RBAC, serta mengaitkan petugas lapangan ke UP3 dan ULP penugasan.
+- [x] **AC-6 (Anti Brute-Force Rate Limiting):** Percobaan login dengan password salah sebanyak 5 kali berturut-turut memicu penguncian akun sementara selama 15 menit via Redis rate limiter.
+- [x] **AC-7 (Tamper-Proof Audit Logging):** Setiap peristiwa krusial (login, verifikasi ulasan, ekspor laporan, pembuatan akun) tercatat secara persisten ke tabel `AuditLog` dengan metadata IP dan timestamp.
 
 ---
 

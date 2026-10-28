@@ -80,7 +80,26 @@ const isExecutive = middleware(async ({ ctx, next }) => {
   });
 });
 
+const isAdmin = middleware(async ({ ctx, next }) => {
+  if (!ctx.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  if (ctx.user.role !== Role.SUPER_ADMIN) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Akses eksklusif Super Admin.",
+    });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      user: ctx.user,
+    },
+  });
+});
+
 export const protectedProcedure = publicProcedure.use(isAuthed);
 export const fieldProcedure = publicProcedure.use(isFieldOfficer);
 export const operatorProcedure = publicProcedure.use(isOperator);
 export const executiveProcedure = publicProcedure.use(isExecutive);
+export const adminProcedure = publicProcedure.use(isAdmin);
