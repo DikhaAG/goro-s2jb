@@ -1,6 +1,6 @@
 # Task 5: Modul Laporan Eksekutif (Pusat Agregasi)
 
-> **Status:** Draft / Ready for Engineering Execution  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 2 (Modul Fitur Utama - Modul 4.4 PRD)  
 > **Target Audiens:** Data Engineer, Backend Engineer, Frontend Engineer  
 > **Referensi Wajib:**
@@ -106,14 +106,14 @@ Selain mengotomatisasi kalkulasi agregasi secara *real-time*, modul ini **mengat
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-1 (RBAC Security Guard):** Rute `/manager/reports` dan endpoint API ekspor hanya dapat diakses oleh role `MANAGER` dan `SUPER_ADMIN`. Akses dari role lain ditolak dengan respon HTTP 403.
-- [ ] **AC-2 (Mathematical Precision):** Nilai Realisasi Harian, H-1, dan Kumulatif pada aplikasi 100% identik dengan hasil kalkulasi manual pada berkas acuan `docs/GORO S2JB 2026 (Jawaban).xlsx`.
-- [ ] **AC-3 (Zero Division Safeguard):** Perhitungan persentase pada ULP yang memiliki target 0 menghasilkan nilai `0.0%` tanpa error `NaN`, `Infinity`, atau crash server.
-- [ ] **AC-4 (Target Immutability):** Penyesuaian nilai target di masa kini/depan tidak mengubah atau merusak kalkulasi persentase pada tanggal-tanggal di masa lalu.
-- [ ] **AC-5 (Executive UI Fluidity):** Dasbor dapat beralih antara Tab Laporan Harian, H-1, dan Bulanan secara instan, serta mendukung filter dropdown UP3/ULP dan pemilih bulan.
-- [ ] **AC-6 (Flawless Excel Export):** Berkas `.xlsx` yang diunduh dapat dibuka di Microsoft Excel tanpa peringatan *corrupt*, mempertahankan susunan layout resmi lama, dan sel persentase/total menggunakan formula aktif Excel (`=SUM`, `=IF`).
-- [ ] **AC-7 (Print-Ready PDF Export):** Ekspor PDF menghasilkan dokumen formal dengan tata letak bersih dan proporsional tanpa elemen terpotong.
-- [ ] **AC-8 (Pacing Visualization):** Grafik laju kumulatif menampilkan garis tren capaian terhadap target dari tanggal 1 hingga akhir bulan secara akurat.
+- [x] **AC-1 (RBAC Security Guard):** Rute `/manager/reports` dan endpoint API ekspor hanya dapat diakses oleh role `MANAGER` dan `SUPER_ADMIN`. Akses dari role lain ditolak dengan respon HTTP 403.
+- [x] **AC-2 (Mathematical Precision):** Nilai Realisasi Harian, H-1, dan Kumulatif pada aplikasi 100% identik dengan hasil kalkulasi manual pada berkas acuan `docs/GORO S2JB 2026 (Jawaban).xlsx`.
+- [x] **AC-3 (Zero Division Safeguard):** Perhitungan persentase pada ULP yang memiliki target 0 menghasilkan nilai `0.0%` tanpa error `NaN`, `Infinity`, atau crash server.
+- [x] **AC-4 (Target Immutability):** Penyesuaian nilai target di masa kini/depan tidak mengubah atau merusak kalkulasi persentase pada tanggal-tanggal di masa lalu.
+- [x] **AC-5 (Executive UI Fluidity):** Dasbor dapat beralih antara Tab Laporan Harian, H-1, dan Bulanan secara instan, serta mendukung filter dropdown UP3/ULP dan pemilih bulan.
+- [x] **AC-6 (Flawless Excel Export):** Berkas `.xlsx` yang diunduh dapat dibuka di Microsoft Excel tanpa peringatan *corrupt*, mempertahankan susunan layout resmi lama, dan sel persentase/total menggunakan formula aktif Excel (`=SUM`, `=IF`).
+- [x] **AC-7 (Print-Ready PDF Export):** Ekspor PDF menghasilkan dokumen formal dengan tata letak bersih dan proporsional tanpa elemen terpotong.
+- [x] **AC-8 (Pacing Visualization):** Grafik laju kumulatif menampilkan garis tren capaian terhadap target dari tanggal 1 hingga akhir bulan secara akurat.
 
 ---
 

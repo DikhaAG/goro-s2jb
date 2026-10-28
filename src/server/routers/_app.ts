@@ -5,6 +5,7 @@ import { authRouter } from "./auth";
 import { intakeRouter } from "./intake";
 import { migrationRouter } from "./migration";
 import { triageRouter } from "./triage";
+import { reportRouter } from "./report";
 
 export const appRouter = router({
   health: healthRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
   intake: intakeRouter,
   migration: migrationRouter,
   triage: triageRouter,
+  report: reportRouter,
 });
 
 export type AppRouter = typeof appRouter;
