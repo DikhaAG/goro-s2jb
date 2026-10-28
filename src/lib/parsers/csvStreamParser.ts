@@ -40,6 +40,7 @@ export async function parseCsvStream(
   filePath: string,
   options: {
     batchSize?: number;
+    startRowNumber?: number;
     onBatch: (batch: RawReviewRow[]) => Promise<void>;
     onError?: (error: { rowNumber: number; raw: any; reason: string }) => Promise<void>;
     onProgress?: (processed: number) => Promise<void>;
@@ -62,6 +63,11 @@ export async function parseCsvStream(
       })
       .on("data", async (row: string[]) => {
         currentRowNumber++;
+
+        // Fast-skip already processed rows if resuming from a checkpoint
+        if (options.startRowNumber && currentRowNumber <= options.startRowNumber) {
+          return;
+        }
 
         // Skip header row if first column is "Column 1" or "Timestamp"
         if (

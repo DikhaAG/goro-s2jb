@@ -274,14 +274,14 @@ Terdapat tiga celah kritis operasional yang perlu diselesaikan:
 
 ## 6. Kriteria Keberhasilan & Verifikasi Penerimaan
 
-- [ ] Path berkas fisik (`filePath`) dan baris checkpoint terakhir (`lastProcessedRow`) tercatat secara persisten pada tabel `MigrationBatch` di basis data.
-- [ ] Parser streaming (`csvStreamParser` dan `xlsxStreamParser`) mendukung parameter `startRowNumber` untuk melanjutkan pembacaan tanpa membaca ulang data lama.
-- [ ] Bilah kemajuan (*Progress Bar*) pada halaman `/migration` tampil secara interaktif saat proses impor berjalan dengan animasi pengisian mulus.
-- [ ] Angka akumulasi baris sukses, baris gagal, dan total baris terbarui secara dinamis tanpa jeda atau kedipan layar (*flicker*).
-- [ ] Tombol "Keluar dari Sesi" pada bilah navigasi desktop dan laci navigasi mobile terkunci (*disabled*) dengan label jelas saat migrasi aktif.
-- [ ] Endpoint `POST /api/auth/logout` menolak permintaan penghentian sesi saat proses impor data sedang berlangsung (atau melakukan graceful pause saat dipaksa).
-- [ ] Jika browser tertutup atau sesi terhenti, sistem menampilkan Kartu Pemulihan (*Recovery Card*) saat pengguna kembali ke `/migration`, memungkinkan kelanjutan impor dengan sekali klik.
-- [ ] Dialog konfirmasi browser pemicu event `beforeunload` aktif saat pengguna mencoba menutup tab di tengah proses impor.
-- [ ] Desain kartu dan kontrol antarmuka mematuhi standar Modern Utility Minimalism (latar putih, border lembut, palet teal/slate, target tap >= 44px).
-- [ ] Bebas dari karakter em dash (Unicode \u2014) di seluruh teks UI, kode, dan komentar.
-- [ ] Seluruh suite pengujian otomatis (`npm test`) lulus 100% tanpa regresi.
+- [x] Path berkas fisik (`filePath`) dan baris checkpoint terakhir (`lastProcessedRow`) tercatat secara persisten pada tabel `MigrationBatch` di basis data.
+- [x] Parser streaming (`csvStreamParser` dan `xlsxStreamParser`) mendukung parameter `startRowNumber` untuk melanjutkan pembacaan tanpa membaca ulang data lama.
+- [x] Bilah kemajuan (*Progress Bar*) pada halaman `/migration` tampil secara interaktif saat proses impor berjalan dengan animasi pengisian mulus.
+- [x] Angka akumulasi baris sukses, baris gagal, dan total baris terbarui secara dinamis tanpa jeda atau kedipan layar (*flicker*).
+- [x] Tombol "Keluar dari Sesi" pada bilah navigasi desktop dan laci navigasi mobile terkunci (*disabled*) dengan label jelas saat migrasi aktif.
+- [x] Endpoint `POST /api/auth/logout` menolak permintaan penghentian sesi saat proses impor data sedang berlangsung (atau melakukan graceful pause saat dipaksa).
+- [x] Jika browser tertutup atau sesi terhenti, sistem menampilkan Kartu Pemulihan (*Recovery Card*) saat pengguna kembali ke `/migration`, memungkinkan kelanjutan impor dengan sekali klik.
+- [x] Dialog konfirmasi browser pemicu event `beforeunload` aktif saat pengguna mencoba menutup tab di tengah proses impor.
+- [x] Desain kartu dan kontrol antarmuka mematuhi standar Modern Utility Minimalism (latar putih, border lembut, palet teal/slate, target tap >= 44px).
+- [x] Bebas dari karakter em dash (Unicode \u2014) di seluruh teks UI, kode, dan komentar.
+- [x] Seluruh suite pengujian otomatis (`npm test`) lulus 100% tanpa regresi.

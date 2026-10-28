@@ -33,9 +33,7 @@ export default function MigrationPage() {
       </div>
 
       {/* Dropzone Component */}
-      <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] card-floating-sm">
-        <BulkDropzone />
-      </div>
+      <BulkDropzone />
 
       {/* Recent Batch History */}
       <div className="rounded-2xl border border-[#e2e8f0] bg-white p-5 sm:p-6 space-y-4 card-floating-sm">

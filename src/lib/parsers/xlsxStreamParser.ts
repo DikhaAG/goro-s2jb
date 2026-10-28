@@ -7,6 +7,7 @@ export async function parseXlsxStream(
     sheetName?: string;
     batchSize?: number;
     maxRows?: number;
+    startRowNumber?: number;
     onBatch: (batch: RawReviewRow[]) => Promise<void>;
     onError?: (error: { rowNumber: number; raw: any; reason: string }) => Promise<void>;
     onProgress?: (processed: number) => Promise<void>;
@@ -36,6 +37,11 @@ export async function parseXlsxStream(
 
       // Skip header row
       if (currentRowNumber === 1) {
+        continue;
+      }
+
+      // Fast-skip already processed rows if resuming from a checkpoint
+      if (options.startRowNumber && currentRowNumber <= options.startRowNumber) {
         continue;
       }
 

@@ -10,15 +10,20 @@ export function createImportWorker() {
   const worker = new Worker<ImportJobData>(
     IMPORT_QUEUE_NAME,
     async (job: Job<ImportJobData>) => {
-      const { importBatchId, filePath, userId } = job.data;
-      console.log(`[Import Worker] Starting batch ${importBatchId} for file ${filePath}`);
+      const { importBatchId, filePath, userId, startRowNumber } = job.data;
+      console.log(`[Import Worker] Starting batch ${importBatchId} for file ${filePath} (startRow: ${startRowNumber || 0})`);
 
-      // 1. Update batch status to PROCESSING
+      // 1. Fetch existing batch to preserve counts if resuming from checkpoint
+      const existingBatch = await prisma.migrationBatch.findUnique({
+        where: { id: importBatchId },
+      });
+
+      // 2. Update batch status to PROCESSING
       await prisma.migrationBatch.update({
         where: { id: importBatchId },
         data: {
           status: "PROCESSING",
-          startedAt: new Date(),
+          startedAt: existingBatch?.startedAt || new Date(),
         },
       });
 
@@ -50,8 +55,12 @@ export function createImportWorker() {
         const defaultUlp = allUlps[0];
         const defaultUp3 = allUp3s[0];
 
-        let totalProcessedRows = 0;
-        let totalFailedRows = 0;
+        let totalProcessedRows = existingBatch?.processedRows || 0;
+        let totalFailedRows = existingBatch?.failedRows || 0;
+        const effectiveStartRow =
+          startRowNumber !== undefined && startRowNumber !== null
+            ? startRowNumber
+            : existingBatch?.lastProcessedRow || 0;
 
         const onBatchInsert = async (batchRows: any[]) => {
           const ratingData = batchRows.map((row) => {
@@ -92,10 +101,17 @@ export function createImportWorker() {
             skipDuplicates: true,
           });
 
+          const maxRowInBatch = Math.max(
+            ...batchRows.map((r: any) => r.rowNumber || 0),
+            effectiveStartRow
+          );
           totalProcessedRows += batchRows.length;
           await prisma.migrationBatch.update({
             where: { id: importBatchId },
-            data: { processedRows: totalProcessedRows },
+            data: {
+              processedRows: totalProcessedRows,
+              lastProcessedRow: maxRowInBatch,
+            },
           });
 
           await job.updateProgress({ processedRows: totalProcessedRows });
@@ -114,7 +130,10 @@ export function createImportWorker() {
             });
             await prisma.migrationBatch.update({
               where: { id: importBatchId },
-              data: { failedRows: totalFailedRows },
+              data: {
+                failedRows: totalFailedRows,
+                lastProcessedRow: Math.max(err.rowNumber, effectiveStartRow),
+              },
             });
           } catch (e) {
             console.error("Failed to log migration error row:", e);
@@ -126,6 +145,7 @@ export function createImportWorker() {
         if (ext === ".csv") {
           await parseCsvStream(filePath, {
             batchSize: 2000,
+            startRowNumber: effectiveStartRow,
             onBatch: onBatchInsert,
             onError: onErrorLog,
           });
@@ -133,6 +153,7 @@ export function createImportWorker() {
           await parseXlsxStream(filePath, {
             sheetName: "Form Responses 1",
             batchSize: 2000,
+            startRowNumber: effectiveStartRow,
             onBatch: onBatchInsert,
             onError: onErrorLog,
           });

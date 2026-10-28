@@ -5,6 +5,7 @@ export interface ImportJobData {
   importBatchId: string;
   filePath: string;
   userId: string;
+  startRowNumber?: number;
 }
 
 export const IMPORT_QUEUE_NAME = "import-processing-queue";

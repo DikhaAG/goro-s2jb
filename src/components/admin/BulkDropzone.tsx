@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet,
@@ -15,8 +14,11 @@ import {
   Layers,
   ArrowRight,
   Database,
-  Sparkles,
+  Activity,
+  Zap,
 } from "lucide-react";
+import { useMigrationGuard } from "@/context/MigrationGuardContext";
+import { InterruptedBatchRecoveryCard } from "./InterruptedBatchRecoveryCard";
 
 export function BulkDropzone() {
   const [file, setFile] = useState<File | null>(null);
@@ -27,9 +29,25 @@ export function BulkDropzone() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const {
+    activeBatch,
+    hasInterruptedBatch,
+    isMigrationActive,
+    progressPercentage,
+    throughput,
+    refetchStatus,
+  } = useMigrationGuard();
+
   const startMutation = trpc.migration.startMigration.useMutation();
 
-  // Poll status of active batch
+  // If there's already an active or interrupted batch from context, sync activeBatchId
+  useEffect(() => {
+    if (activeBatch && (activeBatch.status === "PROCESSING" || activeBatch.status === "PENDING")) {
+      setActiveBatchId(activeBatch.id);
+    }
+  }, [activeBatch]);
+
+  // Query specific batch status if activeBatchId is set
   const batchStatusQuery = trpc.migration.getBatchStatus.useQuery(
     { batchId: activeBatchId || "" },
     {
@@ -43,6 +61,11 @@ export function BulkDropzone() {
       },
     }
   );
+
+  const batchData = batchStatusQuery.data || (activeBatch?.id === activeBatchId ? activeBatch : null);
+  const isFinished = batchData?.status === "COMPLETED";
+  const isFailed = batchData?.status === "FAILED";
+  const isProcessing = batchData?.status === "PROCESSING" || batchData?.status === "PENDING";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -85,6 +108,7 @@ export function BulkDropzone() {
       });
 
       setActiveBatchId(result.batchId);
+      await refetchStatus();
     } catch (err: any) {
       console.error("Migration error:", err);
       setUploadError(err.message || "Gagal memulai proses migrasi berkas");
@@ -93,240 +117,313 @@ export function BulkDropzone() {
     }
   };
 
-  const batchData = batchStatusQuery.data;
-  const isFinished = batchData?.status === "COMPLETED";
-  const isFailed = batchData?.status === "FAILED";
-  const isProcessing = batchData?.status === "PROCESSING" || batchData?.status === "PENDING";
-
   return (
-    <Card className="border-slate-800 bg-[#0d1424]/90 shadow-2xl relative overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-400 to-cyan-500" />
+    <div className="space-y-6">
+      {/* 1. Recovery Card if Interrupted Batch Exists */}
+      {hasInterruptedBatch && activeBatch && (
+        <InterruptedBatchRecoveryCard
+          batch={activeBatch}
+          onResumed={() => {
+            setActiveBatchId(activeBatch.id);
+            refetchStatus();
+          }}
+          onCancelled={() => {
+            setActiveBatchId(null);
+            refetchStatus();
+          }}
+        />
+      )}
 
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <Badge variant="warning" className="gap-1.5 py-1">
-            <Database className="w-3.5 h-3.5" />
-            <span>Memory-Safe Bulk Ingestion</span>
-          </Badge>
-          <span className="text-[11px] font-mono text-slate-400">
-            Fase 2: Sub-track 2.3 & 2.4
-          </span>
-        </div>
-        <CardTitle className="text-xl font-bold text-white mt-2">
-          Migrasi Berkas Historis (CSV / XLSX)
-        </CardTitle>
-        <CardDescription>
-          Unggah berkas rekam data ulasan lama (&gt;140.000 baris) untuk dimigrasikan secara asinkron tanpa membebani memori server.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {uploadError && (
-          <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 flex items-start space-x-3">
-            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-            <div className="text-xs">
-              <div className="font-bold text-sm text-red-300">Kesalahan Unggah Berkas</div>
-              <div>{uploadError}</div>
-            </div>
-          </div>
-        )}
-
-        {/* 1. Target Schema Selector */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-slate-300 flex items-center space-x-1">
-            <Layers className="w-3.5 h-3.5 text-cyan-400 mr-1" />
-            Target Skema Data
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setTargetType("FORM_RESPONSES_RAW")}
-              disabled={isProcessing}
-              className={`p-3.5 rounded-lg border text-left transition flex flex-col justify-between ${
-                targetType === "FORM_RESPONSES_RAW"
-                  ? "bg-cyan-950/40 border-cyan-500/60 text-white shadow-md shadow-cyan-950/40"
-                  : "bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700"
-              }`}
-            >
-              <div className="font-bold text-sm text-slate-200 flex items-center justify-between">
-                <span>Form Responses (13 Kolom)</span>
-                {targetType === "FORM_RESPONSES_RAW" && (
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                )}
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Data ulasan mentah Play Store dari Google Forms historis.
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTargetType("HISTORICAL_REPORTS")}
-              disabled={isProcessing}
-              className={`p-3.5 rounded-lg border text-left transition flex flex-col justify-between ${
-                targetType === "HISTORICAL_REPORTS"
-                  ? "bg-amber-950/40 border-amber-500/60 text-white shadow-md shadow-amber-950/40"
-                  : "bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700"
-              }`}
-            >
-              <div className="font-bold text-sm text-slate-200 flex items-center justify-between">
-                <span>Laporan Harian / Bulanan</span>
-                {targetType === "HISTORICAL_REPORTS" && (
-                  <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                )}
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Rekap capaian historis unit dan perbandingan target operasional.
-              </p>
-            </button>
-          </div>
-        </div>
-
-        {/* 2. Drag & Drop Area */}
-        <div
-          onClick={() => !isProcessing && fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3 bg-slate-950/40 hover:bg-slate-900/60 ${
-            file
-              ? "border-cyan-500/60 bg-cyan-950/10"
-              : "border-slate-700/80 hover:border-cyan-500/60"
-          } ${isProcessing ? "opacity-60 cursor-not-allowed" : ""}`}
-        >
-          <div className="w-14 h-14 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-400">
-            {file ? (
-              <FileSpreadsheet className="w-7 h-7 text-emerald-400" />
-            ) : (
-              <UploadCloud className="w-7 h-7 text-slate-300" />
-            )}
-          </div>
+      {/* 2. Main Dropzone Card (Modern Utility Minimalism) */}
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-xs overflow-hidden">
+        {/* Header Ribbon */}
+        <div className="p-5 sm:p-6 border-b border-[#f1f5f9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-white">
-              {file ? file.name : "Pilih atau Seret Berkas CSV / XLSX ke Sini"}
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#00a2b9]" />
+              <h2 className="text-lg font-bold text-[#0f172a] tracking-tight">
+                Migrasi Massal Berkas Historis
+              </h2>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {file
-                ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Siap diproses`
-                : "Mendukung format .csv, .xlsx, atau .xls (Ukuran hingga >100 MB didukung via streaming)"}
+            <p className="text-xs text-[#64748b] mt-1">
+              Streaming parser memproses berkas skala besar (&gt;140.000 baris) dengan penggunaan memori stabil.
             </p>
           </div>
+          <Badge variant="outline" className="border-[#00a2b9] text-[#006877] bg-[#f0fdfa] self-start sm:self-auto gap-1 text-xs">
+            <Database className="w-3.5 h-3.5 text-[#00a2b9]" />
+            <span>Resumable Stream Parser</span>
+          </Badge>
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          onChange={handleFileChange}
-          disabled={isProcessing}
-          className="hidden"
-        />
-
-        {/* 3. Realtime Processing Monitor */}
-        {activeBatchId && batchData && (
-          <div className="p-5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-slate-400">Batch ID:</span>
-                <span className="font-mono text-xs text-cyan-300 font-bold">{batchData.id}</span>
-              </div>
-              <Badge
-                variant={
-                  isFinished
-                    ? "success"
-                    : isFailed
-                    ? "destructive"
-                    : "warning"
-                }
-              >
-                {batchData.status}
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase">Baris Diproses</div>
-                <div className="text-xl font-bold font-mono text-cyan-400 mt-1">
-                  {batchData.processedRows.toLocaleString("id-ID")}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase">Baris Gagal</div>
-                <div className="text-xl font-bold font-mono text-red-400 mt-1">
-                  {batchData.failedRows.toLocaleString("id-ID")}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase">Status Worker</div>
-                <div className="text-sm font-semibold font-mono text-emerald-400 mt-2 flex items-center justify-center space-x-1">
-                  {isProcessing && <Clock className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{isProcessing ? "Streaming" : isFinished ? "Selesai" : "Gagal"}</span>
-                </div>
+        <div className="p-5 sm:p-6 space-y-6">
+          {/* Error Banner */}
+          {uploadError && (
+            <div
+              role="alert"
+              className="p-4 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-[#991b1b] flex items-start space-x-3 text-xs"
+            >
+              <AlertTriangle className="w-5 h-5 text-[#dc2626] shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold text-sm text-[#b91c1c]">Kesalahan Unggah Berkas</div>
+                <div>{uploadError}</div>
               </div>
             </div>
-
-            {/* Error logs table preview if any errors occurred */}
-            {batchData.errors && batchData.errors.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <div className="text-xs font-semibold text-red-400 flex items-center space-x-1">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Log Error Baris Terisolasi (Tidak Menghentikan Proses):</span>
-                </div>
-                <div className="max-h-36 overflow-y-auto rounded-lg border border-red-950/60 bg-red-950/20 p-2 text-[11px] font-mono text-slate-300 space-y-1">
-                  {batchData.errors.map((err) => (
-                    <div key={err.id} className="border-b border-red-900/30 pb-1">
-                      <span className="text-red-400">Baris #{err.rowNumber}:</span> {err.errorReason}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-
-      <CardFooter className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-slate-950/50">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            setFile(null);
-            setActiveBatchId(null);
-            setUploadError(null);
-            if (fileInputRef.current) fileInputRef.current.value = "";
-          }}
-          disabled={isProcessing}
-          className="w-full sm:w-auto text-xs"
-        >
-          <RotateCcw className="w-3.5 h-3.5 mr-1" />
-          Bersihkan
-        </Button>
-
-        <Button
-          type="button"
-          variant="tactical"
-          onClick={handleStartImport}
-          disabled={!file || isProcessing || isUploading}
-          className="w-full sm:w-auto min-w-[220px]"
-        >
-          {isUploading ? (
-            <span className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 animate-spin text-slate-950" />
-              <span>Mengunggah Berkas...</span>
-            </span>
-          ) : isProcessing ? (
-            <span className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 animate-spin text-slate-950" />
-              <span>Worker Memproses...</span>
-            </span>
-          ) : (
-            <span className="flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-slate-950" />
-              <span>Mulai Migrasi Massal</span>
-              <ArrowRight className="w-4 h-4 text-slate-950" />
-            </span>
           )}
-        </Button>
-      </CardFooter>
-    </Card>
+
+          {/* Target Schema Selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-[#0f172a] flex items-center space-x-1.5">
+              <Layers className="w-3.5 h-3.5 text-[#006877]" />
+              <span>Target Skema Data</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setTargetType("FORM_RESPONSES_RAW")}
+                disabled={isProcessing}
+                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] ${
+                  targetType === "FORM_RESPONSES_RAW"
+                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-1 ring-[#00a2b9]"
+                    : "bg-[#f8fafc] border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1]"
+                }`}
+              >
+                <div className="font-bold text-sm text-[#0f172a] flex items-center justify-between">
+                  <span>Form Responses (13 Kolom)</span>
+                  {targetType === "FORM_RESPONSES_RAW" && (
+                    <CheckCircle2 className="w-4 h-4 text-[#00a2b9]" />
+                  )}
+                </div>
+                <p className="text-[11px] text-[#64748b] mt-1">
+                  Data ulasan mentah Play Store dari Google Forms historis.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTargetType("HISTORICAL_REPORTS")}
+                disabled={isProcessing}
+                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] ${
+                  targetType === "HISTORICAL_REPORTS"
+                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-1 ring-[#00a2b9]"
+                    : "bg-[#f8fafc] border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1]"
+                }`}
+              >
+                <div className="font-bold text-sm text-[#0f172a] flex items-center justify-between">
+                  <span>Laporan Harian / Bulanan</span>
+                  {targetType === "HISTORICAL_REPORTS" && (
+                    <CheckCircle2 className="w-4 h-4 text-[#00a2b9]" />
+                  )}
+                </div>
+                <p className="text-[11px] text-[#64748b] mt-1">
+                  Rekap capaian historis unit dan perbandingan target operasional.
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Drag & Drop File Zone */}
+          <div
+            onClick={() => !isProcessing && fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 ${
+              file
+                ? "border-[#00a2b9] bg-[#f0fdfa]"
+                : "border-[#cbd5e1] bg-[#f8fafc] hover:bg-[#f1f5f9] hover:border-[#006877]"
+            } ${isProcessing ? "opacity-60 cursor-not-allowed" : ""}`}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center text-[#006877] shadow-xs">
+              {file ? (
+                <FileSpreadsheet className="w-7 h-7 text-[#15803d]" />
+              ) : (
+                <UploadCloud className="w-7 h-7 text-[#006877]" />
+              )}
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-[#0f172a]">
+                {file ? file.name : "Pilih atau Seret Berkas CSV / XLSX ke Sini"}
+              </div>
+              <p className="text-xs text-[#64748b] mt-1">
+                {file
+                  ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Berkas siap dimigrasikan`
+                  : "Mendukung format .csv, .xlsx, atau .xls (Ukuran >100 MB didukung melalui streaming)"}
+              </p>
+            </div>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            onChange={handleFileChange}
+            disabled={isProcessing}
+            className="hidden"
+          />
+
+          {/* Realtime Live Progress Bar and Metrics Panel */}
+          {activeBatchId && batchData && (
+            <div
+              className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] space-y-4"
+              aria-live="polite"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
+                <div className="flex items-center space-x-2">
+                  <Activity className="w-4 h-4 text-[#006877] animate-pulse" />
+                  <span className="text-xs font-semibold text-[#0f172a]">
+                    Progres Migrasi Aktif
+                  </span>
+                  <span className="text-[11px] font-mono text-[#64748b]">
+                    ({batchData.id})
+                  </span>
+                </div>
+                <Badge
+                  variant={
+                    isFinished
+                      ? "success"
+                      : isFailed
+                      ? "destructive"
+                      : "warning"
+                  }
+                  className="self-start sm:self-auto"
+                >
+                  {batchData.status}
+                </Badge>
+              </div>
+
+              {/* Progress Bar Container with ARIA */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-[#0f172a]">
+                    {isProcessing
+                      ? "Sedang memproses streaming data..."
+                      : isFinished
+                      ? "Migrasi selesai sepenuhnya"
+                      : "Migrasi dihentikan"}
+                  </span>
+                  <span className="font-mono text-[#006877]">
+                    {batchData.totalRows && batchData.totalRows > 0
+                      ? `${progressPercentage}%`
+                      : `${batchData.processedRows.toLocaleString("id-ID")} baris`}
+                  </span>
+                </div>
+
+                <div
+                  role="progressbar"
+                  aria-valuenow={progressPercentage}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Progres Migrasi Data"
+                  className="w-full h-3 rounded-full bg-[#e2e8f0] overflow-hidden relative"
+                >
+                  {batchData.totalRows && batchData.totalRows > 0 ? (
+                    <div
+                      className="h-full bg-[#006877] transition-all duration-300 rounded-full"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  ) : isProcessing ? (
+                    <div className="h-full bg-gradient-to-r from-[#006877] via-[#00a2b9] to-[#006877] animate-pulse w-full rounded-full" />
+                  ) : (
+                    <div
+                      className="h-full bg-[#006877] rounded-full"
+                      style={{ width: "100%" }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* 3 Metric Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-[#64748b]">
+                    Baris Sukses
+                  </span>
+                  <div className="text-2xl font-bold font-mono text-[#15803d] mt-0.5">
+                    {batchData.processedRows.toLocaleString("id-ID")}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-[#64748b]">
+                    Baris Gagal (Terisolasi)
+                  </span>
+                  <div className="text-2xl font-bold font-mono text-[#b91c1c] mt-0.5">
+                    {batchData.failedRows.toLocaleString("id-ID")}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-[#64748b]">
+                    Kecepatan Streaming
+                  </span>
+                  <div className="text-2xl font-bold font-mono text-[#006877] mt-0.5 flex items-baseline gap-1">
+                    <span>{throughput > 0 ? throughput.toLocaleString("id-ID") : "-"}</span>
+                    <span className="text-xs font-normal text-[#64748b]">baris/dtk</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error list preview if any */}
+              {batchData.errors && batchData.errors.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="text-xs font-semibold text-[#b91c1c] flex items-center space-x-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Log Galat Baris Terisolasi (Proses Tidak Dihentikan):</span>
+                  </div>
+                  <div className="max-h-36 overflow-y-auto rounded-xl border border-[#fecaca] bg-[#fef2f2] p-3 text-[11px] font-mono text-[#7f1d1d] space-y-1.5">
+                    {batchData.errors.map((err) => (
+                      <div key={err.id} className="border-b border-[#fee2e2] pb-1 last:border-0 last:pb-0">
+                        <span className="font-bold text-[#991b1b]">Baris #{err.rowNumber}:</span> {err.errorReason}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="p-4 sm:p-5 border-t border-[#f1f5f9] bg-[#f8fafc] flex flex-col sm:flex-row gap-3 justify-between items-center">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setFile(null);
+              setActiveBatchId(null);
+              setUploadError(null);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
+            disabled={isProcessing}
+            className="w-full sm:w-auto text-xs text-[#64748b] hover:text-[#0f172a] min-h-[44px]"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+            <span>Bersihkan Pilihan</span>
+          </Button>
+
+          <Button
+            type="button"
+            onClick={handleStartImport}
+            disabled={!file || isProcessing || isUploading}
+            className="w-full sm:w-auto min-w-[220px] bg-[#006877] hover:bg-[#00515d] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2"
+          >
+            {isUploading ? (
+              <>
+                <Clock className="w-4 h-4 animate-spin text-white" />
+                <span>Mengunggah Berkas ke Server...</span>
+              </>
+            ) : isProcessing ? (
+              <>
+                <Clock className="w-4 h-4 animate-spin text-white" />
+                <span>Worker Memproses Data...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 text-white fill-white" />
+                <span>Mulai Migrasi Massal</span>
+                <ArrowRight className="w-4 h-4 text-white" />
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

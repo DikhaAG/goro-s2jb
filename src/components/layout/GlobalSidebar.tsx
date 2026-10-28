@@ -16,8 +16,10 @@ import {
   LogOut,
   LogIn,
   Zap,
+  Lock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useMigrationGuard } from "@/context/MigrationGuardContext";
 
 interface GlobalSidebarProps {
   onClose?: () => void;
@@ -91,9 +93,20 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
   // Filter menu items by RBAC
   const visibleItems = filterNavItemsByRole(userRole);
 
+  const { isMigrationActive } = useMigrationGuard();
+
   const handleLogout = async () => {
+    if (isMigrationActive) {
+      alert("Proses migrasi sedang berlangsung. Harap tunggu hingga selesai atau batalkan migrasi sebelum keluar.");
+      return;
+    }
+
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.status === 423) {
+        alert("Proses migrasi sedang berjalan. Silakan tunggu hingga proses selesai sebelum keluar.");
+        return;
+      }
     } catch {
       // ignore
     } finally {
@@ -206,14 +219,31 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[#b91c1c] hover:bg-[#fee2e2] transition-colors focus-utility-ring border border-transparent cursor-pointer min-h-[44px]"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Keluar dari Sesi</span>
-            </button>
+            {isMigrationActive ? (
+              <div className="w-full flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  disabled
+                  title="Migrasi data sedang berlangsung. Logout dikunci demi keamanan data."
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] opacity-80 cursor-not-allowed min-h-[44px]"
+                >
+                  <Lock className="w-4 h-4 text-[#d97706]" />
+                  <span>Sesi Terkunci</span>
+                </button>
+                <span className="text-[10px] text-center text-[#d97706] font-medium leading-tight">
+                  Migrasi aktif, logout dinonaktifkan
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[#b91c1c] hover:bg-[#fee2e2] transition-colors focus-utility-ring border border-transparent cursor-pointer min-h-[44px]"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Keluar dari Sesi</span>
+              </button>
+            )}
           </>
         ) : (
           <>

@@ -15,6 +15,8 @@ function getBaseUrl() {
   return `http://localhost:${process.env.PORT ?? 3000}`;
 }
 
+import { MigrationGuardProvider } from "@/context/MigrationGuardContext";
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -40,7 +42,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <MigrationGuardProvider>{children}</MigrationGuardProvider>
+      </QueryClientProvider>
     </trpc.Provider>
   );
 }
