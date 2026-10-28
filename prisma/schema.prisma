@@ -35,6 +35,7 @@ model User {
   
   submittedReviews RatingReview[] @relation("SubmittedReviews")
   verifiedReviews  RatingReview[] @relation("VerifiedReviews")
+  migrations       MigrationBatch[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -130,3 +131,45 @@ model RatingReview {
   @@index([evidenceImageHash])
   @@index([isDuplicate])
 }
+
+enum MigrationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model MigrationBatch {
+  id            String              @id @default(cuid())
+  fileName      String
+  fileSize      Int
+  targetType    String              // "FORM_RESPONSES_RAW" | "HISTORICAL_REPORTS"
+  totalRows     Int                 @default(0)
+  processedRows Int                 @default(0)
+  failedRows    Int                 @default(0)
+  status        MigrationStatus     @default(PENDING)
+  errorMessage  String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  uploadedById  String?
+  uploadedBy    User?               @relation(fields: [uploadedById], references: [id])
+  errors        MigrationErrorLog[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model MigrationErrorLog {
+  id          String         @id @default(cuid())
+  batchId     String
+  batch       MigrationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  rowNumber   Int
+  rawRowData  String?        @db.Text
+  errorReason String
+  createdAt   DateTime       @default(now())
+
+  @@index([batchId])
+}
+

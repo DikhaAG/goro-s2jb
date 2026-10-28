@@ -1,6 +1,6 @@
 # Task 2: Modul Ingesti & Akuisisi Data (Garis Depan)
 
-> **Status:** Draft / Ready for Engineering Execution  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 2 (Modul Fitur Utama - Modul 4.1 PRD)  
 > **Target Audiens:** Frontend Engineer, Backend Engineer, Database Architect  
 > **Referensi Wajib:**
@@ -112,14 +112,14 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-1 (Intake Form Validation):** Form di `/intake` menolak pengiriman jika kolom wajib (UP3, ULP, Nama Pengulas, Foto Bukti) kosong, serta memberikan pesan error validasi yang jelas pada tiap field.
-- [ ] **AC-2 (Cascading Unit Selection):** Mengubah pilihan UP3 pada dropdown secara instan memperbarui daftar pilihan ULP yang relevan tanpa lag.
-- [ ] **AC-3 (Secure File Ingestion):** Berkas gambar yang diunggah dari form berhasil disimpan ke direktori `./uploads/evidence/YYYY/MM/DD/` dengan nama berkas unik yang disanitasi.
-- [ ] **AC-4 (Database Record & Pending State):** Data formulir berhasil masuk ke tabel `RatingReview` dengan `validationStatus = "PENDING"`, timestamp tercatat akurat, dan relasi foreign key tersambung dengan benar.
-- [ ] **AC-5 (Asynchronous Job Dispatch):** Pengiriman form berhasil menambahkan job baru ke antrean BullMQ `ocrQueue` beserta payload ID review dan path gambar lokal.
-- [ ] **AC-6 (Bulk Import Streaming & No OOM):** Pengujian impor file CSV/XLSX berukuran >140.000 baris melalui `/admin/migration` berhasil diselesaikan oleh worker BullMQ dalam beberapa menit dengan penggunaan memori proses Node.js tetap stabil (< 512 MB).
-- [ ] **AC-7 (Historical Data Import):** Data ulasan dan riwayat laporan pada berkas `GORO S2JB 2026 (Jawaban).xlsx` berhasil dipetakan ke dalam basis data dengan benar.
-- [ ] **AC-8 (Error Tolerant Migration):** Baris data impor yang tidak valid tidak mematikan seluruh proses, melainkan dicatat ke tabel log error untuk ditinjau.
+- [x] **AC-1 (Intake Form Validation):** Form di `/intake` menolak pengiriman jika kolom wajib (UP3, ULP, Nama Pengulas, Foto Bukti) kosong, serta memberikan pesan error validasi yang jelas pada tiap field.
+- [x] **AC-2 (Cascading Unit Selection):** Mengubah pilihan UP3 pada dropdown secara instan memperbarui daftar pilihan ULP yang relevan tanpa lag.
+- [x] **AC-3 (Secure File Ingestion):** Berkas gambar yang diunggah dari form berhasil disimpan ke direktori `./uploads/evidence/YYYY/MM/DD/` dengan nama berkas unik yang disanitasi.
+- [x] **AC-4 (Database Record & Pending State):** Data formulir berhasil masuk ke tabel `RatingReview` dengan `validationStatus = "PENDING"`, timestamp tercatat akurat, dan relasi foreign key tersambung dengan benar.
+- [x] **AC-5 (Asynchronous Job Dispatch):** Pengiriman form berhasil menambahkan job baru ke antrean BullMQ `ocrQueue` beserta payload ID review dan path gambar lokal.
+- [x] **AC-6 (Bulk Import Streaming & No OOM):** Pengujian impor file CSV/XLSX berukuran >140.000 baris melalui `/admin/migration` berhasil diselesaikan oleh worker BullMQ dalam beberapa menit dengan penggunaan memori proses Node.js tetap stabil (< 512 MB).
+- [x] **AC-7 (Historical Data Import):** Data ulasan dan riwayat laporan pada berkas `GORO S2JB 2026 (Jawaban).xlsx` berhasil dipetakan ke dalam basis data dengan benar.
+- [x] **AC-8 (Error Tolerant Migration):** Baris data impor yang tidak valid tidak mematikan seluruh proses, melainkan dicatat ke tabel log error untuk ditinjau.
 
 ---
 

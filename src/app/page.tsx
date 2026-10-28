@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
@@ -49,8 +50,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-xs">
+        <div className="flex items-center space-x-3">
+          <Link
+            href="/intake"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/40 text-xs font-semibold transition"
+          >
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Form Entri Eviden</span>
+          </Link>
+
+          <Link
+            href="/migration"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-semibold transition"
+          >
+            <Database className="w-3.5 h-3.5 text-amber-400" />
+            <span>Migrasi Data</span>
+          </Link>
+
+          <div className="flex items-center space-x-2 text-xs pl-2 border-l border-slate-800">
             <span className="relative flex h-2.5 w-2.5">
               <span
                 className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
@@ -63,7 +80,7 @@ export default function HomePage() {
                 }`}
               ></span>
             </span>
-            <span className="text-slate-300 font-mono">
+            <span className="text-slate-300 font-mono hidden sm:inline">
               {healthQuery.isLoading
                 ? "MEMERIKSA..."
                 : isHealthy
