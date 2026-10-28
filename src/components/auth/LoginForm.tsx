@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function LoginForm() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export function LoginForm() {
       setTimeout(() => {
         router.push(targetUrl);
       }, 600);
-    } catch (err: any) {
+    } catch {
       setErrorMessage("Koneksi gagal. Periksa jaringan Anda dan coba lagi.");
       setIsLoading(false);
     }
@@ -84,15 +85,15 @@ export function LoginForm() {
       {errorMessage && (
         <div
           role="alert"
-          className="mb-6 p-4 rounded-xl border border-rose-500/30 bg-rose-950/40 text-rose-200 text-sm flex items-start space-x-3 shadow-lg backdrop-blur"
+          className="mb-5 p-4 rounded-xl border border-[#fecaca] bg-[#fef2f2] text-[#991b1b] text-xs flex items-start space-x-3 shadow-xs"
         >
           {isLocked ? (
-            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <ShieldAlert className="w-5 h-5 text-[#dc2626] shrink-0 mt-0.5" />
           ) : (
-            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-[#dc2626] shrink-0 mt-0.5" />
           )}
           <div className="flex-1">
-            <span className="font-semibold block mb-0.5">
+            <span className="font-bold block mb-0.5 text-sm">
               {isLocked ? "Akses Terkunci Sementara" : "Autentikasi Gagal"}
             </span>
             <span>{errorMessage}</span>
@@ -101,30 +102,28 @@ export function LoginForm() {
       )}
 
       {successInfo && (
-        <div className="mb-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/40 text-emerald-200 text-sm flex items-center space-x-3 shadow-lg backdrop-blur">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span className="font-medium">{successInfo}</span>
+        <div className="mb-5 p-4 rounded-xl border border-[#a7f3d0] bg-[#ecfdf5] text-[#065f46] text-xs flex items-center space-x-3 shadow-xs">
+          <CheckCircle2 className="w-5 h-5 text-[#16a34a] shrink-0" />
+          <span className="font-semibold text-sm">{successInfo}</span>
         </div>
       )}
 
       {/* Main Login Card */}
       <form
         onSubmit={handleSubmit}
-        className="bg-slate-900/80 border border-slate-800 rounded-2xl p-7 shadow-2xl backdrop-blur-xl relative overflow-hidden"
+        className="bg-white border border-[#e2e8f0] rounded-2xl p-7 shadow-xs relative overflow-hidden"
       >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400" />
-
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* Username Input */}
           <div>
             <label
               htmlFor="username"
-              className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2"
+              className="block text-xs font-bold text-[#0f172a] mb-1.5"
             >
-              Username / NIP Petugas
+              Username / Akun Petugas
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94a3b8]">
                 <User className="w-4 h-4" />
               </div>
               <input
@@ -136,26 +135,26 @@ export function LoginForm() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="misal: petugas_rivai"
-                className="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 disabled:opacity-50 transition"
+                className="w-full pl-10 pr-4 py-2.5 min-h-[44px] h-11 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] placeholder-[#94a3b8] text-sm focus-utility-ring disabled:opacity-50 transition"
               />
             </div>
           </div>
 
           {/* Password Input */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1.5">
               <label
                 htmlFor="password"
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-300"
+                className="block text-xs font-bold text-[#0f172a]"
               >
                 Kata Sandi
               </label>
-              <span className="text-[11px] text-slate-400">
-                Salted Bcrypt / PBKDF2
+              <span className="text-[11px] text-[#64748b] font-mono">
+                Salted PBKDF2
               </span>
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94a3b8]">
                 <Lock className="w-4 h-4" />
               </div>
               <input
@@ -167,13 +166,13 @@ export function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full pl-10 pr-11 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 disabled:opacity-50 transition"
+                className="w-full pl-10 pr-11 py-2.5 min-h-[44px] h-11 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] placeholder-[#94a3b8] text-sm focus-utility-ring disabled:opacity-50 transition"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#64748b] hover:text-[#0f172a] transition cursor-pointer"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" />
@@ -185,10 +184,10 @@ export function LoginForm() {
           </div>
 
           {/* Submit Button */}
-          <button
+          <Button
             type="submit"
             disabled={isLoading || isLocked}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-2 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.99]"
+            className="w-full min-h-[44px] h-11 bg-[#00a2b9] hover:bg-[#008b9e] text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer mt-2"
           >
             {isLoading ? (
               <>
@@ -197,59 +196,59 @@ export function LoginForm() {
               </>
             ) : (
               <>
-                <span>Masuk ke Command Center</span>
-                <ArrowRight className="w-4 h-4 font-bold" />
+                <span>Masuk ke Sistem</span>
+                <ArrowRight className="w-4 h-4" />
               </>
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Quick Demo Role Selector */}
-        <div className="mt-7 pt-5 border-t border-slate-800">
-          <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-2.5 text-center">
-            Akun Default Lingkungan S2JB:
+        <div className="mt-6 pt-5 border-t border-[#f1f5f9]">
+          <p className="text-[11px] uppercase tracking-wider text-[#64748b] font-bold mb-2.5 text-center">
+            Pilih Cepat Akun Simulasi:
           </p>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               type="button"
               onClick={() => handleQuickFill("petugas_rivai", "password123")}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 text-left transition"
+              className="p-2.5 rounded-xl bg-[#f8fafc] hover:bg-[#f1f5f9] border border-[#e2e8f0] text-left transition cursor-pointer min-h-[44px]"
             >
-              <div className="font-bold text-cyan-400">Petugas Lapangan</div>
-              <div className="text-[10px] text-slate-400 truncate">petugas_rivai</div>
+              <div className="font-bold text-[#006877]">Petugas Lapangan</div>
+              <div className="text-[11px] text-[#64748b] font-mono truncate">petugas_rivai</div>
             </button>
             <button
               type="button"
               onClick={() => handleQuickFill("pegawai_operator", "password123")}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 text-left transition"
+              className="p-2.5 rounded-xl bg-[#f8fafc] hover:bg-[#f1f5f9] border border-[#e2e8f0] text-left transition cursor-pointer min-h-[44px]"
             >
-              <div className="font-bold text-amber-400">Pegawai Triase</div>
-              <div className="text-[10px] text-slate-400 truncate">pegawai_operator</div>
+              <div className="font-bold text-[#b45309]">Pegawai Triase</div>
+              <div className="text-[11px] text-[#64748b] font-mono truncate">pegawai_operator</div>
             </button>
             <button
               type="button"
               onClick={() => handleQuickFill("manager_s2jb", "password123")}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 text-left transition"
+              className="p-2.5 rounded-xl bg-[#f8fafc] hover:bg-[#f1f5f9] border border-[#e2e8f0] text-left transition cursor-pointer min-h-[44px]"
             >
-              <div className="font-bold text-indigo-400">Manager S2JB</div>
-              <div className="text-[10px] text-slate-400 truncate">manager_s2jb</div>
+              <div className="font-bold text-[#0369a1]">Manager S2JB</div>
+              <div className="text-[11px] text-[#64748b] font-mono truncate">manager_s2jb</div>
             </button>
             <button
               type="button"
               onClick={() => handleQuickFill("superadmin", "password123")}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/50 text-slate-300 text-left transition"
+              className="p-2.5 rounded-xl bg-[#f8fafc] hover:bg-[#f1f5f9] border border-[#e2e8f0] text-left transition cursor-pointer min-h-[44px]"
             >
-              <div className="font-bold text-emerald-400">Super Admin</div>
-              <div className="text-[10px] text-slate-400 truncate">superadmin</div>
+              <div className="font-bold text-[#15803d]">Super Admin</div>
+              <div className="text-[11px] text-[#64748b] font-mono truncate">superadmin</div>
             </button>
           </div>
         </div>
       </form>
 
       {/* Security Footer Notice */}
-      <div className="mt-6 flex items-center justify-center space-x-2 text-xs text-slate-400">
-        <ShieldCheck className="w-4 h-4 text-cyan-500" />
-        <span>Sesi terenkripsi HTTP-Only & Anti Brute-Force Redis aktif</span>
+      <div className="mt-5 flex items-center justify-center space-x-2 text-xs text-[#64748b]">
+        <ShieldCheck className="w-4 h-4 text-[#00a2b9]" />
+        <span>Sesi terenkripsi HTTP-Only & Proteksi Brute-Force Redis</span>
       </div>
     </div>
   );

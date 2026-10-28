@@ -57,26 +57,26 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
       : "";
 
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+    <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-4 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-[#0f172a] flex items-center gap-2">
             <span>Kurva Laju Kumulatif Bulanan (Pacing Curve)</span>
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Trayektori riil harian (Cyan) vs garis linier target bulanan (Amber Dashed)
+          <p className="text-xs text-[#64748b] mt-0.5">
+            Trayektori riil harian (Teal) vs garis linier target bulanan (Amber Putus-Putus)
           </p>
         </div>
 
         {/* Legend */}
         <div className="flex items-center gap-4 text-xs font-medium">
           <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-1 bg-cyan-400 rounded" />
-            <span className="text-slate-300">Realisasi Riil</span>
+            <div className="w-3.5 h-1 bg-[#00a2b9] rounded" />
+            <span className="text-[#0f172a]">Realisasi Riil</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3.5 h-1 border-t-2 border-dashed border-amber-400" />
-            <span className="text-slate-400">Target Linier</span>
+            <div className="w-3.5 h-1 border-t-2 border-dashed border-[#d97706]" />
+            <span className="text-[#64748b]">Target Linier</span>
           </div>
         </div>
       </div>
@@ -84,12 +84,12 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
       {/* Hover Info Banner */}
       <div className="h-7 flex items-center text-xs">
         {hoveredPoint ? (
-          <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 px-3 py-1 rounded-md text-slate-200">
-            <span className="font-semibold text-cyan-400">{hoveredPoint.dateLabel}</span>
+          <div className="flex items-center gap-3 bg-[#f8fafc] border border-[#e2e8f0] px-3 py-1 rounded-xl text-[#0f172a] shadow-xs">
+            <span className="font-semibold text-[#006877]">{hoveredPoint.dateLabel}</span>
             <span>Target: <strong className="font-mono">{hoveredPoint.targetCumulative.toLocaleString("id-ID")}</strong></span>
             <span>
               Realisasi:{" "}
-              <strong className="font-mono text-emerald-400">
+              <strong className="font-mono text-[#15803d]">
                 {hoveredPoint.actualCumulative !== null
                   ? hoveredPoint.actualCumulative.toLocaleString("id-ID")
                   : "-"}
@@ -99,37 +99,27 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
               <span
                 className={`font-semibold ${
                   hoveredPoint.actualCumulative >= hoveredPoint.targetCumulative
-                    ? "text-emerald-400"
-                    : "text-amber-400"
+                    ? "text-[#15803d]"
+                    : "text-[#b45309]"
                 }`}
               >
-                ({hoveredPoint.actualCumulative >= hoveredPoint.targetCumulative ? "Surplus" : "Defisit"}{" "}
-                {Math.abs(hoveredPoint.actualCumulative - hoveredPoint.targetCumulative).toLocaleString("id-ID")})
+                ({((hoveredPoint.actualCumulative / (hoveredPoint.targetCumulative || 1)) * 100).toFixed(1)}%)
               </span>
             )}
           </div>
         ) : (
-          <span className="text-slate-500 text-xs italic">
-            Arahkan kursor ke titik kurva untuk melihat rincian capaian harian
-          </span>
+          <span className="text-slate-400 italic">Arahkan kursor ke titik kurva untuk melihat detail</span>
         )}
       </div>
 
-      {/* SVG Canvas */}
-      <div className="overflow-x-auto pb-1">
+      {/* Chart SVG Canvas */}
+      <div className="overflow-x-auto pb-2">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-auto min-w-[650px]"
+          className="w-full h-auto min-w-[700px]"
           style={{ maxHeight: "300px" }}
         >
-          <defs>
-            <linearGradient id="cyanArea" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#00a3e0" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#00a3e0" stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-
-          {/* Grid lines */}
+          {/* Subtle Horizontal Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((pct, idx) => {
             const y = height - paddingBottom - pct * innerHeight;
             const val = Math.round(pct * maxVal);
@@ -140,16 +130,14 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
                   y1={y}
                   x2={width - paddingRight}
                   y2={y}
-                  stroke="#1e293b"
+                  stroke="#f1f5f9"
                   strokeDasharray="4 4"
                 />
                 <text
                   x={paddingLeft - 8}
                   y={y + 3}
                   textAnchor="end"
-                  fill="#64748b"
-                  fontSize="9"
-                  fontFamily="monospace"
+                  className="text-[10px] fill-[#94a3b8] font-mono"
                 >
                   {val.toLocaleString("id-ID")}
                 </text>
@@ -157,81 +145,91 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
             );
           })}
 
-          {/* X Axis ticks */}
-          {points.map((p, idx) => {
-            if (p.day === 1 || p.day % 5 === 0 || p.day === totalDaysInMonth) {
-              const x = getX(p.day);
-              return (
-                <g key={idx}>
-                  <line
-                    x1={x}
-                    y1={height - paddingBottom}
-                    x2={x}
-                    y2={height - paddingBottom + 5}
-                    stroke="#475569"
-                  />
-                  <text
-                    x={x}
-                    y={height - paddingBottom + 18}
-                    textAnchor="middle"
-                    fill="#64748b"
-                    fontSize="9"
-                    fontFamily="monospace"
-                  >
-                    H-{p.day}
-                  </text>
-                </g>
-              );
-            }
-            return null;
-          })}
-
           {/* Area under actual path */}
-          {areaPath && <path d={areaPath} fill="url(#cyanArea)" />}
+          {areaPath && (
+            <path
+              d={areaPath}
+              fill="rgba(0, 162, 185, 0.08)"
+            />
+          )}
 
-          {/* Target Dashed Line */}
+          {/* Target Linier Path (Dashed Amber) */}
           <path
             d={targetPath}
             fill="none"
-            stroke="#f59e0b"
+            stroke="#d97706"
             strokeWidth="2"
-            strokeDasharray="6 4"
-            opacity="0.85"
+            strokeDasharray="5 5"
           />
 
-          {/* Actual Line */}
+          {/* Actual Realization Path (Teal Solid) */}
           {actualPath && (
             <path
               d={actualPath}
               fill="none"
-              stroke="#00a3e0"
+              stroke="#00a2b9"
               strokeWidth="2.5"
-              className="drop-shadow-[0_0_8px_rgba(0,163,224,0.5)]"
             />
           )}
 
-          {/* Interactive Data Points on Actual Line */}
-          {actualPoints.map((p) => {
+          {/* Data Points */}
+          {points.map((p) => {
             const cx = getX(p.day);
-            const cy = getY(p.actualCumulative!);
+            const cy = p.actualCumulative !== null ? getY(p.actualCumulative) : null;
             const isHovered = hoveredPoint?.day === p.day;
 
             return (
-              <g
-                key={p.day}
-                onMouseEnter={() => setHoveredPoint(p)}
-                onMouseLeave={() => setHoveredPoint(null)}
-                className="cursor-pointer"
-              >
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={isHovered ? "6" : "3.5"}
-                  fill={isHovered ? "#38bdf8" : "#00a3e0"}
-                  stroke="#0f172a"
-                  strokeWidth="2"
-                  className="transition-all duration-150"
+              <g key={p.day}>
+                {/* Vertical hover guide */}
+                {isHovered && (
+                  <line
+                    x1={cx}
+                    y1={paddingTop}
+                    x2={cx}
+                    y2={height - paddingBottom}
+                    stroke="#00a2b9"
+                    strokeWidth="1"
+                    strokeDasharray="2 2"
+                  />
+                )}
+
+                {/* Actual Realization Circle */}
+                {cy !== null && (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={isHovered ? "5" : "3.5"}
+                    fill="#00a2b9"
+                    stroke="#ffffff"
+                    strokeWidth="1.5"
+                    className="transition-all cursor-pointer"
+                    onMouseEnter={() => setHoveredPoint(p)}
+                  />
+                )}
+
+                {/* Invisible larger hover hit area */}
+                <rect
+                  x={cx - innerWidth / totalDaysInMonth / 2}
+                  y={paddingTop}
+                  width={innerWidth / totalDaysInMonth}
+                  height={innerHeight}
+                  fill="transparent"
+                  className="cursor-pointer"
+                  onMouseEnter={() => setHoveredPoint(p)}
+                  onMouseLeave={() => setHoveredPoint(null)}
                 />
+
+                {/* X-axis Day labels (every 5 days and last day) */}
+                {(p.day === 1 || p.day % 5 === 0 || p.day === totalDaysInMonth) && (
+                  <text
+                    x={cx}
+                    y={height - paddingBottom + 16}
+                    textAnchor="middle"
+                    className="text-[10px] fill-[#64748b] font-mono"
+                  >
+                    Tgl {p.day}
+                  </text>
+                )}
               </g>
             );
           })}

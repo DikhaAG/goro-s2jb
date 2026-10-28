@@ -20,29 +20,29 @@ export function ReportTableMonthly({ groups, grandTotal }: ReportTableMonthlyPro
   let counter = 1;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-md">
+    <div className="overflow-x-auto rounded-2xl border border-[#e2e8f0] bg-white shadow-xs">
       <table className="w-full text-xs text-left border-collapse font-sans">
         <thead>
-          <tr className="bg-slate-950 border-b border-slate-800 text-slate-300 font-semibold uppercase tracking-wider text-[11px]">
-            <th className="py-3 px-3 text-center w-12 border-r border-slate-800/60">NO</th>
-            <th className="py-3 px-4 border-r border-slate-800/60">NAMA ULP</th>
-            <th className="py-3 px-4 text-right border-r border-slate-800/60 w-32">TARGET HARIAN</th>
-            <th className="py-3 px-4 text-right border-r border-slate-800/60 w-36">TARGET KUMULATIF</th>
-            <th className="py-3 px-4 text-right border-r border-slate-800/60 w-32">REALISASI HARIAN</th>
-            <th className="py-3 px-4 text-right border-r border-slate-800/60 w-36">REALISASI KUMULATIF</th>
-            <th className="py-3 px-4 text-right border-r border-slate-800/60 w-28">% KUMULATIF</th>
+          <tr className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#475569] font-bold uppercase tracking-wider text-[11px]">
+            <th className="py-3 px-3 text-center w-12 border-r border-[#e2e8f0]">NO</th>
+            <th className="py-3 px-4 border-r border-[#e2e8f0]">NAMA ULP</th>
+            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-32">TARGET HARIAN</th>
+            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-36">TARGET KUMULATIF</th>
+            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-32">REALISASI HARIAN</th>
+            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-36">REALISASI KUMULATIF</th>
+            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-28">% KUMULATIF</th>
             <th className="py-3 px-4 text-center w-36">KETERANGAN</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800/60">
+        <tbody className="divide-y divide-[#f1f5f9]">
           {groups.map((group) => {
             return (
               <React.Fragment key={group.up3Id}>
                 {/* UP3 Group Banner */}
-                <tr className="bg-slate-950/80 font-bold text-slate-200">
+                <tr className="bg-[#f1f5f9] font-bold text-[#006877]">
                   <td
                     colSpan={8}
-                    className="py-2.5 px-4 text-cyan-400 font-mono tracking-wide text-xs border-y border-slate-800"
+                    className="py-2.5 px-4 font-mono tracking-wide text-xs border-y border-[#e2e8f0]"
                   >
                     🏢 {group.up3Name}
                   </td>
@@ -54,32 +54,32 @@ export function ReportTableMonthly({ groups, grandTotal }: ReportTableMonthlyPro
                   return (
                     <tr
                       key={ulp.ulpId}
-                      className="hover:bg-slate-850/60 transition-colors text-slate-300"
+                      className="hover:bg-[#f8fafc] transition-colors text-[#334155]"
                     >
-                      <td className="py-2 px-3 text-center font-mono text-slate-500 border-r border-slate-800/40">
+                      <td className="py-2.5 px-3 text-center font-mono text-[#94a3b8] border-r border-[#f1f5f9]">
                         {counter++}
                       </td>
-                      <td className="py-2 px-4 font-medium text-slate-200 border-r border-slate-800/40">
+                      <td className="py-2.5 px-4 font-semibold text-[#0f172a] border-r border-[#f1f5f9]">
                         {ulp.ulpName}
                       </td>
-                      <td className="py-2 px-4 text-right font-mono text-slate-400 border-r border-slate-800/40">
+                      <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#f1f5f9]">
                         {ulp.dailyTarget.toLocaleString("id-ID")}
                       </td>
-                      <td className="py-2 px-4 text-right font-mono text-slate-300 border-r border-slate-800/40">
+                      <td className="py-2.5 px-4 text-right font-mono text-[#0f172a] border-r border-[#f1f5f9]">
                         {ulp.cumulativeTarget.toLocaleString("id-ID")}
                       </td>
-                      <td className="py-2 px-4 text-right font-mono text-slate-400 border-r border-slate-800/40">
+                      <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#f1f5f9]">
                         {ulp.dailyRealization.toLocaleString("id-ID")}
                       </td>
-                      <td className="py-2 px-4 text-right font-mono font-bold text-slate-100 border-r border-slate-800/40">
+                      <td className="py-2.5 px-4 text-right font-mono font-bold text-[#0f172a] border-r border-[#f1f5f9]">
                         {ulp.cumulativeRealization.toLocaleString("id-ID")}
                       </td>
-                      <td className="py-2 px-4 text-right font-mono font-bold border-r border-slate-800/40">
-                        <span className={isPass ? "text-emerald-400" : "text-amber-400"}>
+                      <td className="py-2.5 px-4 text-right font-mono font-bold border-r border-[#f1f5f9]">
+                        <span className={isPass ? "text-[#15803d]" : "text-[#b45309]"}>
                           {ulp.cumulativePercentage.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="py-2 px-4 text-center">
+                      <td className="py-2.5 px-4 text-center">
                         <Badge
                           variant={isPass ? "success" : "warning"}
                           className="text-[10px] py-0 px-2 uppercase font-semibold"
@@ -92,30 +92,30 @@ export function ReportTableMonthly({ groups, grandTotal }: ReportTableMonthlyPro
                 })}
 
                 {/* UP3 Subtotal */}
-                <tr className="bg-slate-900 font-bold border-b-2 border-slate-800 text-slate-200">
-                  <td className="border-r border-slate-800/60"></td>
-                  <td className="py-2 px-4 text-slate-300 border-r border-slate-800/60">
+                <tr className="bg-[#f8fafc] font-bold border-b border-[#cbd5e1] text-[#0f172a]">
+                  <td className="border-r border-[#e2e8f0]"></td>
+                  <td className="py-2.5 px-4 text-[#006877] border-r border-[#e2e8f0]">
                     SUBTOTAL {group.up3Name}
                   </td>
-                  <td className="py-2 px-4 text-right font-mono text-slate-400 border-r border-slate-800/60">
+                  <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#e2e8f0]">
                     {group.subtotal.dailyTarget.toLocaleString("id-ID")}
                   </td>
-                  <td className="py-2 px-4 text-right font-mono text-slate-300 border-r border-slate-800/60">
+                  <td className="py-2.5 px-4 text-right font-mono text-[#0f172a] border-r border-[#e2e8f0]">
                     {group.subtotal.cumulativeTarget.toLocaleString("id-ID")}
                   </td>
-                  <td className="py-2 px-4 text-right font-mono text-slate-400 border-r border-slate-800/60">
+                  <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#e2e8f0]">
                     {group.subtotal.dailyRealization.toLocaleString("id-ID")}
                   </td>
-                  <td className="py-2 px-4 text-right font-mono text-cyan-300 border-r border-slate-800/60">
+                  <td className="py-2.5 px-4 text-right font-mono text-[#006877] font-bold border-r border-[#e2e8f0]">
                     {group.subtotal.cumulativeRealization.toLocaleString("id-ID")}
                   </td>
-                  <td className="py-2 px-4 text-right font-mono text-cyan-300 border-r border-slate-800/60">
+                  <td className="py-2.5 px-4 text-right font-mono text-[#006877] font-bold border-r border-[#e2e8f0]">
                     {group.subtotal.cumulativePercentage.toFixed(1)}%
                   </td>
-                  <td className="py-2 px-4 text-center">
+                  <td className="py-2.5 px-4 text-center">
                     <span
                       className={`text-[10px] font-bold ${
-                        group.subtotal.status === "TERCAPAI" ? "text-emerald-400" : "text-amber-400"
+                        group.subtotal.status === "TERCAPAI" ? "text-[#15803d]" : "text-[#b45309]"
                       }`}
                     >
                       {group.subtotal.status}
@@ -127,24 +127,24 @@ export function ReportTableMonthly({ groups, grandTotal }: ReportTableMonthlyPro
           })}
 
           {/* Grand Total Row */}
-          <tr className="bg-slate-950 font-black text-slate-100 border-t-2 border-cyan-500/50 text-xs">
-            <td className="py-3 px-3 text-center border-r border-slate-800"></td>
-            <td className="py-3 px-4 text-cyan-400 font-bold uppercase tracking-wider border-r border-slate-800">
+          <tr className="bg-[#e7eeff] font-bold text-[#0f172a] border-t-2 border-[#00a2b9] text-xs">
+            <td className="py-3 px-3 text-center border-r border-[#cbd5e1]"></td>
+            <td className="py-3 px-4 text-[#006877] font-bold uppercase tracking-wider border-r border-[#cbd5e1]">
               TOTAL UID S2JB
             </td>
-            <td className="py-3 px-4 text-right font-mono text-slate-400 border-r border-slate-800">
+            <td className="py-3 px-4 text-right font-mono text-[#64748b] border-r border-[#cbd5e1]">
               {grandTotal.dailyTarget.toLocaleString("id-ID")}
             </td>
-            <td className="py-3 px-4 text-right font-mono text-slate-200 border-r border-slate-800">
+            <td className="py-3 px-4 text-right font-mono text-[#0f172a] border-r border-[#cbd5e1]">
               {grandTotal.cumulativeTarget.toLocaleString("id-ID")}
             </td>
-            <td className="py-3 px-4 text-right font-mono text-slate-400 border-r border-slate-800">
+            <td className="py-3 px-4 text-right font-mono text-[#64748b] border-r border-[#cbd5e1]">
               {grandTotal.dailyRealization.toLocaleString("id-ID")}
             </td>
-            <td className="py-3 px-4 text-right font-mono text-cyan-300 text-sm border-r border-slate-800">
+            <td className="py-3 px-4 text-right font-mono text-[#006877] font-bold text-sm border-r border-[#cbd5e1]">
               {grandTotal.cumulativeRealization.toLocaleString("id-ID")}
             </td>
-            <td className="py-3 px-4 text-right font-mono text-cyan-300 text-sm border-r border-slate-800">
+            <td className="py-3 px-4 text-right font-mono text-[#006877] font-bold text-sm border-r border-[#cbd5e1]">
               {grandTotal.cumulativePercentage.toFixed(1)}%
             </td>
             <td className="py-3 px-4 text-center">

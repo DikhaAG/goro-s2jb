@@ -273,28 +273,28 @@ export function TriageDashboard() {
   // RBAC Access Control Guard
   if (sessionQuery.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#070b13] text-slate-300">
-        <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+      <div className="flex-1 min-h-[400px] flex items-center justify-center text-[#64748b]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#00a2b9]" />
       </div>
     );
   }
 
   if (user && user.role === "PETUGAS_LAPANGAN") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#070b13] p-4">
-        <div className="max-w-md w-full bg-slate-900 border border-red-500/30 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-full w-14 h-14 mx-auto flex items-center justify-center text-red-400">
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white border border-[#fed7aa] rounded-2xl p-6 text-center space-y-4 shadow-xs">
+          <div className="p-3 bg-[#fff7ed] border border-[#fed7aa] rounded-full w-14 h-14 mx-auto flex items-center justify-center text-[#b45309]">
             <AlertOctagon className="w-8 h-8" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-100">Akses Ditolak (403 Forbidden)</h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <h2 className="text-lg font-bold text-[#0f172a]">Akses Ditolak (403 Forbidden)</h2>
+            <p className="text-xs text-[#64748b] mt-1">
               Modul Dasbor Triase hanya diperuntukkan bagi Pegawai Verifikator atau Super Admin.
-              Akun Anda terdaftar sebagai <span className="text-amber-400 font-mono">PETUGAS_LAPANGAN</span>.
+              Akun Anda terdaftar sebagai <span className="text-[#b45309] font-mono font-semibold">PETUGAS_LAPANGAN</span>.
             </p>
           </div>
           <Link href="/intake">
-            <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs mt-2">
+            <Button className="w-full bg-[#00a2b9] hover:bg-[#008b9e] text-white text-xs mt-2 min-h-[44px] h-11 font-semibold rounded-xl">
               Beralih ke Formulir Input Lapangan
             </Button>
           </Link>
@@ -310,79 +310,39 @@ export function TriageDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col font-sans">
-      {/* Top Navbar */}
-      <header className="border-b border-slate-800/80 bg-[#0c121e]/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Link
-            href="/"
-            className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white transition"
-            title="Kembali ke Beranda"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded bg-cyan-600/30 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-xs">
-              ⚡
-            </div>
-            <div>
-              <span className="font-bold text-sm tracking-wide text-white">
-                GORO S2JB <span className="text-cyan-400">2026</span>
-              </span>
-              <span className="text-xs text-slate-400 ml-2 font-mono">/ Operator Triage</span>
-            </div>
-          </div>
+    <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-4">
+      {/* Header & Tactical Metric Cards */}
+      <TriageHeader
+        operatorName={user?.name || "Petugas Verifikator"}
+        operatorRole={user?.role || "PEGAWAI"}
+        metrics={metrics}
+      />
+
+      {/* Filter Controls & Tabs */}
+      <TriageFilterBar
+        filters={filters}
+        onFilterChange={setFilters}
+        yellowCount={metrics.yellowQueueCount}
+        up3List={up3List}
+        ulpList={ulpList}
+      />
+
+      {/* Virtualized Triage Table */}
+      {queueQuery.isLoading ? (
+        <div className="h-96 flex flex-col items-center justify-center space-y-3 bg-white border border-[#e2e8f0] rounded-2xl shadow-xs">
+          <Loader2 className="w-8 h-8 animate-spin text-[#00a2b9]" />
+          <span className="text-xs text-[#64748b]">Memuat antrean ulasan...</span>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Link href="/migration">
-            <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white">
-              Migrasi Data
-            </Button>
-          </Link>
-          <Link href="/intake">
-            <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white">
-              Input Eviden
-            </Button>
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-4">
-        {/* Header & Tactical Metric Cards */}
-        <TriageHeader
-          operatorName={user?.name || "Petugas Verifikator"}
-          operatorRole={user?.role || "PEGAWAI"}
-          metrics={metrics}
+      ) : (
+        <TriageTable
+          items={items}
+          activeId={activeId}
+          onSelect={setActiveId}
+          onOpenLightbox={(item) => setLightboxItem(item)}
+          onApprove={handleApprove}
+          onReject={handleOpenRejectDialog}
         />
-
-        {/* Filter Controls & Tabs */}
-        <TriageFilterBar
-          filters={filters}
-          onFilterChange={setFilters}
-          yellowCount={metrics.yellowQueueCount}
-          up3List={up3List}
-          ulpList={ulpList}
-        />
-
-        {/* Virtualized Triage Table */}
-        {queueQuery.isLoading ? (
-          <div className="h-96 flex flex-col items-center justify-center space-y-3 bg-slate-900/30 border border-slate-800 rounded-xl">
-            <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-            <span className="text-xs text-slate-400">Memuat antrean ulasan...</span>
-          </div>
-        ) : (
-          <TriageTable
-            items={items}
-            activeId={activeId}
-            onSelect={setActiveId}
-            onOpenLightbox={(item) => setLightboxItem(item)}
-            onApprove={handleApprove}
-            onReject={handleOpenRejectDialog}
-          />
-        )}
-      </main>
+      )}
 
       {/* Lightbox Modal */}
       <EvidenceLightbox
@@ -406,15 +366,15 @@ export function TriageDashboard() {
 
       {/* Optimistic 5-Second Undo Toast */}
       {undoState && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-slate-900 border border-slate-700 shadow-2xl rounded-xl p-3 px-4 text-xs animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl p-4 text-xs animate-in slide-in-from-bottom-5 duration-200">
           <div className="flex items-center gap-2">
             {undoState.decision === "APPROVED" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
             ) : (
-              <ShieldAlert className="w-4 h-4 text-red-400" />
+              <ShieldAlert className="w-4 h-4 text-[#ef4444]" />
             )}
-            <span className="text-slate-200">
-              Ulasan <span className="font-semibold text-amber-300 font-mono">{undoState.reviewerName}</span>{" "}
+            <span className="text-[#f8fafc]">
+              Ulasan <span className="font-semibold text-[#f59e0b] font-mono">{undoState.reviewerName}</span>{" "}
               {undoState.decision === "APPROVED" ? "disetujui" : "ditolak"}.
             </span>
           </div>
@@ -423,7 +383,7 @@ export function TriageDashboard() {
             size="sm"
             variant="outline"
             onClick={handleUndo}
-            className="h-7 px-2.5 text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border-cyan-500/40 gap-1 font-medium"
+            className="h-8 px-3 text-xs bg-[#1e293b] hover:bg-[#334155] text-[#38bdf8] border-[#0284c7]/40 gap-1 font-semibold rounded-lg"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Undo ({undoSecondsLeft}s)</span>

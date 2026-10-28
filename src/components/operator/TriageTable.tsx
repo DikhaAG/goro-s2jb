@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TriageRow, TriageRowData } from "./TriageRow";
-import { CheckCircle2, Inbox } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 interface TriageTableProps {
   items: TriageRowData[];
@@ -27,7 +27,7 @@ export function TriageTable({
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 145, // Estimated average row height
+    estimateSize: () => 145,
     overscan: 5,
   });
 
@@ -45,15 +45,15 @@ export function TriageTable({
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 bg-slate-900/40 border border-slate-800 rounded-2xl text-center space-y-3">
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400">
+      <div className="flex flex-col items-center justify-center py-20 bg-white border border-[#e2e8f0] rounded-2xl text-center space-y-3 shadow-xs">
+        <div className="p-4 bg-[#ecfdf5] border border-[#a7f3d0] rounded-full text-[#16a34a]">
           <CheckCircle2 className="w-8 h-8" />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-slate-200">
+          <h3 className="text-base font-bold text-[#0f172a]">
             Antrean Triase Bersih!
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm mt-1">
+          <p className="text-xs text-[#64748b] max-w-sm mt-1">
             Tidak ada ulasan pada filter yang dipilih. Seluruh data Zona Kuning telah diverifikasi oleh operator.
           </p>
         </div>
@@ -66,7 +66,7 @@ export function TriageTable({
   return (
     <div
       ref={parentRef}
-      className="h-[calc(100vh-320px)] min-h-[500px] overflow-y-auto rounded-xl border border-slate-800/80 bg-slate-950/40 p-2 relative"
+      className="h-[calc(100vh-320px)] min-h-[500px] overflow-y-auto rounded-2xl border border-[#e2e8f0] bg-white p-2.5 relative shadow-xs"
     >
       <div
         style={{

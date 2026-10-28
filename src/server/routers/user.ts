@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, adminProcedure } from "../trpc";
 import { hashPassword } from "@/lib/auth";
-import { logAuditEvent } from "../services/auditService";
+import { logAuditEvent, getAuditLogs } from "../services/auditService";
 import { Role } from "@prisma/client";
 
 export const userRouter = router({
@@ -273,4 +273,17 @@ export const userRouter = router({
 
     return { up3s };
   }),
+
+  getAuditLogs: adminProcedure
+    .input(
+      z.object({
+        action: z.string().optional(),
+        entityType: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      return getAuditLogs(input);
+    }),
 });

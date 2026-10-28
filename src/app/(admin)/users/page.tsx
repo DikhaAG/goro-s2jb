@@ -3,54 +3,42 @@
 import React, { useState } from "react";
 import { UserManagementTable } from "@/components/admin/UserManagementTable";
 import { UserFormDialog } from "@/components/admin/UserFormDialog";
-import { Users, UserPlus, Shield, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Users, UserPlus } from "lucide-react";
 
 export default function AdminUsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   return (
-    <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col">
-      {/* Top Navigation Bar */}
-      <header className="border-b border-slate-800/80 bg-[#0c121e]/90 backdrop-blur sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Link
-            href="/"
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            title="Kembali ke Beranda"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-white flex items-center space-x-2">
-                <Users className="w-5 h-5 text-cyan-400" />
-                <span>Manajemen Pengguna & Otorisasi RBAC</span>
-              </h1>
-              <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded">
-                Super Admin
-              </span>
+    <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#e2e8f0] gap-4">
+        <div>
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#006877] text-white flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 text-[#00a2b9]" />
             </div>
-            <p className="text-xs text-slate-400">
-              Pengelolaan kredensial terenkripsi, status akun, dan penugasan wilayah kerja UP3/ULP
-            </p>
+            <h1 className="text-headline-sm sm:text-headline-md text-[#0f172a] font-bold tracking-tight">
+              Manajemen Pengguna & Otorisasi RBAC
+            </h1>
           </div>
+          <p className="text-body-meta text-[#64748b] mt-1">
+            Pengelolaan kredensial terenkripsi, status akun, dan penugasan wilayah kerja UP3/ULP
+          </p>
         </div>
 
         <button
+          type="button"
           onClick={() => setIsDialogOpen(true)}
-          className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 text-slate-950 font-bold rounded-xl text-xs sm:text-sm shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition cursor-pointer active:scale-95"
+          className="min-h-[44px] px-4 py-2 bg-[#00a2b9] hover:bg-[#0097a7] text-white font-semibold rounded-lg text-sm flex items-center justify-center space-x-2 transition cursor-pointer active:scale-98 shadow-xs focus-utility-ring"
         >
-          <UserPlus className="w-4 h-4 font-bold" />
+          <UserPlus className="w-4 h-4" />
           <span>Tambah Pengguna</span>
         </button>
-      </header>
+      </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        <UserManagementTable onRefreshTrigger={refreshTrigger} />
-      </main>
+      <UserManagementTable onRefreshTrigger={refreshTrigger} />
 
       {/* User Create Modal */}
       <UserFormDialog

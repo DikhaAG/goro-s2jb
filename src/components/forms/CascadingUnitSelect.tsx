@@ -51,7 +51,7 @@ export function CascadingUnitSelect({
       {/* UP3 Dropdown */}
       <div className="space-y-1.5">
         <Label required htmlFor="up3Select">
-          <Building2 className="w-3.5 h-3.5 text-cyan-400 mr-1" />
+          <Building2 className="w-3.5 h-3.5 text-[#006877] mr-1" />
           Unit Pelaksana (UP3)
         </Label>
         <select
@@ -59,8 +59,8 @@ export function CascadingUnitSelect({
           value={selectedUp3Id}
           disabled={disabled || unitsQuery.isLoading}
           onChange={(e) => onUp3Change(e.target.value)}
-          className={`flex h-11 w-full rounded-lg border bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus-visible:outline-none focus-visible:border-cyan-400 focus-visible:ring-1 focus-visible:ring-cyan-400 transition-colors ${
-            errors?.up3Id ? "border-red-500" : "border-slate-700/80"
+          className={`flex h-11 min-h-[44px] w-full rounded-xl border bg-[#f8fafc] px-3.5 py-2 text-sm text-[#0f172a] focus-utility-ring transition-colors ${
+            errors?.up3Id ? "border-[#ef4444]" : "border-[#cbd5e1] focus:border-[#00a2b9]"
           }`}
         >
           <option value="">-- Pilih UP3 --</option>
@@ -70,13 +70,13 @@ export function CascadingUnitSelect({
             </option>
           ))}
         </select>
-        {errors?.up3Id && <p className="text-[11px] text-red-400 mt-1">{errors.up3Id}</p>}
+        {errors?.up3Id && <p className="text-[11px] text-[#b91c1c] font-medium mt-1">{errors.up3Id}</p>}
       </div>
 
       {/* ULP Dropdown */}
       <div className="space-y-1.5">
         <Label required htmlFor="ulpSelect">
-          <MapPin className="w-3.5 h-3.5 text-amber-400 mr-1" />
+          <MapPin className="w-3.5 h-3.5 text-[#b45309] mr-1" />
           Unit Layanan Pelanggan (ULP)
         </Label>
         <select
@@ -84,8 +84,8 @@ export function CascadingUnitSelect({
           value={selectedUlpId}
           disabled={disabled || !selectedUp3Id || availableUlps.length === 0}
           onChange={(e) => onUlpChange(e.target.value)}
-          className={`flex h-11 w-full rounded-lg border bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus-visible:outline-none focus-visible:border-cyan-400 focus-visible:ring-1 focus-visible:ring-cyan-400 transition-colors ${
-            errors?.ulpId ? "border-red-500" : "border-slate-700/80"
+          className={`flex h-11 min-h-[44px] w-full rounded-xl border bg-[#f8fafc] px-3.5 py-2 text-sm text-[#0f172a] focus-utility-ring transition-colors ${
+            errors?.ulpId ? "border-[#ef4444]" : "border-[#cbd5e1] focus:border-[#00a2b9]"
           } ${!selectedUp3Id ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           <option value="">
@@ -97,7 +97,7 @@ export function CascadingUnitSelect({
             </option>
           ))}
         </select>
-        {errors?.ulpId && <p className="text-[11px] text-red-400 mt-1">{errors.ulpId}</p>}
+        {errors?.ulpId && <p className="text-[11px] text-[#b91c1c] font-medium mt-1">{errors.ulpId}</p>}
       </div>
     </div>
   );

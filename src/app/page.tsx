@@ -3,6 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
+import { AppShell } from "@/components/layout/AppShell";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Activity,
   Database,
@@ -15,6 +18,11 @@ import {
   FolderGit2,
   Radio,
   Zap,
+  ArrowRight,
+  FileUp,
+  CheckSquare,
+  BarChart3,
+  Users,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -28,239 +36,247 @@ export default function HomePage() {
   const isHealthy = healthQuery.data?.status === "HEALTHY";
 
   return (
-    <main className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col">
-      {/* Tactical Top Bar */}
-      <header className="border-b border-slate-800/80 bg-[#0c121e]/90 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-600 to-sky-400 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-            <Zap className="w-5 h-5 text-slate-950 font-bold" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-lg font-bold tracking-tight text-white">
-                GORO S2JB <span className="text-cyan-400">2026</span>
+    <AppShell pageTitle="Beranda Komando">
+      <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Top Header Banner */}
+        <div className="rounded-2xl p-6 sm:p-8 bg-white border border-[#e2e8f0] shadow-xs relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="neutral" className="gap-1 font-semibold">
+                  <Zap className="w-3.5 h-3.5 text-[#006877]" />
+                  <span>PLN UID S2JB</span>
+                </Badge>
+                <span className="text-xs text-[#64748b]">
+                  Sistem Validasi Eviden Rating PLN Mobile 2026
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight">
+                Pusat Komando Operasional
               </h1>
-              <span className="px-2 py-0.5 text-[10px] font-semibold bg-cyan-950 text-cyan-300 border border-cyan-800/60 rounded">
-                PLN UID S2JB
-              </span>
+              <p className="text-sm text-[#475569] leading-relaxed">
+                Platform terpadu pemantauan target rating PLN Mobile UID Sumatera Selatan,
+                Jambi, dan Bengkulu. Dilengkapi pipeline otomatisasi OCR, deteksi duplikasi
+                perceptual hashing 64-bit, dan verifikasi berjenjang.
+              </p>
             </div>
-            <p className="text-xs text-slate-400">
-              Command Center & Sistem Validasi Eviden Rating PLN Mobile
-            </p>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+                <span className="relative flex h-3 w-3">
+                  <span
+                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
+                    }`}
+                  ></span>
+                  <span
+                    className={`relative inline-flex rounded-full h-3 w-3 ${
+                      isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
+                    }`}
+                  ></span>
+                </span>
+                <span className="text-xs font-semibold text-[#0f172a]">
+                  {healthQuery.isLoading
+                    ? "Memeriksa..."
+                    : isHealthy
+                    ? "Sistem Aktif Normal"
+                    : "Layanan Terdegradasi"}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => healthQuery.refetch()}
+                className="min-h-[44px] h-11 px-4 rounded-xl bg-white border border-[#cbd5e1] hover:bg-[#f8fafc] text-[#334155] text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring"
+                title="Muat Ulang Status Infrastruktur"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 text-[#64748b] ${
+                    healthQuery.isFetching ? "animate-spin" : ""
+                  }`}
+                />
+                <span>Segarkan</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Quick Navigation Cards Hub */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/intake"
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25 border border-cyan-500/40 text-xs font-semibold transition"
+            className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#00a2b9] hover:shadow-xs transition duration-150 focus-utility-ring"
           >
-            <Zap className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Entri Eviden</span>
+            <div className="w-10 h-10 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <FileUp className="w-5 h-5" />
+            </div>
+            <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#006877] transition-colors flex items-center justify-between">
+              <span>Entri Eviden Lapangan</span>
+              <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#00a2b9] group-hover:translate-x-0.5 transition-all" />
+            </h2>
+            <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
+              Formulir cepat pengumpulan bukti tangkapan layar ulasan pelanggan Play Store.
+            </p>
           </Link>
 
           <Link
-            href="/triage"
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-semibold transition"
+            href="/operator/triage"
+            className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#f59e0b] hover:shadow-xs transition duration-150 focus-utility-ring"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-            <span>Triase Kuning</span>
+            <div className="w-10 h-10 rounded-xl bg-[#fff7ed] text-[#b45309] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <CheckSquare className="w-5 h-5" />
+            </div>
+            <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#b45309] transition-colors flex items-center justify-between">
+              <span>Triase Ulasan Kuning</span>
+              <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#f59e0b] group-hover:translate-x-0.5 transition-all" />
+            </h2>
+            <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
+              Dasbor verifikasi operator (human in the loop) dengan hotkey keyboard taktis.
+            </p>
           </Link>
 
           <Link
-            href="/reports"
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25 border border-indigo-500/40 text-xs font-semibold transition"
+            href="/manager/reports"
+            className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#0284c7] hover:shadow-xs transition duration-150 focus-utility-ring"
           >
-            <Activity className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Laporan Manajer</span>
+            <div className="w-10 h-10 rounded-xl bg-[#f0f9ff] text-[#0369a1] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#0369a1] transition-colors flex items-center justify-between">
+              <span>Laporan Eksekutif</span>
+              <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#0284c7] group-hover:translate-x-0.5 transition-all" />
+            </h2>
+            <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
+              Agregasi capaian harian, H-1, bulanan, dan ekspor spreadsheet terenkripsi.
+            </p>
           </Link>
 
           <Link
             href="/admin/users"
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/40 text-xs font-semibold transition"
+            className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#16a34a] hover:shadow-xs transition duration-150 focus-utility-ring"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Pengguna</span>
-          </Link>
-
-          <Link
-            href="/login"
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition"
-          >
-            <span>Masuk / Ganti Akun</span>
-          </Link>
-
-          <div className="flex items-center space-x-2 text-xs pl-2 border-l border-slate-800">
-            <span className="relative flex h-2.5 w-2.5">
-              <span
-                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                  isHealthy ? "bg-emerald-400" : "bg-amber-400"
-                }`}
-              ></span>
-              <span
-                className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                  isHealthy ? "bg-emerald-500" : "bg-amber-500"
-                }`}
-              ></span>
-            </span>
-            <span className="text-slate-300 font-mono hidden sm:inline">
-              {healthQuery.isLoading
-                ? "MEMERIKSA..."
-                : isHealthy
-                ? "SISTEM AKTIF"
-                : "STATUS TERDEGRADASI"}
-            </span>
-          </div>
-
-          <button
-            onClick={() => healthQuery.refetch()}
-            className="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 text-slate-300 transition-colors border border-slate-700/60"
-            title="Muat Ulang Status"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${healthQuery.isFetching ? "animate-spin" : ""}`}
-            />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
-        {/* Banner / Stage Announcement */}
-        <div className="rounded-xl p-6 bg-gradient-to-r from-slate-900 via-slate-900/90 to-[#0e1726] border border-cyan-500/20 shadow-xl relative overflow-hidden">
-          <div className="absolute right-0 top-0 bottom-0 w-96 bg-cyan-500/5 blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center space-x-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                  Fase 1: Lapisan Teknis Global
-                </span>
-                <span className="text-xs text-slate-400">
-                  Ready for Full-Stack Operations
-                </span>
-              </div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">
-                Pondasi Taktis & Pipeline Eviden Terintegrasi
-              </h2>
-              <p className="text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                Skema relasional 13-kolom PostgreSQL, bus antrean BullMQ + Redis,
-                lapisan tRPC v11 type-safe, serta microservice OCR & Perceptual Hashing
-                siap mengawal target rating PLN Mobile 2026.
-              </p>
+            <div className="w-10 h-10 rounded-xl bg-[#ecfdf5] text-[#15803d] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+              <Users className="w-5 h-5" />
             </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="text-right">
-                <div className="text-xs text-slate-400">Total Unit Terdaftar</div>
-                <div className="text-xl font-bold text-cyan-400 font-mono">
-                  {unitsQuery.data ? `${unitsQuery.data.length} UP3` : "..."}
-                </div>
-              </div>
-            </div>
-          </div>
+            <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#15803d] transition-colors flex items-center justify-between">
+              <span>Manajemen Pengguna</span>
+              <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
+            </h2>
+            <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
+              Kelola akun operasional berjenjang, penugasan unit, dan catatan audit log.
+            </p>
+          </Link>
         </div>
 
         {/* Infrastructure Heartbeat Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Service 1: PostgreSQL */}
-          <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="rounded-2xl bg-white border border-[#e2e8f0] p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Database
+              <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                Basis Data Relasional
               </span>
-              <Database className="w-5 h-5 text-sky-400" />
+              <div className="w-8 h-8 rounded-lg bg-[#e7eeff] text-[#006877] flex items-center justify-center">
+                <Database className="w-4 h-4" />
+              </div>
             </div>
             <div className="my-3">
-              <div className="text-xl font-bold font-mono text-white">
+              <div className="text-lg font-bold text-[#0f172a]">
                 PostgreSQL 16
               </div>
-              <div className="text-xs text-slate-400 mt-0.5">
-                Latency:{" "}
-                <span className="text-emerald-400 font-mono font-medium">
+              <div className="text-xs text-[#64748b] mt-0.5">
+                Latensi:{" "}
+                <span className="text-[#15803d] font-semibold">
                   {healthQuery.data?.services?.database?.latencyMs ?? 0} ms
                 </span>
               </div>
             </div>
-            <div className="flex items-center space-x-1.5 text-xs text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 text-xs text-[#15803d] font-medium pt-2 border-t border-[#f1f5f9]">
+              <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
               <span>
                 {healthQuery.data?.services?.database?.status === "UP"
                   ? "Tersambung (goro_s2jb)"
-                  : "Mengecek..."}
+                  : "Mengecek koneksi..."}
               </span>
             </div>
           </div>
 
           {/* Service 2: Redis & Queue */}
-          <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="rounded-2xl bg-white border border-[#e2e8f0] p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Event Bus & Queue
+              <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                Antrean & Event Bus
               </span>
-              <Server className="w-5 h-5 text-amber-400" />
+              <div className="w-8 h-8 rounded-lg bg-[#fff7ed] text-[#c2410c] flex items-center justify-center">
+                <Server className="w-4 h-4" />
+              </div>
             </div>
             <div className="my-3">
-              <div className="text-xl font-bold font-mono text-white">
+              <div className="text-lg font-bold text-[#0f172a]">
                 Redis + BullMQ
               </div>
-              <div className="text-xs text-slate-400 mt-0.5">
-                Heartbeat:{" "}
-                <span className="text-emerald-400 font-mono font-medium">
+              <div className="text-xs text-[#64748b] mt-0.5">
+                Detak Jantung:{" "}
+                <span className="text-[#15803d] font-semibold">
                   {healthQuery.data?.services?.redis?.latencyMs ?? 0} ms
                 </span>
               </div>
             </div>
-            <div className="flex items-center space-x-1.5 text-xs text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 text-xs text-[#15803d] font-medium pt-2 border-t border-[#f1f5f9]">
+              <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
               <span>
                 {healthQuery.data?.services?.redis?.status === "UP"
-                  ? "Siap Menerima Job"
-                  : "Mengecek..."}
+                  ? "Siap Memproses Job"
+                  : "Mengecek antrean..."}
               </span>
             </div>
           </div>
 
           {/* Service 3: Local Storage */}
-          <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="rounded-2xl bg-white border border-[#e2e8f0] p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Evidence Engine
+              <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                Penyimpanan Bukti
               </span>
-              <FolderGit2 className="w-5 h-5 text-emerald-400" />
+              <div className="w-8 h-8 rounded-lg bg-[#ecfdf5] text-[#15803d] flex items-center justify-center">
+                <FolderGit2 className="w-4 h-4" />
+              </div>
             </div>
             <div className="my-3">
-              <div className="text-xl font-bold font-mono text-white">
-                Local Storage
+              <div className="text-lg font-bold text-[#0f172a]">
+                Penyimpanan Lokal
               </div>
-              <div className="text-xs text-slate-400 mt-0.5 font-mono">
+              <div className="text-xs text-[#64748b] mt-0.5 truncate font-mono">
                 uploads/evidence/YYYY/MM/DD
               </div>
             </div>
-            <div className="flex items-center space-x-1.5 text-xs text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Anti Path-Traversal Aktif</span>
+            <div className="flex items-center gap-1.5 text-xs text-[#15803d] font-medium pt-2 border-t border-[#f1f5f9]">
+              <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+              <span>Proteksi Traversal Aktif</span>
             </div>
           </div>
 
           {/* Service 4: Python OCR & pHash */}
-          <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition">
+          <div className="rounded-2xl bg-white border border-[#e2e8f0] p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                AI Vision Core
+              <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                Pemrosesan Cerdas
               </span>
-              <Cpu className="w-5 h-5 text-purple-400" />
+              <div className="w-8 h-8 rounded-lg bg-[#f3e8ff] text-[#7e22ce] flex items-center justify-center">
+                <Cpu className="w-4 h-4" />
+              </div>
             </div>
             <div className="my-3">
-              <div className="text-xl font-bold font-mono text-white">
-                OCR + pHash
+              <div className="text-lg font-bold text-[#0f172a]">
+                OCR + pHash 64-bit
               </div>
-              <div className="text-xs text-slate-400 mt-0.5">
-                Tesseract + RapidFuzz 64-bit
+              <div className="text-xs text-[#64748b] mt-0.5">
+                Tesseract + RapidFuzz
               </div>
             </div>
-            <div className="flex items-center space-x-1.5 text-xs text-cyan-400">
-              <Radio className="w-4 h-4" />
-              <span>Subprocess Adapter Siap</span>
+            <div className="flex items-center gap-1.5 text-xs text-[#006877] font-medium pt-2 border-t border-[#f1f5f9]">
+              <Radio className="w-4 h-4 text-[#00a2b9]" />
+              <span>Subproses Adaptif Aktif</span>
             </div>
           </div>
         </div>
@@ -268,24 +284,24 @@ export default function HomePage() {
         {/* Master Data Overview Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Unit Structure List */}
-          <div className="lg:col-span-2 rounded-xl bg-slate-900/60 border border-slate-800 p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="lg:col-span-2 rounded-2xl bg-white border border-[#e2e8f0] p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-4">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                  <Layers className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-base font-bold text-[#0f172a] flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[#006877]" />
                   <span>Struktur Unit Induk Distribusi S2JB</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Daftar UP3 dan ULP operasional yang disinkronisasi dari data acuan
+                <p className="text-xs text-[#64748b] mt-0.5">
+                  Daftar UP3 dan ULP operasional yang disinkronkan dari lembar acuan
                 </p>
               </div>
-              <span className="text-xs font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2.5 py-1 rounded">
+              <Badge variant="neutral" className="font-semibold text-xs">
                 {unitsQuery.data?.reduce((acc, u) => acc + u.ulps.length, 0) ?? 0} Total ULP
-              </span>
+              </Badge>
             </div>
 
             {unitsQuery.isLoading ? (
-              <div className="py-8 text-center text-sm text-slate-500 animate-pulse">
+              <div className="py-8 text-center text-sm text-[#94a3b8] animate-pulse">
                 Memuat data master unit...
               </div>
             ) : (
@@ -293,13 +309,13 @@ export default function HomePage() {
                 {unitsQuery.data?.map((up3) => (
                   <div
                     key={up3.id}
-                    className="p-4 rounded-lg bg-slate-950/50 border border-slate-800/80 hover:border-slate-700/80 transition"
+                    className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] hover:border-[#cbd5e1] transition"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm text-white tracking-wide">
+                      <span className="font-bold text-sm text-[#0f172a]">
                         {up3.name}
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white text-[#475569] border border-[#e2e8f0]">
                         {up3.code}
                       </span>
                     </div>
@@ -307,7 +323,7 @@ export default function HomePage() {
                       {up3.ulps.map((ulp) => (
                         <span
                           key={ulp.id}
-                          className="text-[11px] px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800"
+                          className="text-[11px] px-2 py-0.5 rounded bg-white text-[#475569] border border-[#e2e8f0]"
                         >
                           {ulp.name.replace("ULP ", "")}
                         </span>
@@ -320,54 +336,48 @@ export default function HomePage() {
           </div>
 
           {/* PLN Mobile Versions & Testing Roles */}
-          <div className="rounded-xl bg-slate-900/60 border border-slate-800 p-6 space-y-6">
+          <div className="rounded-2xl bg-white border border-[#e2e8f0] p-6 space-y-6">
             <div>
-              <h3 className="text-base font-bold text-white flex items-center space-x-2 border-b border-slate-800 pb-3">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-base font-bold text-[#0f172a] flex items-center gap-2 border-b border-[#f1f5f9] pb-3">
+                <ShieldCheck className="w-4 h-4 text-[#16a34a]" />
                 <span>Akun Uji Coba RBAC</span>
               </h3>
               <div className="space-y-2.5 mt-3 text-xs">
-                <div className="p-2.5 rounded bg-slate-950/40 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-slate-200">petugas_rivai</div>
-                    <div className="text-[10px] text-slate-400">Petugas Lapangan (ULP Rivai)</div>
+                    <div className="font-semibold text-[#0f172a]">petugas_rivai</div>
+                    <div className="text-[11px] text-[#64748b]">Petugas Lapangan (ULP Rivai)</div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-950 text-blue-300 border border-blue-800/50">
-                    FIELD
-                  </span>
+                  <Badge variant="info">FIELD</Badge>
                 </div>
 
-                <div className="p-2.5 rounded bg-slate-950/40 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-slate-200">pegawai_operator</div>
-                    <div className="text-[10px] text-slate-400">Operator Verifikator S2JB</div>
+                    <div className="font-semibold text-[#0f172a]">pegawai_operator</div>
+                    <div className="text-[11px] text-[#64748b]">Operator Verifikator S2JB</div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-950 text-amber-300 border border-amber-800/50">
-                    OPERATOR
-                  </span>
+                  <Badge variant="warning">OPERATOR</Badge>
                 </div>
 
-                <div className="p-2.5 rounded bg-slate-950/40 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-slate-200">manager_s2jb</div>
-                    <div className="text-[10px] text-slate-400">Executive & Unit Manager</div>
+                    <div className="font-semibold text-[#0f172a]">manager_s2jb</div>
+                    <div className="text-[11px] text-[#64748b]">Executive & Unit Manager</div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-950 text-purple-300 border border-purple-800/50">
-                    MANAGER
-                  </span>
+                  <Badge variant="neutral">MANAGER</Badge>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                Versi PLN Mobile Aktif
+              <h4 className="text-xs font-bold text-[#64748b] uppercase tracking-wider mb-2">
+                Versi PLN Mobile Terdaftar
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {versionsQuery.data?.map((v) => (
                   <span
                     key={v.id}
-                    className="text-xs font-mono px-2 py-1 rounded bg-cyan-950/40 text-cyan-300 border border-cyan-800/30"
+                    className="text-xs font-mono px-2.5 py-1 rounded-lg bg-[#e7eeff] text-[#006877] font-medium border border-[#cfdaf2]"
                   >
                     {v.version}
                   </span>
@@ -377,11 +387,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-[#060a11] px-6 py-4 text-center text-xs text-slate-500">
-        PLN UID S2JB Gotong Royong System (GORO) &copy; 2026. All rights reserved.
-      </footer>
-    </main>
+    </AppShell>
   );
 }
