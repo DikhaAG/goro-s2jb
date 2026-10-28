@@ -4,12 +4,19 @@ import { SignJWT, jwtVerify } from "jose";
 import { Role } from "@prisma/client";
 import { SessionUser } from "@/types";
 
-export {
+import {
   SESSION_COOKIE_NAME,
   USER_ID_COOKIE_NAME,
   getRoleMaxAgeSeconds,
   getDefaultRedirectForRole,
 } from "./auth-constants";
+
+export {
+  SESSION_COOKIE_NAME,
+  USER_ID_COOKIE_NAME,
+  getRoleMaxAgeSeconds,
+  getDefaultRedirectForRole,
+};
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "goro-s2jb-command-center-secret-key-pln-2026-production-secured"
