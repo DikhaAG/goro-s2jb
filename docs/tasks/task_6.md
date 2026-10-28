@@ -17,8 +17,8 @@ Membangun fondasi keamanan, autentikasi identitas, dan matriks otorisasi berbasi
 
 Sistem GORO beroperasi dengan memisahkan 3 entitas pengguna operasional nyata:
 1. **PETUGAS LAPANGAN:** Dibatasi secara mutlak hanya pada formulir entri data ulasan & unggah foto eviden (`/intake`). Tidak memiliki izin membuka antrean triase maupun modul pelaporan.
-2. **PEGAWAI (Operator / Verifikator):** Diberikan hak akses ke dasbor triase Zona Kuning (`/operator/triage`) untuk melakukan verifikasi bukti yang ditahan AI, tanpa hak akses ke modul laporan eksekutif.
-3. **MANAGER (Komandan / Eksekutif):** Diberikan hak akses eksklusif ke pusat agregasi laporan performa (`/manager/reports`), pemantauan tren, dan ekspor resmi tanpa terdistraksi oleh proses validasi data mentah.
+2. **PEGAWAI (Operator / Verifikator):** Diberikan hak akses ke dasbor triase Zona Kuning (`/triage`) untuk melakukan verifikasi bukti yang ditahan AI, tanpa hak akses ke modul laporan eksekutif.
+3. **MANAGER (Komandan / Eksekutif):** Diberikan hak akses eksklusif ke pusat agregasi laporan performa (`/reports`), pemantauan tren, dan ekspor resmi tanpa terdistraksi oleh proses validasi data mentah.
 4. **SUPER_ADMIN:** Administrator sistem untuk tata kelola akun pengguna, master data unit, dan audit keamanan.
 
 Selain proteksi hak akses, modul ini mengimplementasikan mekanisme pertahanan keamanan infrastruktur: *rate-limiting* berbasis Redis untuk mencegah *brute-force* dan *spamming*, enkripsi password menggunakan *Argon2/Bcrypt*, pengamanan sesi via *HTTP-only SameSite cookies*, dan pencatatan jejak audit (*Audit Trail*).
@@ -55,8 +55,8 @@ Selain proteksi hak akses, modul ini mengimplementasikan mekanisme pertahanan ke
    * Alur Pasca-Login Reaktif:
      - Pengguna yang berhasil login secara otomatis dialihkan (*redirect*) ke antarmuka utama sesuai perannya:
        - Role `PETUGAS_LAPANGAN` $\rightarrow$ langsung ke `/intake`.
-       - Role `PEGAWAI` $\rightarrow$ langsung ke `/operator/triage`.
-       - Role `MANAGER` $\rightarrow$ langsung ke `/manager/reports`.
+       - Role `PEGAWAI` $\rightarrow$ langsung ke `/triage`.
+       - Role `MANAGER` $\rightarrow$ langsung ke `/reports`.
        - Role `SUPER_ADMIN` $\rightarrow$ ke `/users` atau dasbor overview.
 
 ---
@@ -135,8 +135,8 @@ Selain proteksi hak akses, modul ini mengimplementasikan mekanisme pertahanan ke
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
 - [x] **AC-1 (Secure Authentication):** Pengguna dapat login menggunakan kredensial yang sah, password diverifikasi menggunakan hashing satu arah (Bcrypt/Argon2), dan sesi tersimpan di cookie HTTP-only yang aman.
-- [x] **AC-2 (Role-Based Redirection):** Setelah login sukses, sistem secara otonom mengarahkan pengguna ke dasbor spesifik peran masing-masing (Lapangan $\rightarrow$ `/intake`, Pegawai $\rightarrow$ `/operator/triage`, Manager $\rightarrow$ `/manager/reports`).
-- [x] **AC-3 (Impenetrable Route Middleware):** Upaya mengakses URL rute di luar wewenang peran (misal: petugas lapangan mencoba membuka `/manager/reports` atau `/operator/triage`) langsung diblokir oleh Next.js Middleware dan dialihkan dengan notifikasi penolakan.
+- [x] **AC-2 (Role-Based Redirection):** Setelah login sukses, sistem secara otonom mengarahkan pengguna ke dasbor spesifik peran masing-masing (Lapangan $\rightarrow$ `/intake`, Pegawai $\rightarrow$ `/triage`, Manager $\rightarrow$ `/reports`).
+- [x] **AC-3 (Impenetrable Route Middleware):** Upaya mengakses URL rute di luar wewenang peran (misal: petugas lapangan mencoba membuka `/reports` atau `/triage`) langsung diblokir oleh Next.js Middleware dan dialihkan dengan notifikasi penolakan.
 - [x] **AC-4 (Backend Procedure Shielding):** Upaya pemanggilan mutasi atau query tRPC tanpa role yang berhak secara konsisten menghasilkan respon error `FORBIDDEN` (HTTP 403).
 - [x] **AC-5 (User Management CRUD):** Administrator dapat membuat akun pengguna baru, menentukan peran RBAC, serta mengaitkan petugas lapangan ke UP3 dan ULP penugasan.
 - [x] **AC-6 (Anti Brute-Force Rate Limiting):** Percobaan login dengan password salah sebanyak 5 kali berturut-turut memicu penguncian akun sementara selama 15 menit via Redis rate limiter.
@@ -170,6 +170,6 @@ Selain proteksi hak akses, modul ini mengimplementasikan mekanisme pertahanan ke
 ## 6. Titik Uji & Pengujian (TDD Seams)
 
 1. **Password Hashing Seam:** Uji fungsi `hashPassword` dan `verifyPassword` untuk memastikan salt acak bekerja, dan password identik menghasilkan hash yang berbeda namun tetap dapat diverifikasi.
-2. **RBAC Middleware Seam:** Simulasikan HTTP request ke rute `/operator/triage` dan `/manager/reports` dengan header cookie dari masing-masing role (`PETUGAS_LAPANGAN`, `PEGAWAI`, `MANAGER`), pastikan respon redirect / 403 terjadi tepat sasaran.
+2. **RBAC Middleware Seam:** Simulasikan HTTP request ke rute `/triage` dan `/reports` dengan header cookie dari masing-masing role (`PETUGAS_LAPANGAN`, `PEGAWAI`, `MANAGER`), pastikan respon redirect / 403 terjadi tepat sasaran.
 3. **tRPC Procedure Guard Seam:** Uji pemanggilan prosedur `trpc.report.getDailyReport` menggunakan konteks pengguna dengan role `PEGAWAI` dan pastikan memicu `TRPCError` dengan kode `FORBIDDEN`.
 4. **Rate Limiting Seam:** Kirim 6 request beruntun ke fungsi validasi login dengan IP simulasi yang sama, verifikasi bahwa request ke-6 ditolak dengan status rate limit exceeded.

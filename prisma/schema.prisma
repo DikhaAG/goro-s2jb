@@ -23,24 +23,68 @@ enum ValidationStatus {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  name         String
-  passwordHash String
-  role         Role     @default(PETUGAS_LAPANGAN)
-  isActive     Boolean  @default(true)
-  up3Id        String?
-  ulpId        String?
-  up3          UP3?     @relation(fields: [up3Id], references: [id])
-  ulp          ULP?     @relation(fields: [ulpId], references: [id])
+  id              String    @id @default(cuid())
+  username        String    @unique
+  displayUsername String?
+  name            String
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
+  image           String?
+  passwordHash    String?
+  role            Role      @default(PETUGAS_LAPANGAN)
+  isActive        Boolean   @default(true)
+  up3Id           String?
+  ulpId           String?
+  up3             UP3?      @relation(fields: [up3Id], references: [id])
+  ulp             ULP?      @relation(fields: [ulpId], references: [id])
   
+  sessions        Session[]
+  accounts        Account[]
   submittedReviews RatingReview[] @relation("SubmittedReviews")
   verifiedReviews  RatingReview[] @relation("VerifiedReviews")
   migrations       MigrationBatch[]
   auditLogs        AuditLog[]
   
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model UP3 {

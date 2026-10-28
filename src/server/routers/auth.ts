@@ -68,6 +68,14 @@ export const authRouter = router({
         });
       }
 
+      if (!dbUser.passwordHash) {
+        await recordLoginFailure(clientIp);
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Kredensial tidak valid atau akun dinonaktifkan.",
+        });
+      }
+
       // 3. Verify Password Hash (Bcrypt / Argon2 / Legacy fallback)
       const isPasswordValid = await verifyPassword(
         input.password,
@@ -180,6 +188,13 @@ export const authRouter = router({
 
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Pengguna tidak ditemukan." });
+      }
+
+      if (!user.passwordHash) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Akun belum memiliki password terdaftar.",
+        });
       }
 
       const isValid = await verifyPassword(input.currentPassword, user.passwordHash);

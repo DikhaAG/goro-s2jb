@@ -27,7 +27,7 @@ Dengan sistem baru:
 
 ## 2. Struktur Sub-Task Hierarkis
 
-* **Task 4.1:** Layout & Arsitektur Navigasi Dasbor Operator (`/operator/triage`)
+* **Task 4.1:** Layout & Arsitektur Navigasi Dasbor Operator (`/triage`)
 * **Task 4.2:** Komponen Baris Pandangan Kohesif & Virtualisasi Tabel Berperforma Tinggi (TanStack Virtual)
 * **Task 4.3:** Fitur Pratinjau Citra Interaktif (Lightbox, Zoom, Rotate) & Highlighting Teks OCR
 * **Task 4.4:** Sistem Aksi Cepat (Hotkeys, Optimistic UI Updates, dan Audit Trail Verifikator)
@@ -36,7 +36,7 @@ Dengan sistem baru:
 
 ## 3. Instruksi Teknis Rinci
 
-### 3.1 Task 4.1: Layout & Arsitektur Navigasi Dasbor Operator (`/operator/triage`)
+### 3.1 Task 4.1: Layout & Arsitektur Navigasi Dasbor Operator (`/triage`)
 1. **Target Rute:** `src/app/(operator)/triage/page.tsx`
 2. **Proteksi Otorisasi (RBAC):**
    * Pastikan halaman ini hanya dapat diakses oleh pengguna dengan role `PEGAWAI` atau `SUPER_ADMIN`.
@@ -115,7 +115,7 @@ Dengan sistem baru:
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [x] **AC-1 (RBAC Guard):** Akses rute `/operator/triage` terlindungi secara ketat. Pengguna dengan peran `PEGAWAI` dan `SUPER_ADMIN` dapat mengakses antarmuka, sedangkan peran `PETUGAS_LAPANGAN` ditolak dengan respon 403 Forbidden.
+- [x] **AC-1 (RBAC Guard):** Akses rute `/triage` terlindungi secara ketat. Pengguna dengan peran `PEGAWAI` dan `SUPER_ADMIN` dapat mengakses antarmuka, sedangkan peran `PETUGAS_LAPANGAN` ditolak dengan respon 403 Forbidden.
 - [x] **AC-2 (Zero Browser Freeze via Virtualization):** Antarmuka tabel triase menggunakan `@tanstack/react-virtual` dan dapat menggulir (*scrolling*) ribuan data ulasan pada kecepatan 60 FPS tanpa lag memori peramban.
 - [x] **AC-3 (Single-Glance Cohesive View):** Dalam satu kartu/baris, operator dapat melihat thumbnail gambar, nama target, teks OCR, dan skor keyakinan secara simultan tanpa membuka jendela terpisah.
 - [x] **AC-4 (Interactive Lightbox & Zoom):** Modal lightbox dapat dibuka secara instan, mendukung fitur perbesaran citra (zoom), geser (pan), serta rotasi gambar $90^\circ$.

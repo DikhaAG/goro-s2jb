@@ -46,13 +46,13 @@ const NAV_ITEMS: NavMenuItem[] = [
   },
   {
     label: "Triase Ulasan",
-    href: "/operator/triage",
+    href: "/triage",
     icon: CheckSquare,
     roles: ["PEGAWAI", "SUPER_ADMIN"],
   },
   {
     label: "Laporan Eksekutif",
-    href: "/manager/reports",
+    href: "/reports",
     icon: BarChart3,
     roles: ["MANAGER", "SUPER_ADMIN"],
   },
@@ -157,9 +157,9 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
               item.href === "/"
                 ? pathname === "/"
                 : pathname.startsWith(item.href) ||
-                  (item.href === "/operator/triage" && pathname.startsWith("/triage")) ||
-                  (item.href === "/manager/reports" && pathname.startsWith("/reports")) ||
-                  (item.href === "/users" && pathname.startsWith("/admin/users"));
+                (item.href === "/triage" && pathname.startsWith("/operator/triage")) ||
+                (item.href === "/reports" && pathname.startsWith("/manager/reports")) ||
+                (item.href === "/users" && pathname.startsWith("/admin/users"));
 
             return (
               <Link

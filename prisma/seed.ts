@@ -20,6 +20,9 @@ async function main() {
   // 1. Bersihkan data lama jika ada (idempotent)
   await prisma.ratingReview.deleteMany();
   await prisma.targetMaster.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.account.deleteMany();
+  await prisma.verification.deleteMany();
   await prisma.user.deleteMany();
   await prisma.uLP.deleteMany();
   await prisma.uP3.deleteMany();
@@ -133,50 +136,58 @@ async function main() {
   // 5. Seed Users untuk 3 Role RBAC + Super Admin
   const defaultPassword = hashPassword('password123');
 
-  // Akun Petugas Lapangan (ditautkan ke ULP RIVAI)
-  await prisma.user.create({
-    data: {
+  const usersToSeed = [
+    {
       username: 'petugas_rivai',
       name: 'Ahmad Surveyor Lapangan',
+      email: 'petugas_rivai@goro.pln.co.id',
+      displayUsername: 'petugas_rivai',
       passwordHash: defaultPassword,
       role: Role.PETUGAS_LAPANGAN,
       up3Id: createdUp3s['UP3_PLG'],
       ulpId: createdUlps['ULP_RIV'],
     },
-  });
-
-  // Akun Pegawai (Operator Verifikator Triase)
-  await prisma.user.create({
-    data: {
+    {
       username: 'pegawai_operator',
       name: 'Budi Operator Triase',
+      email: 'pegawai_operator@goro.pln.co.id',
+      displayUsername: 'pegawai_operator',
       passwordHash: defaultPassword,
       role: Role.PEGAWAI,
       up3Id: createdUp3s['UP3_PLG'],
     },
-  });
-
-  // Akun Manager (Komandan Eksekutif UID S2JB)
-  await prisma.user.create({
-    data: {
+    {
       username: 'manager_s2jb',
       name: 'Ir. Hendra Manager UID S2JB',
+      email: 'manager_s2jb@goro.pln.co.id',
+      displayUsername: 'manager_s2jb',
       passwordHash: defaultPassword,
       role: Role.MANAGER,
     },
-  });
-
-  // Akun Super Admin
-  await prisma.user.create({
-    data: {
+    {
       username: 'superadmin',
       name: 'Super Administrator GORO',
+      email: 'superadmin@goro.pln.co.id',
+      displayUsername: 'superadmin',
       passwordHash: defaultPassword,
       role: Role.SUPER_ADMIN,
     },
-  });
+  ];
 
-  console.log(`✅ Berhasil membuat 4 akun pengguna (Petugas Lapangan, Pegawai, Manager, Super Admin).`);
+  for (const u of usersToSeed) {
+    const createdUser = await prisma.user.create({ data: u });
+    await prisma.account.create({
+      data: {
+        id: `acc_${createdUser.id}`,
+        userId: createdUser.id,
+        accountId: createdUser.id,
+        providerId: 'credential',
+        password: defaultPassword,
+      },
+    });
+  }
+
+  console.log(`✅ Berhasil membuat 4 akun pengguna (Petugas Lapangan, Pegawai, Manager, Super Admin) dengan Better Auth credentials.`);
   console.log('🎉 Seeding selesai dengan sukses!');
 }
 

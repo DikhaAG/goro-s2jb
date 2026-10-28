@@ -58,22 +58,20 @@ export function HomePageClient() {
               <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
                 <span className="relative flex h-3 w-3">
                   <span
-                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                      isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
-                    }`}
+                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
+                      }`}
                   ></span>
                   <span
-                    className={`relative inline-flex rounded-full h-3 w-3 ${
-                      isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
-                    }`}
+                    className={`relative inline-flex rounded-full h-3 w-3 ${isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
+                      }`}
                   ></span>
                 </span>
                 <span className="text-xs font-semibold text-[#0f172a]">
                   {healthQuery.isLoading
                     ? "Memeriksa..."
                     : isHealthy
-                    ? "Sistem Aktif Normal"
-                    : "Layanan Terdegradasi"}
+                      ? "Sistem Aktif Normal"
+                      : "Layanan Terdegradasi"}
                 </span>
               </div>
 
@@ -84,9 +82,8 @@ export function HomePageClient() {
                 title="Muat Ulang Status Infrastruktur"
               >
                 <RefreshCw
-                  className={`w-4 h-4 text-[#64748b] ${
-                    healthQuery.isFetching ? "animate-spin" : ""
-                  }`}
+                  className={`w-4 h-4 text-[#64748b] ${healthQuery.isFetching ? "animate-spin" : ""
+                    }`}
                 />
                 <span>Segarkan</span>
               </button>
@@ -113,7 +110,7 @@ export function HomePageClient() {
           </Link>
 
           <Link
-            href="/operator/triage"
+            href="/triage"
             className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#f59e0b] hover:shadow-xs transition duration-150 focus-utility-ring"
           >
             <div className="w-10 h-10 rounded-xl bg-[#fff7ed] text-[#b45309] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -129,7 +126,7 @@ export function HomePageClient() {
           </Link>
 
           <Link
-            href="/manager/reports"
+            href="/reports"
             className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#0284c7] hover:shadow-xs transition duration-150 focus-utility-ring"
           >
             <div className="w-10 h-10 rounded-xl bg-[#f0f9ff] text-[#0369a1] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">

@@ -110,7 +110,7 @@ export function ReportsDashboard() {
               Akun Anda terdaftar sebagai <span className="text-[#b45309] font-mono font-semibold">{user.role}</span>.
             </p>
           </div>
-          <Link href={user.role === "PEGAWAI" ? "/operator/triage" : "/intake"}>
+          <Link href={user.role === "PEGAWAI" ? "/triage" : "/intake"}>
             <Button className="w-full bg-[#00a2b9] hover:bg-[#008b9e] text-white text-xs mt-2 min-h-[44px] h-11 font-semibold rounded-xl">
               Kembali ke Modul {user.role === "PEGAWAI" ? "Verifikator Triase" : "Entri Eviden"}
             </Button>

@@ -72,8 +72,8 @@ describe("Authentication & Password Security Engine (AC-1, AC-2)", () => {
 
   it("should return the exact dashboard route for each role", () => {
     expect(getDefaultRedirectForRole(Role.PETUGAS_LAPANGAN)).toBe("/intake");
-    expect(getDefaultRedirectForRole(Role.PEGAWAI)).toBe("/operator/triage");
-    expect(getDefaultRedirectForRole(Role.MANAGER)).toBe("/manager/reports");
+    expect(getDefaultRedirectForRole(Role.PEGAWAI)).toBe("/triage");
+    expect(getDefaultRedirectForRole(Role.MANAGER)).toBe("/reports");
     expect(getDefaultRedirectForRole(Role.SUPER_ADMIN)).toBe("/users");
   });
 });

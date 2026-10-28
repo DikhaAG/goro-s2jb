@@ -95,15 +95,25 @@ export const userRouter = router({
 
       const passwordHash = await hashPassword(input.password);
 
+      const email = `${input.username.toLowerCase()}@goro.pln.co.id`;
       const newUser = await ctx.prisma.user.create({
         data: {
           username: input.username,
+          displayUsername: input.username,
+          email,
           name: input.name,
           passwordHash,
           role: input.role,
           up3Id: input.up3Id || null,
           ulpId: input.ulpId || null,
           isActive: true,
+          accounts: {
+            create: {
+              accountId: input.username,
+              providerId: "credential",
+              password: passwordHash,
+            },
+          },
         },
         select: {
           id: true,

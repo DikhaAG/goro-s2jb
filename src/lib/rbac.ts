@@ -29,14 +29,14 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   // Operator triage: Pegawai and Super Admin
   {
     pattern: /^\/(operator\/triage|triage)(\/.*)?$/,
-    prefix: "/operator/triage",
+    prefix: "/triage",
     allowedRoles: [Role.PEGAWAI, Role.SUPER_ADMIN],
     description: "Modul Triase Ulasan Operator",
   },
   // Manager reports: Manager and Super Admin
   {
     pattern: /^\/(manager\/reports|reports)(\/.*)?$/,
-    prefix: "/manager/reports",
+    prefix: "/reports",
     allowedRoles: [Role.MANAGER, Role.SUPER_ADMIN],
     description: "Modul Laporan & Intelijen Manajer",
   },

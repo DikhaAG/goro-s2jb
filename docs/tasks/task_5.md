@@ -26,7 +26,7 @@ Selain mengotomatisasi kalkulasi agregasi secara *real-time*, modul ini **mengat
 ## 2. Struktur Sub-Task Hierarkis
 
 * **Task 5.1:** Mesin Agregasi & Logika Kalkulasi Metrik Immutabel (Daily, H-1, dan Kumulatif)
-* **Task 5.2:** Antarmuka Dasbor Eksekutif Manajerial (`/manager/reports`)
+* **Task 5.2:** Antarmuka Dasbor Eksekutif Manajerial (`/reports`)
 * **Task 5.3:** Visualisasi Tren & Grafik Performa ULP (Target vs Realisasi)
 * **Task 5.4:** Mesin Ekspor Otomatis Berkas Resmi (.xlsx Baku Berformula & Ringkasan .pdf)
 
@@ -56,7 +56,7 @@ Selain mengotomatisasi kalkulasi agregasi secara *real-time*, modul ini **mengat
 
 ---
 
-### 3.2 Task 5.2: Antarmuka Dasbor Eksekutif Manajerial (`/manager/reports`)
+### 3.2 Task 5.2: Antarmuka Dasbor Eksekutif Manajerial (`/reports`)
 1. **Target Rute:** `src/app/(manager)/reports/page.tsx`
 2. **Proteksi Otorisasi (RBAC):**
    * Prosedur tRPC menggunakan `executiveProcedure` yang hanya mengizinkan role `MANAGER` dan `SUPER_ADMIN`. Role `PEGAWAI` dan `PETUGAS_LAPANGAN` ditolak keras.
@@ -106,7 +106,7 @@ Selain mengotomatisasi kalkulasi agregasi secara *real-time*, modul ini **mengat
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [x] **AC-1 (RBAC Security Guard):** Rute `/manager/reports` dan endpoint API ekspor hanya dapat diakses oleh role `MANAGER` dan `SUPER_ADMIN`. Akses dari role lain ditolak dengan respon HTTP 403.
+- [x] **AC-1 (RBAC Security Guard):** Rute `/reports` dan endpoint API ekspor hanya dapat diakses oleh role `MANAGER` dan `SUPER_ADMIN`. Akses dari role lain ditolak dengan respon HTTP 403.
 - [x] **AC-2 (Mathematical Precision):** Nilai Realisasi Harian, H-1, dan Kumulatif pada aplikasi 100% identik dengan hasil kalkulasi manual pada berkas acuan `docs/GORO S2JB 2026 (Jawaban).xlsx`.
 - [x] **AC-3 (Zero Division Safeguard):** Perhitungan persentase pada ULP yang memiliki target 0 menghasilkan nilai `0.0%` tanpa error `NaN`, `Infinity`, atau crash server.
 - [x] **AC-4 (Target Immutability):** Penyesuaian nilai target di masa kini/depan tidak mengubah atau merusak kalkulasi persentase pada tanggal-tanggal di masa lalu.

@@ -83,6 +83,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Verify Password
+    if (!dbUser.passwordHash) {
+      return NextResponse.json(
+        { error: "Kredensial tidak valid." },
+        { status: 401 }
+      );
+    }
     const isValid = await verifyPassword(password, dbUser.passwordHash);
     if (!isValid) {
       const failRes = await recordLoginFailure(clientIp);

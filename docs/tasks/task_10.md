@@ -22,7 +22,7 @@ Mengaudit dan mengimplementasikan arsitektur keamanan **Pertahanan Berlapis (*De
   1. `/login` (Formulir Masuk; jika sudah login, dialihkan ke dasbor sesuai peran).
   2. `/unauthorized` (Halaman Peringatan 403).
   3. Aset internal Next.js & berkas statis (`/_next/*`, favicon, dsb.).
-* Seluruh rute aplikasi lainnya (termasuk Beranda Komando `/`, entri lapangan `/intake`, triase `/operator/triage`, laporan `/manager/reports`, administrasi `/admin/*`, serta API ekspor dan upload) terkunci mutlak dan membutuhkan autentikasi serta otorisasi peran yang valid.
+* Seluruh rute aplikasi lainnya (termasuk Beranda Komando `/`, entri lapangan `/intake`, triase `/triage`, laporan `/reports`, administrasi `/admin/*`, serta API ekspor dan upload) terkunci mutlak dan membutuhkan autentikasi serta otorisasi peran yang valid.
 
 ### Mengapa Menggunakan Proxy, Bukan Middleware Tradisional?
 Dalam standar dan evolusi arsitektur *Next.js App Router* terkini (resmi distandardisasi pada Next.js 16 melalui konvensi file `proxy.ts` dan fungsi `proxy()`), tim inti Next.js merekomendasikan peralihan dari istilah lama *middleware* menuju **Network Edge Proxy**:
@@ -54,8 +54,8 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 | `/login` | Formulir Masuk Sesi | Khusus `GUEST` (belum terautentikasi) | Jika sudah login, redirect ke dasbor peran terkait |
 | `/unauthorized` | Halaman Peringatan 403 | Terbuka untuk seluruh peran | Memberikan info peran yang dibutuhkan |
 | `/intake` | Entri Eviden Lapangan | `PETUGAS_LAPANGAN`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
-| `/operator/triage` (`/triage`) | Dasbor Triase Ulasan Kuning | `PEGAWAI`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
-| `/manager/reports` (`/reports`) | Laporan Eksekutif & KPI | `MANAGER`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
+| `/triage` (`/triage`) | Dasbor Triase Ulasan Kuning | `PEGAWAI`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
+| `/reports` (`/reports`) | Laporan Eksekutif & KPI | `MANAGER`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
 | `/admin/*` (`users`, `migration`, `audit-logs`) | Administrasi Sistem | `SUPER_ADMIN` (Eksklusif) | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
 | `POST /api/upload` | Unggah Berkas Eviden/Migrasi | `PETUGAS_LAPANGAN`, `SUPER_ADMIN` | `HTTP 401 Unauthorized` / `HTTP 403 Forbidden` |
 | `GET /api/export/excel` | Ekspor Spreadsheet Laporan | `MANAGER`, `SUPER_ADMIN` | `HTTP 401 Unauthorized` / `HTTP 403 Forbidden` |
@@ -107,7 +107,7 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
        5. Mengizinkan rute terbuka HANYA `/unauthorized` dan `/login`.
        6. **Penguncian Rute `/`:** Jika pengguna belum login (tidak ada cookie atau token tidak valid) dan mengakses `/`, Edge Proxy langsung mengalihkan (*redirect 307*) ke `/login`.
        7. Untuk rute terproteksi lainnya: mengalihkan tamu ke `/login?redirect=...` dan pengguna tanpa hak akses ke `/unauthorized?required=...`.
-       8. Menjalankan *declarative URL rewriting* (`REWRITE_MAP`) untuk rute operasional (`/operator/triage` $\rightarrow$ `/triage`, `/manager/reports` $\rightarrow$ `/reports`, `/admin/users` $\rightarrow$ `/users`, dll).
+       8. Menjalankan *declarative URL rewriting* (`REWRITE_MAP`) untuk rute operasional (`/triage` $\rightarrow$ `/triage`, `/reports` $\rightarrow$ `/reports`, `/admin/users` $\rightarrow$ `/users`, dll).
        9. Melakukan *header enrichment* (`x-user-role`, `x-user-id`) untuk mempercepat konsumsi downstream di Server Components.
 
 ---
@@ -161,10 +161,10 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 1. **Target File:**
    * `tests/integration/comprehensiveRbacMatrix.test.ts`
 2. **Cakupan Skenario Pengujian:**
-   * **Pengujian 1 (Guest Matrix):** Menguji akses tamu ke seluruh rute (halaman `/`, `/intake`, `/operator/triage`, `/manager/reports`, `/admin/*`, API export, API upload). Memverifikasi bahwa akses tamu ke `/` dan rute internal LANGSUNG menghasilkan redirect status 307 ke `/login`, serta penolakan status 401 pada endpoint API.
+   * **Pengujian 1 (Guest Matrix):** Menguji akses tamu ke seluruh rute (halaman `/`, `/intake`, `/triage`, `/reports`, `/admin/*`, API export, API upload). Memverifikasi bahwa akses tamu ke `/` dan rute internal LANGSUNG menghasilkan redirect status 307 ke `/login`, serta penolakan status 401 pada endpoint API.
    * **Pengujian 2 (Petugas Lapangan Matrix):** Memverifikasi akses sukses ke `/` dan `/intake`, serta penolakan saat mencoba membuka `/triage`, `/reports`, `/users`, atau API ekspor.
-   * **Pengujian 3 (Pegawai Triase Matrix):** Memverifikasi akses sukses ke `/` dan `/operator/triage`, serta penolakan pada modul lapangan, manajerial, dan admin.
-   * **Pengujian 4 (Manager Matrix):** Memverifikasi akses sukses ke `/`, `/manager/reports`, dan endpoint ekspor Excel/PDF, serta penolakan pada modul admin dan entri lapangan.
+   * **Pengujian 3 (Pegawai Triase Matrix):** Memverifikasi akses sukses ke `/` dan `/triage`, serta penolakan pada modul lapangan, manajerial, dan admin.
+   * **Pengujian 4 (Manager Matrix):** Memverifikasi akses sukses ke `/`, `/reports`, dan endpoint ekspor Excel/PDF, serta penolakan pada modul admin dan entri lapangan.
    * **Pengujian 5 (Super Admin Matrix):** Memverifikasi akses penuh tanpa hambatan ke seluruh rute sistem.
    * **Pengujian 6 (Edge Proxy & Server Layout Guard):** Memverifikasi fungsi `proxy()` dan Server Component layout menghentikan rendering jika cookie sesi tidak valid.
 

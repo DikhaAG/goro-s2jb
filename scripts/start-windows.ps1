@@ -42,8 +42,8 @@ Write-Host "👁️  OCR Service:     http://127.0.0.1:8001/docs" -ForegroundCol
 Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "🔑 Kredensial Uji Coba Cepat (Password: password123):" -ForegroundColor White
 Write-Host "  • Petugas Lapangan:  petugas_rivai      -> http://localhost:3000/intake" -ForegroundColor Yellow
-Write-Host "  • Pegawai Triase:    pegawai_operator   -> http://localhost:3000/operator/triage" -ForegroundColor Yellow
-Write-Host "  • Manager UID S2JB:  manager_s2jb       -> http://localhost:3000/manager/reports" -ForegroundColor Yellow
+Write-Host "  • Pegawai Triase:    pegawai_operator   -> http://localhost:3000/triage" -ForegroundColor Yellow
+Write-Host "  • Manager UID S2JB:  manager_s2jb       -> http://localhost:3000/reports" -ForegroundColor Yellow
 Write-Host "  • Super Admin:       superadmin         -> http://localhost:3000/users" -ForegroundColor Yellow
 Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "Tips: Tutup masing-masing jendela PowerShell saat selesai menggunakan sistem.`n" -ForegroundColor DarkGray

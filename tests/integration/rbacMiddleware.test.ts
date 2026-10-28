@@ -81,9 +81,13 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       expect(res.status).toBe(307);
       expect(res.headers.get("location")).toContain("/intake");
 
+      const resOperator = await middleware(createMockRequest("/login", operatorToken));
+      expect(resOperator.status).toBe(307);
+      expect(resOperator.headers.get("location")).toContain("/triage");
+
       const resManager = await middleware(createMockRequest("/login", managerToken));
       expect(resManager.status).toBe(307);
-      expect(resManager.headers.get("location")).toContain("/manager/reports");
+      expect(resManager.headers.get("location")).toContain("/reports");
     });
 
     it("should block Petugas Lapangan from accessing /triage or /reports", async () => {

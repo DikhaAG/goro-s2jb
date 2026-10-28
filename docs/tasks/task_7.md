@@ -37,8 +37,8 @@ Sesuai spesifikasi PRD versi 2.2 (*Local-Optimized MVP*), sistem harus dapat dij
 2. **Skenario Pengujian Alur Kritis (The Full Loop):**
    * **Tahap 1 (Petugas Lapangan):** Login akun lapangan $\rightarrow$ akses `/intake` $\rightarrow$ memilih UP3 PALEMBANG & ULP RIVAI $\rightarrow$ menginput nama pengulas target $\rightarrow$ mengunggah foto bukti eviden $\rightarrow$ submit berhasil dalam <500ms $\rightarrow$ form me-reset untuk entri berikutnya.
    * **Tahap 2 (Background Processing):** BullMQ worker memproses job OCR di latar belakang $\rightarrow$ mengekstrak teks via microservice Python $\rightarrow$ menghitung kemiripan (disimulasikan pada zona marginal 78%) $\rightarrow$ record berubah status menjadi `NEEDS_REVIEW` (Zona Kuning).
-   * **Tahap 3 (Pegawai Operator):** Login akun pegawai $\rightarrow$ membuka `/operator/triage` $\rightarrow$ ulasan dari Tahap 2 muncul di antrean $\rightarrow$ pegawai menekan hotkey `A` untuk *Approve* $\rightarrow$ status ulasan beralih menjadi `APPROVED` dan tercatat audit trail.
-   * **Tahap 4 (Manager):** Login akun manajer $\rightarrow$ membuka `/manager/reports` $\rightarrow$ angka Realisasi Harian pada ULP RIVAI bertambah 1 dan persentase capaian terakumulasi otomatis $\rightarrow$ manajer mengunduh laporan `.xlsx`.
+   * **Tahap 3 (Pegawai Operator):** Login akun pegawai $\rightarrow$ membuka `/triage` $\rightarrow$ ulasan dari Tahap 2 muncul di antrean $\rightarrow$ pegawai menekan hotkey `A` untuk *Approve* $\rightarrow$ status ulasan beralih menjadi `APPROVED` dan tercatat audit trail.
+   * **Tahap 4 (Manager):** Login akun manajer $\rightarrow$ membuka `/reports` $\rightarrow$ angka Realisasi Harian pada ULP RIVAI bertambah 1 dan persentase capaian terakumulasi otomatis $\rightarrow$ manajer mengunduh laporan `.xlsx`.
    * **Tahap 5 (Anti-Fraud Check):** Mengunggah kembali gambar bukti yang sama persis $\rightarrow$ sistem mendeteksi kesamaan pHash (Hamming distance 0) $\rightarrow$ sistem menandai `isDuplicate = true` dan mengaitkannya ke entri pertama tanpa menghapus data.
 
 ---

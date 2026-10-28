@@ -31,6 +31,7 @@
     "@trpc/react-query": "^11.0.0-rc.820",
     "@trpc/server": "^11.0.0-rc.820",
     "bcryptjs": "^3.0.3",
+    "better-auth": "^1.7.14",
     "bullmq": "^5.41.0",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.7",
@@ -48,6 +49,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.4.22",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/bcryptjs": "^2.4.6",

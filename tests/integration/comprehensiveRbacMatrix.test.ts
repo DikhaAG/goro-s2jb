@@ -55,7 +55,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
     });
 
     it("should REDIRECT unauthenticated guests from protected internal modules to /login with redirect param", async () => {
-      const routes = ["/intake", "/operator/triage", "/manager/reports", "/users"];
+      const routes = ["/intake", "/triage", "/reports", "/users"];
 
       for (const route of routes) {
         const req = new NextRequest(`http://localhost:3000${route}`);
@@ -81,8 +81,8 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
     it("should REDIRECT already authenticated users hitting /login to their role dashboard", async () => {
       const testCases = [
         { token: fieldToken, expected: "/intake" },
-        { token: operatorToken, expected: "/operator/triage" },
-        { token: managerToken, expected: "/manager/reports" },
+        { token: operatorToken, expected: "/triage" },
+        { token: managerToken, expected: "/reports" },
         { token: adminToken, expected: "/users" },
       ];
 
@@ -97,7 +97,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       }
     });
 
-    it("should ENFORCE RBAC on Petugas Lapangan: permit /, /intake; reject /operator/triage, /manager/reports, /admin", async () => {
+    it("should ENFORCE RBAC on Petugas Lapangan: permit /, /intake; reject /triage, /reports, /admin", async () => {
       // 1. Root /
       const reqRoot = new NextRequest("http://localhost:3000/", {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${fieldToken}` },
@@ -130,15 +130,22 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       expect(resAdmin.headers.get("location")).toContain("/unauthorized?required=SUPER_ADMIN");
     });
 
-    it("should ENFORCE RBAC on Pegawai Operator: permit /, /operator/triage (rewritten to /triage); reject /intake, /admin", async () => {
-      // 1. /operator/triage should rewrite to /triage
+    it("should ENFORCE RBAC on Pegawai Operator: permit /, /triage, and rewrite /operator/triage; reject /intake, /admin", async () => {
+      // 1. /triage canonical route
+      const reqCanonical = new NextRequest("http://localhost:3000/triage", {
+        headers: { cookie: `${SESSION_COOKIE_NAME}=${operatorToken}` },
+      });
+      const resCanonical = await proxy(reqCanonical);
+      expect(resCanonical.status).toBe(200);
+
+      // 2. /operator/triage should rewrite to /triage
       const reqTriage = new NextRequest("http://localhost:3000/operator/triage", {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${operatorToken}` },
       });
       const resTriage = await proxy(reqTriage);
       expect(resTriage.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/triage");
 
-      // 2. /intake should be forbidden
+      // 3. /intake should be forbidden
       const reqIntake = new NextRequest("http://localhost:3000/intake", {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${operatorToken}` },
       });
@@ -147,15 +154,22 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       expect(resIntake.headers.get("location")).toContain("/unauthorized?required=PETUGAS_LAPANGAN");
     });
 
-    it("should ENFORCE RBAC on Manager: permit /, /manager/reports (rewritten to /reports); reject /intake, /admin", async () => {
-      // 1. /manager/reports should rewrite to /reports
+    it("should ENFORCE RBAC on Manager: permit /, /reports, and rewrite /manager/reports; reject /intake, /admin", async () => {
+      // 1. /reports canonical route
+      const reqCanonical = new NextRequest("http://localhost:3000/reports", {
+        headers: { cookie: `${SESSION_COOKIE_NAME}=${managerToken}` },
+      });
+      const resCanonical = await proxy(reqCanonical);
+      expect(resCanonical.status).toBe(200);
+
+      // 2. /manager/reports should rewrite to /reports
       const reqReports = new NextRequest("http://localhost:3000/manager/reports", {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${managerToken}` },
       });
       const resReports = await proxy(reqReports);
       expect(resReports.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/reports");
 
-      // 2. /users should be forbidden
+      // 3. /users should be forbidden
       const reqAdmin = new NextRequest("http://localhost:3000/users", {
         headers: { cookie: `${SESSION_COOKIE_NAME}=${managerToken}` },
       });
@@ -165,7 +179,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
     });
 
     it("should GRANT Super Admin complete access across all routes", async () => {
-      const routes = ["/", "/intake", "/operator/triage", "/manager/reports", "/users", "/migration", "/audit-logs"];
+      const routes = ["/", "/intake", "/triage", "/reports", "/users", "/migration", "/audit-logs"];
 
       for (const route of routes) {
         const req = new NextRequest(`http://localhost:3000${route}`, {
@@ -307,18 +321,18 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
 
       expect(isPublicRoute("/")).toBe(false);
       expect(isPublicRoute("/intake")).toBe(false);
-      expect(isPublicRoute("/operator/triage")).toBe(false);
-      expect(isPublicRoute("/manager/reports")).toBe(false);
+      expect(isPublicRoute("/triage")).toBe(false);
+      expect(isPublicRoute("/reports")).toBe(false);
       expect(isPublicRoute("/users")).toBe(false);
     });
 
     it("should return the exact required role for 403 reporting", () => {
       expect(getRequiredRoleForRoute("/intake")).toBe(Role.PETUGAS_LAPANGAN);
-      expect(getRequiredRoleForRoute("/operator/triage")).toBe(Role.PEGAWAI);
-      expect(getRequiredRoleForRoute("/manager/reports")).toBe(Role.MANAGER);
+      expect(getRequiredRoleForRoute("/triage")).toBe(Role.PEGAWAI);
+      expect(getRequiredRoleForRoute("/reports")).toBe(Role.MANAGER);
       expect(getRequiredRoleForRoute("/users")).toBe(Role.SUPER_ADMIN);
-      expect(getRequiredRoleForRoute("/admin/migration")).toBe(Role.SUPER_ADMIN);
-      expect(getRequiredRoleForRoute("/admin/audit-logs")).toBe(Role.SUPER_ADMIN);
+      expect(getRequiredRoleForRoute("/migration")).toBe(Role.SUPER_ADMIN);
+      expect(getRequiredRoleForRoute("/audit-logs")).toBe(Role.SUPER_ADMIN);
     });
 
     it("should correctly evaluate isRouteAllowed for all role permutations", () => {
@@ -331,14 +345,14 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
       // Petugas Lapangan
       expect(isRouteAllowed("/", Role.PETUGAS_LAPANGAN)).toBe(true);
       expect(isRouteAllowed("/intake", Role.PETUGAS_LAPANGAN)).toBe(true);
-      expect(isRouteAllowed("/operator/triage", Role.PETUGAS_LAPANGAN)).toBe(false);
+      expect(isRouteAllowed("/triage", Role.PETUGAS_LAPANGAN)).toBe(false);
       expect(isRouteAllowed("/users", Role.PETUGAS_LAPANGAN)).toBe(false);
 
       // Super Admin
       expect(isRouteAllowed("/", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/intake", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/operator/triage", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/manager/reports", Role.SUPER_ADMIN)).toBe(true);
+      expect(isRouteAllowed("/triage", Role.SUPER_ADMIN)).toBe(true);
+      expect(isRouteAllowed("/reports", Role.SUPER_ADMIN)).toBe(true);
       expect(isRouteAllowed("/users", Role.SUPER_ADMIN)).toBe(true);
     });
   });

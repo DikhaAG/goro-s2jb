@@ -46,7 +46,7 @@ describe("Design System & Antislop Compliance", () => {
     expect(
       filesWithEmDash,
       `Found ${filesWithEmDash.length} em-dash (—) occurrences violating antislop R-02:\n` +
-        filesWithEmDash.map((f) => `  ${f.file}:${f.line} -> ${f.text}`).join("\n")
+      filesWithEmDash.map((f) => `  ${f.file}:${f.line} -> ${f.text}`).join("\n")
     ).toHaveLength(0);
   });
 
@@ -70,12 +70,12 @@ describe("Design System & Antislop Compliance", () => {
       },
       {
         label: "Triase Ulasan",
-        href: "/operator/triage",
+        href: "/triage",
         roles: ["PEGAWAI", "SUPER_ADMIN"],
       },
       {
         label: "Laporan Eksekutif",
-        href: "/manager/reports",
+        href: "/reports",
         roles: ["MANAGER", "SUPER_ADMIN"],
       },
       {
@@ -101,11 +101,11 @@ describe("Design System & Antislop Compliance", () => {
 
     // Operator Verifikator sees 2 items
     const operatorItems = NAV_ITEMS.filter((i) => i.roles.includes("PEGAWAI"));
-    expect(operatorItems.map((i) => i.href)).toEqual(["/", "/operator/triage"]);
+    expect(operatorItems.map((i) => i.href)).toEqual(["/", "/triage"]);
 
     // Manager sees 2 items
     const managerItems = NAV_ITEMS.filter((i) => i.roles.includes("MANAGER"));
-    expect(managerItems.map((i) => i.href)).toEqual(["/", "/manager/reports"]);
+    expect(managerItems.map((i) => i.href)).toEqual(["/", "/reports"]);
 
     // Super Admin sees all 7 items
     const adminItems = NAV_ITEMS.filter((i) => i.roles.includes("SUPER_ADMIN"));

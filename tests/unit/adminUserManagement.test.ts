@@ -21,12 +21,12 @@ const NAV_ITEMS: NavMenuItem[] = [
   },
   {
     label: "Triase Ulasan",
-    href: "/operator/triage",
+    href: "/triage",
     roles: ["GUEST", "PEGAWAI", "SUPER_ADMIN"],
   },
   {
     label: "Laporan Eksekutif",
-    href: "/manager/reports",
+    href: "/reports",
     roles: ["GUEST", "MANAGER", "SUPER_ADMIN"],
   },
   {
