@@ -48,3 +48,10 @@ venv/
 .venv/
 env/
 .env/
+
+# backups & runtime logs
+/backups/*
+!/backups/.gitkeep
+!/backups/db/.gitkeep
+/logs/*
+!/logs/.gitkeep

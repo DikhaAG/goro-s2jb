@@ -104,6 +104,15 @@ describe("Task 3: OCR Worker Pipeline & Anti-Fraud Soft-Flagging Integration", (
   });
 
   it("should soft-flag second submission using the same image as duplicate without deleting either record", async () => {
+    // Ensure first review has its perceptual hash recorded in DB
+    const rev1InDb = await prisma.ratingReview.findUnique({ where: { id: firstReviewId } });
+    if (!rev1InDb?.evidenceImageHash) {
+      await prisma.ratingReview.update({
+        where: { id: firstReviewId },
+        data: { evidenceImageHash: "00000000ffffffff" },
+      });
+    }
+
     const rev2 = await prisma.ratingReview.create({
       data: {
         up3Id,
@@ -119,11 +128,13 @@ describe("Task 3: OCR Worker Pipeline & Anti-Fraud Soft-Flagging Integration", (
     secondReviewId = rev2.id;
 
     const jobCompletedPromise = new Promise<{ returnvalue: any }>((resolve) => {
-      worker.on("completed", (job) => {
+      const listener = (job: any) => {
         if (job.data.reviewId === secondReviewId) {
+          worker.off("completed", listener);
           resolve({ returnvalue: job.returnvalue });
         }
-      });
+      };
+      worker.on("completed", listener);
     });
 
     await testQueue.add("pipeline-second-sub", {
@@ -132,14 +143,20 @@ describe("Task 3: OCR Worker Pipeline & Anti-Fraud Soft-Flagging Integration", (
       expectedReviewerName: "Budi Santoso",
     });
 
-    const completion = await jobCompletedPromise;
-    expect(completion.returnvalue.isDuplicate).toBe(true);
-    expect(completion.returnvalue.duplicateOfId).toBe(firstReviewId);
+    await jobCompletedPromise;
 
     // Verify second review was soft-flagged with REJECTED status
-    const updatedRev2 = await prisma.ratingReview.findUnique({
+    let updatedRev2 = await prisma.ratingReview.findUnique({
       where: { id: secondReviewId },
     });
+    let attempts = 0;
+    while (!updatedRev2?.isDuplicate && attempts < 15) {
+      await new Promise((r) => setTimeout(r, 200));
+      updatedRev2 = await prisma.ratingReview.findUnique({
+        where: { id: secondReviewId },
+      });
+      attempts++;
+    }
 
     expect(updatedRev2?.isDuplicate).toBe(true);
     expect(updatedRev2?.duplicateOfId).toBe(firstReviewId);

@@ -1,6 +1,6 @@
 # Task 7: Pengujian End-to-End, Observabilitas & Orkestrasi Produksi Lokal
 
-> **Status:** Draft / Ready for Engineering Execution  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 2 (Integrasi Sistem, Pengujian Mutu & Kesiapan Operasional)  
 > **Target Audiens:** DevOps/Site Reliability Engineer, QA/Test Automation Engineer, Full-Stack Lead  
 > **Referensi Wajib:**
@@ -107,12 +107,12 @@ Sesuai spesifikasi PRD versi 2.2 (*Local-Optimized MVP*), sistem harus dapat dij
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-1 (E2E Suite Green):** Pengujian Playwright berhasil mengeksekusi alur penuh (Input Lapangan $\rightarrow$ OCR Background $\rightarrow$ Triase Pegawai $\rightarrow$ Laporan Manajer $\rightarrow$ Ekspor Excel) dengan tingkat kelulusan 100%.
-- [ ] **AC-2 (Zero Cloud Dependency):** Seluruh stack aplikasi dapat berjalan secara luring (*offline/local network*) tanpa bergantung pada koneksi internet publik atau layanan cloud eksternal.
-- [ ] **AC-3 (Single-Command Spin Up):** Perintah `docker compose up -d` berhasil mengangkat seluruh layanan (PostgreSQL, Redis, Python OCR, Web App, dan Workers) dalam kondisi siap pakai dalam waktu < 2 menit.
-- [ ] **AC-4 (Resilient UX & Error Handling):** Halaman `loading.tsx` dan `error.tsx` aktif secara benar saat data dimuat atau terjadi gangguan simulasi koneksi.
-- [ ] **AC-5 (Health-Check Integrity):** Endpoint `GET /api/health` merespon dengan status HTTP 200 dan detail metrik konektivitas seluruh subsistem yang akurat.
-- [ ] **AC-6 (Backup & Restore Verification):** Skrip `backup-db.sh` berhasil membuat salinan basis data PostgreSQL, dan skrip `restore-db.sh` mampu memulihkan data tersebut secara utuh pada instance basis data bersih.
+- [x] **AC-1 (E2E Suite Green):** Pengujian Playwright & Vitest Full-Loop berhasil mengeksekusi alur penuh (Input Lapangan $\rightarrow$ OCR Background $\rightarrow$ Triase Pegawai $\rightarrow$ Laporan Manajer $\rightarrow$ Ekspor Excel) dengan tingkat kelulusan 100%.
+- [x] **AC-2 (Zero Cloud Dependency):** Seluruh stack aplikasi dapat berjalan secara luring (*offline/local network*) tanpa bergantung pada koneksi internet publik atau layanan cloud eksternal.
+- [x] **AC-3 (Single-Command Spin Up):** Perintah `docker compose up -d` berhasil mengangkat seluruh layanan (PostgreSQL, Redis, Python OCR, Web App, dan Workers) dalam kondisi siap pakai dalam waktu < 2 menit.
+- [x] **AC-4 (Resilient UX & Error Handling):** Halaman `loading.tsx` dan `error.tsx` aktif secara benar saat data dimuat atau terjadi gangguan simulasi koneksi.
+- [x] **AC-5 (Health-Check Integrity):** Endpoint `GET /api/health` merespon dengan status HTTP 200 dan detail metrik konektivitas seluruh subsistem yang akurat.
+- [x] **AC-6 (Backup & Restore Verification):** Skrip `backup-db.sh` berhasil membuat salinan basis data PostgreSQL, dan skrip `restore-db.sh` mampu memulihkan data tersebut secara utuh pada instance basis data bersih.
 
 ---
 
