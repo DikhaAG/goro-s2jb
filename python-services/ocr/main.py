@@ -4,89 +4,73 @@ import os
 import json
 import time
 import argparse
-from typing import Dict, Any, Optional
-from PIL import Image, ImageEnhance, ImageFilter
-import imagehash
-from rapidfuzz import fuzz
-import pytesseract
+from typing import Optional, Dict, Any
+from PIL import Image
 
-# Configure tesseract executable if present in standard Homebrew / Linux paths
-if os.path.exists("/opt/homebrew/bin/tesseract"):
-    pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"
-elif os.path.exists("/usr/bin/tesseract"):
-    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
-elif os.path.exists("/usr/local/bin/tesseract"):
-    pytesseract.pytesseract.tesseract_cmd = "/usr/local/bin/tesseract"
+from engine import extract_text_from_image
+from matcher import calculate_similarity
+from hasher import calculate_phash, hamming_distance, is_visual_duplicate
 
-def preprocess_image_for_ocr(img: Image.Image) -> Image.Image:
-    """Preprocess image: convert to grayscale and enhance contrast for better OCR extraction."""
-    # Convert to grayscale
-    gray = img.convert("L")
-    # Enhance contrast
-    enhancer = ImageEnhance.Contrast(gray)
-    enhanced = enhancer.enhance(1.8)
-    return enhanced
+# FastAPI imports
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-def calculate_phash(img: Image.Image) -> str:
-    """Calculate 64-bit perceptual hash (pHash) and return as hex string."""
-    hash_obj = imagehash.phash(img, hash_size=8)
-    return str(hash_obj)
+app = FastAPI(
+    title="GORO S2JB AI Vision & OCR Service",
+    description="Microservice untuk OCR Tesseract, Perceptual Hashing, dan Fuzzy Matching Triase 3 Zona",
+    version="2.0.0",
+)
 
-def determine_zone_and_status(similarity_score: float) -> tuple[str, str]:
-    """
-    Determine tactical validation zone and recommended status:
-    - GREEN (>= 80%): APPROVED
-    - YELLOW (50% - 79.9%): NEEDS_REVIEW
-    - RED (< 50%): REJECTED
-    """
-    if similarity_score >= 80.0:
-        return "GREEN", "APPROVED"
-    elif similarity_score >= 50.0:
-        return "YELLOW", "NEEDS_REVIEW"
-    else:
-        return "RED", "REJECTED"
+class ProcessRequest(BaseModel):
+    image_path: str
+    target_name: Optional[str] = ""
 
-def extract_and_verify(image_path: str, expected_name: Optional[str] = None) -> Dict[str, Any]:
-    """
-    Extract text via OCR, compute perceptual hash, and calculate fuzzy similarity
-    against the expected reviewer name.
-    """
+class ProcessResponse(BaseModel):
+    success: bool
+    extracted_text: str
+    phash: str
+    similarity_score: float
+    zone: str
+    recommended_status: str
+    execution_time_ms: int
+    error: Optional[str] = None
+
+class CompareHashRequest(BaseModel):
+    hash1: str
+    hash2: str
+    max_distance: Optional[int] = 5
+
+class CompareHashResponse(BaseModel):
+    hamming_distance: int
+    is_duplicate: bool
+
+def process_evidence(image_path: str, target_name: Optional[str] = "") -> Dict[str, Any]:
     start_time = time.time()
 
     if not os.path.exists(image_path):
         return {
             "success": False,
+            "extracted_text": "",
+            "phash": "",
+            "similarity_score": 0.0,
+            "zone": "RED",
+            "recommended_status": "REJECTED",
+            "execution_time_ms": int((time.time() - start_time) * 1000),
             "error": f"Image file not found: {image_path}",
-            "execution_time_ms": int((time.time() - start_time) * 1000)
         }
 
     try:
         with Image.open(image_path) as img:
-            # 1. Calculate pHash
+            # 1. Calculate 64-bit perceptual hash (pHash)
             phash = calculate_phash(img)
 
-            # 2. Preprocess & Extract text with Tesseract
-            processed = preprocess_image_for_ocr(img)
-            extracted_text = pytesseract.image_to_string(processed, lang="ind+eng").strip()
-            if not extracted_text:
-                # Fallback to English if Indonesian language data isn't installed
-                extracted_text = pytesseract.image_to_string(processed, lang="eng").strip()
+            # 2. Extract text with preprocessing and OCR
+            extracted_text = extract_text_from_image(img)
 
-        # 3. Fuzzy similarity calculation
-        similarity_score = 0.0
-        zone = "RED"
-        recommended_status = "REJECTED"
-
-        if expected_name and extracted_text:
-            # Calculate highest score between partial_ratio and token_set_ratio
-            score_partial = fuzz.partial_ratio(expected_name.lower(), extracted_text.lower())
-            score_token_set = fuzz.token_set_ratio(expected_name.lower(), extracted_text.lower())
-            similarity_score = round(float(max(score_partial, score_token_set)), 2)
-
-            zone, recommended_status = determine_zone_and_status(similarity_score)
-        elif not expected_name:
-            zone = "YELLOW"
-            recommended_status = "NEEDS_REVIEW"
+        # 3. Fuzzy match target reviewer name against extracted text
+        similarity_score, zone, recommended_status = calculate_similarity(
+            target_name or "", extracted_text
+        )
 
         execution_time_ms = int((time.time() - start_time) * 1000)
 
@@ -97,23 +81,49 @@ def extract_and_verify(image_path: str, expected_name: Optional[str] = None) -> 
             "similarity_score": similarity_score,
             "zone": zone,
             "recommended_status": recommended_status,
-            "execution_time_ms": execution_time_ms
+            "execution_time_ms": execution_time_ms,
+            "error": None,
         }
     except Exception as e:
         return {
             "success": False,
+            "extracted_text": "",
+            "phash": "",
+            "similarity_score": 0.0,
+            "zone": "RED",
+            "recommended_status": "REJECTED",
+            "execution_time_ms": int((time.time() - start_time) * 1000),
             "error": str(e),
-            "execution_time_ms": int((time.time() - start_time) * 1000)
         }
 
-def main():
+@app.get("/health")
+def health():
+    return {"status": "UP", "service": "GORO S2JB OCR Vision Core", "timestamp": time.time()}
+
+@app.post("/api/v1/process", response_model=ProcessResponse)
+def api_process(req: ProcessRequest):
+    result = process_evidence(req.image_path, req.target_name)
+    return result
+
+@app.post("/api/v1/compare-hash", response_model=CompareHashResponse)
+def api_compare_hash(req: CompareHashRequest):
+    dist = hamming_distance(req.hash1, req.hash2)
+    is_dup = is_visual_duplicate(req.hash1, req.hash2, req.max_distance or 5)
+    return {"hamming_distance": dist, "is_duplicate": is_dup}
+
+def cli_main():
     parser = argparse.ArgumentParser(description="GORO S2JB OCR & pHash Extractor")
-    parser.add_argument("--image", required=True, help="Absolute path to evidence image")
+    parser.add_argument("--image", required=True, help="Path to evidence image")
     parser.add_argument("--expected-name", default="", help="Expected Play Store reviewer name")
     args = parser.parse_args()
 
-    result = extract_and_verify(args.image, args.expected_name)
+    result = process_evidence(args.image, args.expected_name)
     print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and ("--image" in sys.argv or "--help" in sys.argv):
+        cli_main()
+    else:
+        import uvicorn
+        port = int(os.environ.get("OCR_PORT", 8001))
+        uvicorn.run("main:app", host="127.0.0.1", port=port, log_level="info")

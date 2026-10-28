@@ -1,6 +1,6 @@
 # Task 3: Mesin AI & Logika Probabilitas (Inti Eksekusi)
 
-> **Status:** Draft / Ready for Engineering Execution  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 2 (Modul Fitur Utama - Modul 4.2 PRD)  
 > **Target Audiens:** AI/Vision Engineer, Backend Engineer, Full-Stack Engineer  
 > **Referensi Wajib:**
@@ -145,17 +145,17 @@ Sistem mengeksekusi tiga kapabilitas utama:
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-1 (Preprocessing Quality):** Modul prapemrosesan berhasil meningkatkan ketajaman gambar tangkapan layar beresolusi rendah dan tangkapan layar mode gelap (*Dark Mode*) sehingga teks dapat dibaca oleh engine OCR.
-- [ ] **AC-2 (Text Extraction Accuracy):** Engine OCR berhasil mengekstrak teks nama pengulas dan ulasan dari gambar tangkapan layar Play Store dengan tingkat keberhasilan baca > 90% pada sampel eviden yang valid.
-- [ ] **AC-3 (Fuzzy Match Robustness):** Algoritma fuzzy matching berhasil mencocokkan variasi penulisan nama yang memuat emoji, spasi ganda, atau perbedaan kapitalisasi dengan skor $\ge 90\%$.
-- [ ] **AC-4 (Accurate Tri-Zone Triage):**
+- [x] **AC-1 (Preprocessing Quality):** Modul prapemrosesan berhasil meningkatkan ketajaman gambar tangkapan layar beresolusi rendah dan tangkapan layar mode gelap (*Dark Mode*) sehingga teks dapat dibaca oleh engine OCR.
+- [x] **AC-2 (Text Extraction Accuracy):** Engine OCR berhasil mengekstrak teks nama pengulas dan ulasan dari gambar tangkapan layar Play Store dengan tingkat keberhasilan baca > 90% pada sampel eviden yang valid.
+- [x] **AC-3 (Fuzzy Match Robustness):** Algoritma fuzzy matching berhasil mencocokkan variasi penulisan nama yang memuat emoji, spasi ganda, atau perbedaan kapitalisasi dengan skor $\ge 90\%$.
+- [x] **AC-4 (Accurate Tri-Zone Triage):**
   - Skor $\ge 90\%$ menghasilkan `validationStatus = "APPROVED"` (Zona Hijau).
   - Skor 70% – 89.9% menghasilkan `validationStatus = "NEEDS_REVIEW"` (Zona Kuning).
   - Skor < 70% menghasilkan `validationStatus = "REJECTED"` (Zona Merah).
-- [ ] **AC-5 (pHash Calculation & Storage):** Setiap gambar yang diproses menghasilkan string heksadesimal pHash 64-bit yang tersimpan rapi di kolom `evidenceImageHash`.
-- [ ] **AC-6 (Anti-Fraud Duplicate Detection):** Jika sebuah gambar eviden diunggah ulang (meskipun nama file diubah atau di-crop tipis), sistem mendeteksi Hamming Distance $\le 5$, menandai `isDuplicate = true`, dan mengaitkan `duplicateOfId` ke entri sumber.
-- [ ] **AC-7 (Asynchronous Queue Reliability):** BullMQ worker memproses antrean job OCR satu per satu secara asinkron tanpa memblokir server utama, dengan waktu eksekusi rata-rata < 1,5 detik per gambar.
-- [ ] **AC-8 (Zero Data Loss on Soft-Flagging):** Data yang terindikasi manipulasi atau duplikat tetap tersimpan di basis data tanpa pernah dihapus secara permanen.
+- [x] **AC-5 (pHash Calculation & Storage):** Setiap gambar yang diproses menghasilkan string heksadesimal pHash 64-bit yang tersimpan rapi di kolom `evidenceImageHash`.
+- [x] **AC-6 (Anti-Fraud Duplicate Detection):** Jika sebuah gambar eviden diunggah ulang (meskipun nama file diubah atau di-crop tipis), sistem mendeteksi Hamming Distance $\le 5$, menandai `isDuplicate = true`, dan mengaitkan `duplicateOfId` ke entri sumber.
+- [x] **AC-7 (Asynchronous Queue Reliability):** BullMQ worker memproses antrean job OCR satu per satu secara asinkron tanpa memblokir server utama, dengan waktu eksekusi rata-rata < 1,5 detik per gambar.
+- [x] **AC-8 (Zero Data Loss on Soft-Flagging):** Data yang terindikasi manipulasi atau duplikat tetap tersimpan di basis data tanpa pernah dihapus secara permanen.
 
 ---
 

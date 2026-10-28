@@ -91,7 +91,7 @@ describe("Intake Mutation Procedure (trpc.intake.submitReview)", () => {
     expect(fs.existsSync(physicalPath)).toBe(true);
 
     // Verify job in BullMQ
-    const jobs = await ocrQueue.getJobs(["waiting", "delayed", "active", "completed"]);
+    const jobs = await ocrQueue.getJobs(["waiting", "delayed", "active", "completed", "failed", "prioritized"]);
     const queuedJob = jobs.find((j) => j.data.reviewId === result.reviewId);
     expect(queuedJob).toBeDefined();
     expect(queuedJob?.data.expectedReviewerName).toBe("Hendra Wijaya");

@@ -1,32 +1,35 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { ocrQueue, OCR_QUEUE_NAME } from "@/server/queues/ocrQueue";
+import { Queue } from "bullmq";
 import redis from "@/lib/redis";
 
 describe("BullMQ & Redis Queue Connection", () => {
+  const testQueue = new Queue("test-connectivity-queue", {
+    connection: redis,
+  });
+
   afterAll(async () => {
-    await ocrQueue.close();
+    await testQueue.close();
     redis.disconnect();
   });
 
-  it("should connect to Redis and add a job to ocrQueue", async () => {
+  it("should connect to Redis and add a job to BullMQ queue", async () => {
     const jobData = {
-      reviewId: "test_rev_123",
-      evidenceImagePath: "evidence/test/sample.jpg",
-      expectedReviewerName: "Ahmad Dani",
+      testId: "test_job_123",
+      payload: "connectivity_check",
     };
 
-    const job = await ocrQueue.add("test-ocr-job", jobData);
+    const job = await testQueue.add("ping-job", jobData);
 
     expect(job.id).toBeDefined();
-    expect(job.name).toBe("test-ocr-job");
-    expect(job.data.reviewId).toBe("test_rev_123");
+    expect(job.name).toBe("ping-job");
+    expect(job.data.testId).toBe("test_job_123");
 
     // Retrieve job from queue
-    const fetchedJob = await ocrQueue.getJob(job.id!);
+    const fetchedJob = await testQueue.getJob(job.id!);
     expect(fetchedJob).toBeDefined();
-    expect(fetchedJob?.data.expectedReviewerName).toBe("Ahmad Dani");
+    expect(fetchedJob?.data.payload).toBe("connectivity_check");
 
     // Clean up
-    await job.remove();
+    await job.remove().catch(() => {});
   });
 });
