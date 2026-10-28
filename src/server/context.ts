@@ -12,8 +12,17 @@ export async function createContext(opts?: FetchCreateContextFnOptions) {
 
   if (opts?.req) {
     // Basic session extraction from custom header for API/testing, or session cookie
-    const userId = opts.req.headers.get("x-user-id");
-    const userRole = opts.req.headers.get("x-user-role");
+    let userId = opts.req.headers.get("x-user-id");
+
+    if (!userId) {
+      const cookieHeader = opts.req.headers.get("cookie");
+      if (cookieHeader) {
+        const match = cookieHeader.match(/goro_user_id=([^;]+)/);
+        if (match) {
+          userId = decodeURIComponent(match[1].trim());
+        }
+      }
+    }
 
     if (userId) {
       const dbUser = await prisma.user.findUnique({

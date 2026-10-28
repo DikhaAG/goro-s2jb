@@ -1,6 +1,6 @@
 # Task 4: Dasbor Operator (Human-in-the-Loop)
 
-> **Status:** Draft / Ready for Engineering Execution  
+> **Status:** Completed / Verified ✅  
 > **Fase:** 2 (Modul Fitur Utama - Modul 4.3 PRD)  
 > **Target Audiens:** Frontend Engineer, UI/UX Designer, Full-Stack Engineer  
 > **Referensi Wajib:**
@@ -115,14 +115,14 @@ Dengan sistem baru:
 
 ## 4. Kriteria Penerimaan (Acceptance Criteria)
 
-- [ ] **AC-1 (RBAC Guard):** Akses rute `/operator/triage` terlindungi secara ketat. Pengguna dengan peran `PEGAWAI` dan `SUPER_ADMIN` dapat mengakses antarmuka, sedangkan peran `PETUGAS_LAPANGAN` ditolak dengan respon 403 Forbidden.
-- [ ] **AC-2 (Zero Browser Freeze via Virtualization):** Antarmuka tabel triase menggunakan `@tanstack/react-virtual` dan dapat menggulir (*scrolling*) ribuan data ulasan pada kecepatan 60 FPS tanpa lag memori peramban.
-- [ ] **AC-3 (Single-Glance Cohesive View):** Dalam satu kartu/baris, operator dapat melihat thumbnail gambar, nama target, teks OCR, dan skor keyakinan secara simultan tanpa membuka jendela terpisah.
-- [ ] **AC-4 (Interactive Lightbox & Zoom):** Modal lightbox dapat dibuka secara instan, mendukung fitur perbesaran citra (zoom), geser (pan), serta rotasi gambar $90^\circ$.
-- [ ] **AC-5 (Rapid Keyboard Navigation):** Pegawai dapat menavigasi seluruh antrean triase dan mengeksekusi *Approve/Reject* murni menggunakan keyboard (`A`, `R`, `J`, `K`, `Space`) dengan indikator fokus yang tegas.
-- [ ] **AC-6 (Optimistic UI & Reversible Action):** Baris ulasan langsung terhapus dari tampilan antrean seketika setelah tombol ditekan, dan toast notifikasi menyediakan tombol `Undo` selama 5 detik.
-- [ ] **AC-7 (Tamper-Proof Audit Trail):** Setiap perubahan status mencatat akun verifikator (`verifiedById`) dan waktu eksekusi (`verifiedAt`) di basis data PostgreSQL.
-- [ ] **AC-8 (Duplicate Indicator Visibility):** Submission yang memiliki tanda `isDuplicate = true` menampilkan badge peringatan merah dan tautan untuk meninjau submission awal pembandingnya.
+- [x] **AC-1 (RBAC Guard):** Akses rute `/operator/triage` terlindungi secara ketat. Pengguna dengan peran `PEGAWAI` dan `SUPER_ADMIN` dapat mengakses antarmuka, sedangkan peran `PETUGAS_LAPANGAN` ditolak dengan respon 403 Forbidden.
+- [x] **AC-2 (Zero Browser Freeze via Virtualization):** Antarmuka tabel triase menggunakan `@tanstack/react-virtual` dan dapat menggulir (*scrolling*) ribuan data ulasan pada kecepatan 60 FPS tanpa lag memori peramban.
+- [x] **AC-3 (Single-Glance Cohesive View):** Dalam satu kartu/baris, operator dapat melihat thumbnail gambar, nama target, teks OCR, dan skor keyakinan secara simultan tanpa membuka jendela terpisah.
+- [x] **AC-4 (Interactive Lightbox & Zoom):** Modal lightbox dapat dibuka secara instan, mendukung fitur perbesaran citra (zoom), geser (pan), serta rotasi gambar $90^\circ$.
+- [x] **AC-5 (Rapid Keyboard Navigation):** Pegawai dapat menavigasi seluruh antrean triase dan mengeksekusi *Approve/Reject* murni menggunakan keyboard (`A`, `R`, `J`, `K`, `Space`) dengan indikator fokus yang tegas.
+- [x] **AC-6 (Optimistic UI & Reversible Action):** Baris ulasan langsung terhapus dari tampilan antrean seketika setelah tombol ditekan, dan toast notifikasi menyediakan tombol `Undo` selama 5 detik.
+- [x] **AC-7 (Tamper-Proof Audit Trail):** Setiap perubahan status mencatat akun verifikator (`verifiedById`) dan waktu eksekusi (`verifiedAt`) di basis data PostgreSQL.
+- [x] **AC-8 (Duplicate Indicator Visibility):** Submission yang memiliki tanda `isDuplicate = true` menampilkan badge peringatan merah dan tautan untuk meninjau submission awal pembandingnya.
 
 ---
 
