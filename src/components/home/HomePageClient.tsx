@@ -37,7 +37,7 @@ export function HomePageClient() {
   const isHealthy = healthQuery.data?.status === "HEALTHY";
 
   return (
-    <AppShell pageTitle="Beranda Komando">
+    <AppShell pageTitle="Beranda">
       <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Top Header Banner */}
         <div className="rounded-2xl p-6 sm:p-8 bg-white border border-[#e2e8f0] shadow-xs relative overflow-hidden">
@@ -101,7 +101,7 @@ export function HomePageClient() {
               <FileUp className="w-5 h-5" />
             </div>
             <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#006877] transition-colors flex items-center justify-between">
-              <span>Entri Eviden Lapangan</span>
+              <span>Entri Eviden</span>
               <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#00a2b9] group-hover:translate-x-0.5 transition-all" />
             </h2>
             <p className="text-xs text-[#64748b] mt-1 line-clamp-2">

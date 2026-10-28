@@ -41,10 +41,10 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
 | 5 | `/triage` (Dasbor Triase) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 200 OK | 307 $\rightarrow$ 403 | 200 OK |
 | 6 | `/reports` (Laporan Eksekutif) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK | 200 OK |
 | 7 | `/users` (Manajemen Pengguna) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
-| 8 | `/migration` (Migrasi Data) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
+| 8 | `/migration` (Migrasi Data) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 200 OK | 307 $\rightarrow$ 403 | 200 OK |
 | 9 | `/audit-logs` (Audit Trail) | 307 $\rightarrow$ `/login` | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 307 $\rightarrow$ 403 | 200 OK |
 | **B** | **HTTP Route Handlers (/api/*)** | | | | | |
-| 10 | `POST /api/upload` | 401 Unauthorized | 200 / 400 (Allowed) | 403 Forbidden | 403 Forbidden | 200 / 400 (Allowed) |
+| 10 | `POST /api/upload` | 401 Unauthorized | 200 / 400 (Eviden) | 200 / 400 (Migrasi) | 403 Forbidden | 200 / 400 (Semua) |
 | 11 | `GET /api/uploads/[...path]` | 401 Unauthorized | 200 OK (Served) | 200 OK (Served) | 200 OK (Served) | 200 OK (Served) |
 | 12 | `GET /api/export/excel` | 401 Unauthorized | 403 Forbidden | 403 Forbidden | 200 OK (Spreadsheet) | 200 OK (Spreadsheet) |
 | 13 | `GET /api/export/pdf` | 401 Unauthorized | 403 Forbidden | 403 Forbidden | 200 OK (PDF Stream) | 200 OK (PDF Stream) |
@@ -100,8 +100,10 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
    * Menguji pemanggilan langsung HTTP handlers tanpa bergantung pada proxy (Layer 3 Defense-in-Depth):
      * **`POST /api/upload`:**
        - Tamu $\rightarrow$ `401 Unauthorized`.
-       - Pegawai Triase & Manager $\rightarrow$ `403 Forbidden`.
-       - Petugas Lapangan & Super Admin $\rightarrow$ Lolos autentikasi (mengembalikan 400 Bad Request jika form kosong, bukan 401/403).
+       - Petugas Lapangan $\rightarrow$ Lolos upload bukti eviden lapangan, ditolak `403 Forbidden` jika tipe unggahan migrasi (`type="migration"`).
+       - Pegawai Triase $\rightarrow$ Lolos upload berkas migrasi historis (`type="migration"`), ditolak `403 Forbidden` untuk bukti eviden standar.
+       - Manager UID $\rightarrow$ Ditolak `403 Forbidden` untuk seluruh kategori berkas.
+       - Super Admin $\rightarrow$ Lolos otorisasi untuk seluruh kategori berkas (mengembalikan 400 Bad Request jika form kosong, bukan 401/403).
      * **`GET /api/uploads/[...path]`:**
        - Tamu $\rightarrow$ `401 Unauthorized`.
        - Seluruh pengguna terautentikasi $\rightarrow$ Lolos guard autentikasi (mengembalikan file atau 404 jika file tidak ditemukan).
@@ -122,9 +124,9 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
 2. **Spesifikasi Pengujian:**
    * Menstimulasikan eksekusi Server Layouts dengan mock `next/headers` cookies:
      - `src/app/(field)/layout.tsx` $\rightarrow$ memanggil `requireServerAuth([Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN])`.
-     - `src/app/(operator)/layout.tsx` $\rightarrow$ memanggil `requireServerAuth([Role.PEGAWAI, Role.SUPER_ADMIN])`.
+     - `src/app/(operator)/layout.tsx` $\rightarrow$ memanggil `requireServerAuth([Role.PEGAWAI, Role.SUPER_ADMIN])` (menjaga rute `/triage` dan `/migration`).
      - `src/app/(manager)/layout.tsx` $\rightarrow$ memanggil `requireServerAuth([Role.MANAGER, Role.SUPER_ADMIN])`.
-     - `src/app/(admin)/layout.tsx` $\rightarrow$ memanggil `requireServerAuth([Role.SUPER_ADMIN])`.
+     - `src/app/(admin)/layout.tsx` $\rightarrow$ memanggil `requireServerAuth([Role.SUPER_ADMIN])` (menjaga rute `/users` dan `/audit-logs`).
    * Verifikasi pemanggilan `redirect("/login")` saat sesi kosong dan `redirect("/unauthorized?required=...")` saat peran tidak cocok.
 
 ---
@@ -134,10 +136,10 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
    * `tests/integration/trpcRbacFullMatrix.test.ts`
 2. **Spesifikasi Pengujian:**
    * Menjalankan caller tRPC untuk setiap domain prosedur menggunakan context mock:
-     - Prosedur Lapangan (`intake.submit`, `intake.getMyHistory`): menolak Pegawai dan Manager dengan error code `FORBIDDEN`.
-     - Prosedur Triase (`triage.getPending`, `triage.verify`): menolak Petugas Lapangan dan Manager dengan error code `FORBIDDEN`.
-     - Prosedur Manajerial (`report.getSummary`, `report.getDetailedGrid`): menolak Petugas Lapangan dan Pegawai dengan error code `FORBIDDEN`.
-     - Prosedur Administratif (`user.listUsers`, `user.createUser`, `migration.getBatches`, `auditLog.getAuditLogs`): menolak Petugas, Pegawai, dan Manager dengan error code `FORBIDDEN`.
+     - Prosedur Lapangan (`intake.submitReview`): menolak Pegawai dan Manager dengan error code `FORBIDDEN`.
+     - Prosedur Triase & Migrasi (`triage.getQueue`, `triage.submitDecision`, `migration.startMigration`, `migration.listBatches`, `migration.getBatchStatus`): diizinkan untuk Pegawai Triase dan Super Admin, menolak Petugas Lapangan dan Manager dengan error code `FORBIDDEN`.
+     - Prosedur Manajerial (`report.getDaily`, `report.getKpis`): menolak Petugas Lapangan dan Pegawai dengan error code `FORBIDDEN`.
+     - Prosedur Administratif (`user.listUsers`, `user.createUser`, `user.getAuditLogs`): menolak Petugas, Pegawai, dan Manager dengan error code `FORBIDDEN`.
      - Super Admin: Berhasil memanggil seluruh prosedur tanpa pengecualian.
 
 ---
@@ -149,7 +151,7 @@ Matriks berikut menguraikan ekspektasi perilaku sistem untuk setiap kombinasi pe
    * Menguji fungsi filter navigasi pada `GlobalSidebar.tsx`:
      - Tamu: Menu navigasi tidak dirender sama sekali.
      - Petugas Lapangan: Hanya melihat `["/", "/intake"]`.
-     - Pegawai Triase: Hanya melihat `["/", "/triage"]`.
+     - Pegawai Triase: Melihat `["/", "/triage", "/migration"]` (3 item operasional verifikasi dan migrasi).
      - Manager UID: Hanya melihat `["/", "/reports"]`.
      - Super Admin: Melihat seluruh 7 item menu (`["/", "/intake", "/triage", "/reports", "/users", "/migration", "/audit-logs"]`).
    * Memastikan tidak ada URL yang bocor ke DOM untuk pengguna yang tidak memiliki hak akses.

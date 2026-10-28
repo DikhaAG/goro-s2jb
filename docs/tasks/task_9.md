@@ -49,11 +49,11 @@ Mengimplementasikan modul **Manajemen Pengguna (`/users`)** secara penuh dengan 
 
 ## 3. Instruksi Teknis Rinci
 
-### 3.1 Task 9.1: Penegakan Navigasi Eksklusif Super Admin pada Sidebar Global
+### 3.1 Task 9.1: Penegakan Navigasi Eksklusif Admin & Akses Migrasi Pegawai pada Sidebar Global
 1. **Target File:**
    * `src/components/layout/GlobalSidebar.tsx`
 2. **Aturan Otorisasi Navigasi:**
-   * Konfigurasikan item menu `NAV_ITEMS` untuk rute admin agar hanya berisi peran `SUPER_ADMIN`:
+   * Konfigurasikan item menu `NAV_ITEMS` untuk rute administratif dan migrasi eviden:
      ```typescript
      {
        label: "Manajemen Pengguna",
@@ -63,19 +63,20 @@ Mengimplementasikan modul **Manajemen Pengguna (`/users`)** secara penuh dengan 
      },
      {
        label: "Migrasi Data Eviden",
-       href: "/admin/migration",
+       href: "/migration",
        icon: Database,
-       roles: ["SUPER_ADMIN"],
+       roles: ["PEGAWAI", "SUPER_ADMIN"],
      },
      {
        label: "Catatan Audit Log",
-       href: "/admin/audit-logs",
+       href: "/audit-logs",
        icon: ShieldAlert,
        roles: ["SUPER_ADMIN"],
      }
      ```
-   * Pastikan pengguna `GUEST`, `PETUGAS_LAPANGAN`, `PEGAWAI`, dan `MANAGER` tidak dapat melihat opsi menu tersebut di bilah navigasi desktop maupun mobile drawer.
-   * Di beranda komando (`src/app/page.tsx`), sembunyikan atau berikan pembatasan visual pada kartu pintasan navigasi "Manajemen Pengguna" sesuai peran aktif sesi.
+   * Pastikan pengguna `GUEST`, `PETUGAS_LAPANGAN`, dan `MANAGER` tidak dapat melihat opsi menu Migrasi Data Eviden (`/migration`). Pengguna `PEGAWAI` (Operator Triase) dan `SUPER_ADMIN` dapat melihat serta mengakses fitur migrasi data.
+   * Menu "Manajemen Pengguna" (`/users`) dan "Catatan Audit Log" (`/audit-logs`) tetap terkunci eksklusif hanya untuk pengguna bertaraf `SUPER_ADMIN`.
+   * Di beranda komando (`src/app/page.tsx`), sembunyikan atau berikan pembatasan visual pada kartu pintasan navigasi sesuai matriks peran aktif sesi.
 
 ---
 

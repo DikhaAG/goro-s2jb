@@ -109,16 +109,16 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
      * *Semua Pengguna Terautentikasi:*
        - Beranda Komando (`/`)
      * *Petugas Lapangan (`PETUGAS_LAPANGAN`):*
-       - Entri Eviden Lapangan (`/intake`)
+       - Entri Eviden (`/intake`)
      * *Pegawai Operator (`PEGAWAI`):*
        - Antrean Triase Ulasan (`/triage`)
+       - Migrasi Data Eviden Historis (`/migration`)
      * *Manajer Wilayah (`MANAGER`):*
        - Laporan & Intelijen Kinerja (`/reports`)
      * *Super Administrator (`SUPER_ADMIN`):*
-       - Akses seluruh modul operasional (`/intake`, `/triage`, `/reports`)
+       - Akses seluruh modul operasional (`/intake`, `/triage`, `/reports`, `/migration`)
        - Manajemen Pengguna (`/users`)
-       - Migrasi Data & Impor Eviden (`/admin/migration`)
-       - Catatan Audit Sistem (`/admin/audit-logs`) (Halaman baru yang akan dibangun di Task 8)
+       - Catatan Audit Sistem (`/audit-logs`) (Halaman baru yang akan dibangun di Task 8)
    * **Status Visual Item Menu:**
      * *Item Aktif:* Background pastel teal muda (`#e7eeff`), teks tebal Primary Teal `#006877`, border vertikal kiri 3px solid `#00a2b9`, dan lencana indikator status.
      * *Item Tidak Aktif:* Teks warna slate `#64748b`, transisi hover latar `#f8fafc` dan teks `#1e293b`.
@@ -176,10 +176,10 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
      * Kartu KPI (`ExecutiveKpiCards`) menggunakan kanvas putih berkontur halus `shadow-sm`, angka numerik Inter tebal `#0f172a`, dan persentase capaian target dengan indikator warna semantik.
      * Sesuaikan grafik pacing kumulatif (`CumulativePacingChart`) dan chart performa (`PerformanceChart`) agar selaras dengan palet teal dan oranye resmi PLN.
      * Format tabel laporan harian & bulanan dengan baris berkontras tinggi dan padding yang proporsional.
-   * **Tata Kelola Pengguna, Migrasi & Audit (`/admin/`):**
+   * **Tata Kelola Pengguna, Migrasi & Audit:**
      * Menu admin dapat diakses langsung dari sidebar untuk pengguna bertaraf `SUPER_ADMIN`.
-     * Menghubungkan rute admin yang telah ada: Manajemen Pengguna (`/users`) dan Migrasi Data Eviden (`/admin/migration`).
-     * Halaman Catatan Jejak Audit (`/admin/audit-logs`): Akan dibangun secara baru (*new page*) pada Task 8 untuk memvisualisasikan data tabel `AuditLog` yang telah direkam oleh sistem sejak Task 6.
+     * Menghubungkan rute admin dan operasional: Manajemen Pengguna (`/users`), Migrasi Data Eviden (`/migration`), dan Catatan Audit Sistem (`/audit-logs`).
+     * Halaman Catatan Jejak Audit (`/audit-logs`): Dibangun pada Task 8 untuk memvisualisasikan data tabel `AuditLog` yang telah direkam oleh sistem sejak Task 6.
      * Terapkan tabel data dengan border tipis bersih `#e2e8f0`, lencana peran (*role badge*) pastel solid, dan form modal tambah user yang ramah keyboard.
 
 ---
@@ -259,7 +259,7 @@ Menerapkan sistem desain resmi yang tertuang pada [`DESIGN.md`](file:///Users/a6
 | `src/app/(operator)/triage/page.tsx` | Diubah | Penyelarasan antarmuka triase 3 zona dengan kartu status pastel |
 | `src/app/(manager)/reports/page.tsx` | Diubah | Penyelarasan dasbor laporan manajer dan kartu metrik KPI |
 | `src/app/(admin)/users/page.tsx` | Diubah | Penyelarasan tabel manajemen pengguna dengan token desain |
-| `src/app/(admin)/migration/page.tsx` | Diubah | Penyelarasan antarmuka migrasi eviden dengan token desain |
+| `src/app/(operator)/migration/page.tsx` | Diubah | Penyelarasan antarmuka migrasi eviden dengan token desain untuk Pegawai dan Super Admin |
 | `src/app/(admin)/audit-logs/page.tsx` | Dibuat | Halaman antarmuka penampil catatan jejak audit keamanan |
 | `src/components/admin/AuditLogTable.tsx` | Dibuat | Komponen tabel interaktif pencarian dan filter log audit |
 | `tests/unit/globalSidebar.test.tsx` | Dibuat | Pengujian unit komponen sidebar, filtering peran RBAC & drawer |

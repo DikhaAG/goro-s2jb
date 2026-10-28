@@ -33,13 +33,13 @@ export interface NavMenuItem {
 
 export const NAV_ITEMS: NavMenuItem[] = [
   {
-    label: "Beranda Komando",
+    label: "Beranda",
     href: "/",
     icon: LayoutDashboard,
     roles: ["PETUGAS_LAPANGAN", "PEGAWAI", "MANAGER", "SUPER_ADMIN"],
   },
   {
-    label: "Entri Eviden Lapangan",
+    label: "Entri Eviden",
     href: "/intake",
     icon: FileUp,
     roles: ["PETUGAS_LAPANGAN", "SUPER_ADMIN"],

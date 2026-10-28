@@ -2,7 +2,7 @@ import React from "react";
 import { IntakeForm } from "@/components/forms/IntakeForm";
 
 export const metadata = {
-  title: "Entri Eviden Lapangan | GORO S2JB 2026",
+  title: "Entri Eviden | GORO S2JB 2026",
   description: "Formulir cepat pengumpulan bukti rating pelanggan PLN Mobile untuk Petugas Lapangan",
 };
 

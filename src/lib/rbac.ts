@@ -24,7 +24,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
     pattern: /^\/intake(\/.*)?$/,
     prefix: "/intake",
     allowedRoles: [Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN],
-    description: "Modul Entri Eviden Lapangan",
+    description: "Modul Entri Eviden",
   },
   // Operator triage: Pegawai and Super Admin
   {

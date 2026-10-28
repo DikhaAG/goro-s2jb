@@ -11,5 +11,5 @@ export default async function FieldLayout({
   // Layer 2 Server Guard: Verify active session and role
   await requireServerAuth([Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN]);
 
-  return <AppShell pageTitle="Entri Eviden Lapangan">{children}</AppShell>;
+  return <AppShell pageTitle="Entri Eviden">{children}</AppShell>;
 }

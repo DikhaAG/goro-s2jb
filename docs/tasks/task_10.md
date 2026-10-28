@@ -50,14 +50,15 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 
 | Rute / Modul / Endpoint | Deskripsi Akses | Hak Akses Peran yang Diizinkan | Tindakan Jika Tidak Memiliki Izin |
 | :--- | :--- | :--- | :--- |
-| `/` | Beranda Komando | `PETUGAS_LAPANGAN`, `PEGAWAI`, `MANAGER`, `SUPER_ADMIN` | Tamu belum login $\rightarrow$ Langsung redirect ke `/login` |
+| `/` | Beranda | `PETUGAS_LAPANGAN`, `PEGAWAI`, `MANAGER`, `SUPER_ADMIN` | Tamu belum login $\rightarrow$ Langsung redirect ke `/login` |
 | `/login` | Formulir Masuk Sesi | Khusus `GUEST` (belum terautentikasi) | Jika sudah login, redirect ke dasbor peran terkait |
 | `/unauthorized` | Halaman Peringatan 403 | Terbuka untuk seluruh peran | Memberikan info peran yang dibutuhkan |
-| `/intake` | Entri Eviden Lapangan | `PETUGAS_LAPANGAN`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
+| `/intake` | Entri Eviden | `PETUGAS_LAPANGAN`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
 | `/triage` (`/triage`) | Dasbor Triase Ulasan Kuning | `PEGAWAI`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
 | `/reports` (`/reports`) | Laporan Eksekutif & KPI | `MANAGER`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
-| `/admin/*` (`users`, `migration`, `audit-logs`) | Administrasi Sistem | `SUPER_ADMIN` (Eksklusif) | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
-| `POST /api/upload` | Unggah Berkas Eviden/Migrasi | `PETUGAS_LAPANGAN`, `SUPER_ADMIN` | `HTTP 401 Unauthorized` / `HTTP 403 Forbidden` |
+| `/migration` (`/migration`) | Migrasi Data Eviden Historis | `PEGAWAI`, `SUPER_ADMIN` | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
+| `/users`, `/audit-logs` | Administrasi Pengguna & Audit | `SUPER_ADMIN` (Eksklusif) | Tamu $\rightarrow$ `/login`, Non-izin $\rightarrow$ `/unauthorized` |
+| `POST /api/upload` | Unggah Berkas Eviden / Migrasi | `PETUGAS_LAPANGAN` (Eviden), `PEGAWAI` (Migrasi), `SUPER_ADMIN` (Semua) | `HTTP 401 Unauthorized` / `HTTP 403 Forbidden` |
 | `GET /api/export/excel` | Ekspor Spreadsheet Laporan | `MANAGER`, `SUPER_ADMIN` | `HTTP 401 Unauthorized` / `HTTP 403 Forbidden` |
 | `GET /api/export/pdf` | Ekspor Dokumen Cetak Laporan | `MANAGER`, `SUPER_ADMIN` | `HTTP 401 Unauthorized` / `HTTP 403 Forbidden` |
 | `GET /api/uploads/[...path]` | Penyajian Gambar Bukti Eviden | Sesi Terautentikasi (Semua Peran) | `HTTP 401 Unauthorized` (Blok scraper luar) |
@@ -163,7 +164,7 @@ Seluruh subsistem aplikasi wajib mematuhi matriks hak akses berikut yang didefin
 2. **Cakupan Skenario Pengujian:**
    * **Pengujian 1 (Guest Matrix):** Menguji akses tamu ke seluruh rute (halaman `/`, `/intake`, `/triage`, `/reports`, `/admin/*`, API export, API upload). Memverifikasi bahwa akses tamu ke `/` dan rute internal LANGSUNG menghasilkan redirect status 307 ke `/login`, serta penolakan status 401 pada endpoint API.
    * **Pengujian 2 (Petugas Lapangan Matrix):** Memverifikasi akses sukses ke `/` dan `/intake`, serta penolakan saat mencoba membuka `/triage`, `/reports`, `/users`, atau API ekspor.
-   * **Pengujian 3 (Pegawai Triase Matrix):** Memverifikasi akses sukses ke `/` dan `/triage`, serta penolakan pada modul lapangan, manajerial, dan admin.
+   * **Pengujian 3 (Pegawai Triase Matrix):** Memverifikasi akses sukses ke `/`, `/triage`, dan `/migration` (serta unggah migrasi `POST /api/upload`), serta penolakan pada modul lapangan, manajerial, dan admin pengguna/audit.
    * **Pengujian 4 (Manager Matrix):** Memverifikasi akses sukses ke `/`, `/reports`, dan endpoint ekspor Excel/PDF, serta penolakan pada modul admin dan entri lapangan.
    * **Pengujian 5 (Super Admin Matrix):** Memverifikasi akses penuh tanpa hambatan ke seluruh rute sistem.
    * **Pengujian 6 (Edge Proxy & Server Layout Guard):** Memverifikasi fungsi `proxy()` dan Server Component layout menghentikan rendering jika cookie sesi tidak valid.

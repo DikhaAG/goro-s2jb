@@ -59,12 +59,12 @@ describe("Design System & Antislop Compliance", () => {
 
     const NAV_ITEMS: NavMenuItem[] = [
       {
-        label: "Beranda Komando",
+        label: "Beranda",
         href: "/",
         roles: ["PETUGAS_LAPANGAN", "PEGAWAI", "MANAGER", "SUPER_ADMIN"],
       },
       {
-        label: "Entri Eviden Lapangan",
+        label: "Entri Eviden",
         href: "/intake",
         roles: ["PETUGAS_LAPANGAN", "SUPER_ADMIN"],
       },

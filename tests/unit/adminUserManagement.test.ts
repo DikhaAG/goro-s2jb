@@ -10,12 +10,12 @@ interface NavMenuItem {
 
 const NAV_ITEMS: NavMenuItem[] = [
   {
-    label: "Beranda Komando",
+    label: "Beranda",
     href: "/",
     roles: ["GUEST", "PETUGAS_LAPANGAN", "PEGAWAI", "MANAGER", "SUPER_ADMIN"],
   },
   {
-    label: "Entri Eviden Lapangan",
+    label: "Entri Eviden",
     href: "/intake",
     roles: ["GUEST", "PETUGAS_LAPANGAN", "SUPER_ADMIN"],
   },

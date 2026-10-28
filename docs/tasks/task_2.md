@@ -26,7 +26,7 @@ Sesuai arahan pada **Roadmap MVP (PRD Bagian 6)**, modul ini merupakan prioritas
 Modul ini dipecah menjadi 4 sub-track pengerjaan:
 * **Task 2.1:** Antarmuka & Validasi Formulir Petugas Lapangan (`/intake`)
 * **Task 2.2:** Rute Mutasi API tRPC & Logika Penyimpanan Berkas Eviden Lokal
-* **Task 2.3:** Antarmuka Dasbor Impor Berkas Historis CSV / XLSX (`/admin/migration`)
+* **Task 2.3:** Antarmuka Dasbor Impor Berkas Historis CSV / XLSX (`/migration`)
 * **Task 2.4:** Queue Worker BullMQ & Streaming Parser Memory-Safe (>140.000 Baris)
 
 ---
@@ -78,10 +78,10 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
 
 ---
 
-### 3.3 Task 2.3: Dasbor Migrasi Berkas Historis CSV / XLSX (`/admin/migration`)
-1. **Target Rute:** `src/app/(admin)/migration/page.tsx`
+### 3.3 Task 2.3: Dasbor Migrasi Berkas Historis CSV / XLSX (`/migration`)
+1. **Target Rute:** `src/app/(operator)/migration/page.tsx`
 2. **Karakteristik Antarmuka:**
-   * Didedikasikan untuk operator atau super-admin untuk mengimpor berkas lama (*Form Responses 1*, *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*).
+   * Didedikasikan untuk peran Pegawai (Operator Triase) dan Super Admin untuk mengimpor berkas lama (*Form Responses 1*, *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*).
    * Komponen Dropzone interaktif dengan indikasi *drag-and-drop*.
    * Dropdown pemilihan target skema:
      - `FORM_RESPONSES_RAW`: Mengimpor data ulasan mentah 13 kolom (*Form Responses 1*).
@@ -117,7 +117,7 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
 - [x] **AC-3 (Secure File Ingestion):** Berkas gambar yang diunggah dari form berhasil disimpan ke direktori `./uploads/evidence/YYYY/MM/DD/` dengan nama berkas unik yang disanitasi.
 - [x] **AC-4 (Database Record & Pending State):** Data formulir berhasil masuk ke tabel `RatingReview` dengan `validationStatus = "PENDING"`, timestamp tercatat akurat, dan relasi foreign key tersambung dengan benar.
 - [x] **AC-5 (Asynchronous Job Dispatch):** Pengiriman form berhasil menambahkan job baru ke antrean BullMQ `ocrQueue` beserta payload ID review dan path gambar lokal.
-- [x] **AC-6 (Bulk Import Streaming & No OOM):** Pengujian impor file CSV/XLSX berukuran >140.000 baris melalui `/admin/migration` berhasil diselesaikan oleh worker BullMQ dalam beberapa menit dengan penggunaan memori proses Node.js tetap stabil (< 512 MB).
+- [x] **AC-6 (Bulk Import Streaming & No OOM):** Pengujian impor file CSV/XLSX berukuran >140.000 baris melalui `/migration` berhasil diselesaikan oleh worker BullMQ dalam beberapa menit dengan penggunaan memori proses Node.js tetap stabil (< 512 MB).
 - [x] **AC-7 (Historical Data Import):** Data ulasan dan riwayat laporan pada berkas `GORO S2JB 2026 (Jawaban).xlsx` berhasil dipetakan ke dalam basis data dengan benar.
 - [x] **AC-8 (Error Tolerant Migration):** Baris data impor yang tidak valid tidak mematikan seluruh proses, melainkan dicatat ke tabel log error untuk ditinjau.
 
@@ -132,7 +132,7 @@ Modul ini dipecah menjadi 4 sub-track pengerjaan:
 | `src/components/forms/CascadingUnitSelect.tsx` | Dibuat | Komponen select dropdown bertingkat UP3 dan ULP |
 | `src/lib/validators/intake.ts` | Dibuat | Skema validasi Zod untuk input form lapangan |
 | `src/server/routers/intake.ts` | Dibuat | Prosedur tRPC untuk mutasi input data dan registrasi bukti eviden |
-| `src/app/(admin)/migration/page.tsx` | Dibuat | Halaman UI dropzone untuk upload dan monitoring impor data historis |
+| `src/app/(operator)/migration/page.tsx` | Dibuat | Halaman UI dropzone untuk upload dan monitoring impor data historis oleh Pegawai |
 | `src/components/admin/BulkDropzone.tsx` | Dibuat | Komponen upload berkas drag-and-drop dengan progress bar |
 | `src/server/routers/migration.ts` | Dibuat | Prosedur tRPC untuk upload file CSV/XLSX dan pengecekan status antrean |
 | `src/server/queues/importQueue.ts` | Dibuat | Antrean BullMQ khusus untuk tugas pemrosesan impor massal |
