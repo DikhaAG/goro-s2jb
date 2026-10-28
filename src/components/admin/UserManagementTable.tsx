@@ -78,25 +78,25 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
     switch (role) {
       case Role.PETUGAS_LAPANGAN:
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-cyan-950/70 border border-cyan-800/60 text-cyan-400">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#e0f2fe] border border-[#bae6fd] text-[#0369a1]">
             Petugas Lapangan
           </span>
         );
       case Role.PEGAWAI:
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-950/70 border border-amber-800/60 text-amber-400">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#fff7ed] border border-[#fed7aa] text-[#b45309]">
             Pegawai Triase
           </span>
         );
       case Role.MANAGER:
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-950/70 border border-indigo-800/60 text-indigo-400">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#eff6ff] border border-[#bfdbfe] text-[#1d4ed8]">
             Manager Eksekutif
           </span>
         );
       case Role.SUPER_ADMIN:
         return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-950/70 border border-emerald-800/60 text-emerald-400">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#ecfdf5] border border-[#a7f3d0] text-[#15803d]">
             Super Admin
           </span>
         );
@@ -108,9 +108,9 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
   return (
     <div className="space-y-4">
       {/* Search & Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-4 rounded-2xl backdrop-blur">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-[#e2e8f0] p-4 rounded-2xl shadow-xs">
         <div className="relative flex-1 max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#64748b]">
             <Search className="w-4 h-4" />
           </div>
           <input
@@ -118,19 +118,19 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari berdasarkan nama atau username..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] placeholder-[#94a3b8] text-xs sm:text-sm focus-utility-ring min-h-[44px]"
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1.5 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
             <Filter className="w-3.5 h-3.5" />
-            <span>Peran:</span>
+            <span className="font-medium">Peran:</span>
           </div>
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value as any)}
-            className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="px-3 py-2 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] text-xs focus-utility-ring min-h-[44px] cursor-pointer"
           >
             <option value="ALL">Semua Peran</option>
             <option value={Role.PETUGAS_LAPANGAN}>Petugas Lapangan</option>
@@ -142,7 +142,7 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as any)}
-            className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="px-3 py-2 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] text-xs focus-utility-ring min-h-[44px] cursor-pointer"
           >
             <option value="ALL">Semua Status</option>
             <option value="ACTIVE">Aktif</option>
@@ -150,9 +150,10 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
           </select>
 
           <button
+            type="button"
             onClick={() => usersQuery.refetch()}
             disabled={usersQuery.isFetching}
-            className="p-2 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition disabled:opacity-50"
+            className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#475569] hover:text-[#0f172a] transition disabled:opacity-50 flex items-center justify-center focus-utility-ring cursor-pointer"
             title="Muat Ulang Data"
           >
             <RefreshCw className={`w-4 h-4 ${usersQuery.isFetching ? "animate-spin" : ""}`} />
@@ -161,91 +162,93 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
       </div>
 
       {/* Users Data Table */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl backdrop-blur">
+      <div className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-950/80 text-slate-400 text-[11px] uppercase tracking-wider font-semibold">
-                <th className="py-3 px-4">Pengguna</th>
-                <th className="py-3 px-4">Peran (RBAC)</th>
-                <th className="py-3 px-4">Penugasan Unit Kerja</th>
-                <th className="py-3 px-4">Status Akun</th>
-                <th className="py-3 px-4">Terdaftar</th>
-                <th className="py-3 px-4 text-right">Tindakan Admin</th>
+              <tr className="border-b border-[#e2e8f0] bg-[#f8fafc] text-[#475569] text-[11px] uppercase tracking-wider font-semibold">
+                <th className="py-3.5 px-4">Pengguna</th>
+                <th className="py-3.5 px-4">Peran (RBAC)</th>
+                <th className="py-3.5 px-4">Penugasan Unit Kerja</th>
+                <th className="py-3.5 px-4">Status Akun</th>
+                <th className="py-3.5 px-4">Terdaftar</th>
+                <th className="py-3.5 px-4 text-right">Tindakan Admin</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[#f1f5f9]">
               {usersQuery.isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                  <td colSpan={6} className="py-12 text-center text-[#64748b] animate-pulse">
                     Memuat daftar pengguna sistem...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                  <td colSpan={6} className="py-12 text-center text-[#64748b]">
                     Tidak ada akun pengguna yang cocok dengan kriteria filter.
                   </td>
                 </tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-800/30 transition">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-100">{u.name}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">@{u.username}</div>
+                  <tr key={u.id} className="hover:bg-[#f8fafc]/70 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div className="font-semibold text-[#0f172a]">{u.name}</div>
+                      <div className="text-[11px] text-[#64748b] font-mono">@{u.username}</div>
                     </td>
-                    <td className="py-3 px-4">{getRoleBadge(u.role)}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">{getRoleBadge(u.role)}</td>
+                    <td className="py-3.5 px-4">
                       {u.ulp ? (
                         <div>
-                          <div className="font-medium text-slate-200">{u.ulp.name}</div>
-                          <div className="text-[11px] text-slate-400">{u.up3?.name}</div>
+                          <div className="font-medium text-[#1e293b]">{u.ulp.name}</div>
+                          <div className="text-[11px] text-[#64748b]">{u.up3?.name}</div>
                         </div>
                       ) : u.up3 ? (
-                        <div className="font-medium text-slate-200">{u.up3.name}</div>
+                        <div className="font-medium text-[#1e293b]">{u.up3.name}</div>
                       ) : (
-                        <span className="text-slate-400 italic">UID S2JB (Wilayah)</span>
+                        <span className="text-[#64748b] italic">UID S2JB (Wilayah)</span>
                       )}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       {u.isActive ? (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
                           <span>AKTIF</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-800/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
                           <span>NONAKTIF</span>
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-slate-400 text-xs">
+                    <td className="py-3.5 px-4 text-[#64748b] text-xs">
                       {new Date(u.createdAt).toLocaleDateString("id-ID", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
                       })}
                     </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         {/* Reset Password Button */}
                         <button
+                          type="button"
                           onClick={() => {
                             if (confirm(`Reset kata sandi akun @${u.username}?`)) {
                               resetPasswordMutation.mutate({ id: u.id });
                             }
                           }}
                           disabled={resetPasswordMutation.isPending}
-                          className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center space-x-1 transition"
+                          className="min-h-[40px] px-3 py-1.5 rounded-lg border border-[#cbd5e1] bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#334155] text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer focus-utility-ring"
                           title="Reset Password Pengguna"
                         >
-                          <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                          <KeyRound className="w-3.5 h-3.5 text-[#b45309]" />
                           <span>Reset Sandi</span>
                         </button>
 
                         {/* Toggle Status Button */}
                         <button
+                          type="button"
                           onClick={() => {
                             const newStatus = !u.isActive;
                             const actionLabel = newStatus ? "mengaktifkan" : "menonaktifkan";
@@ -254,10 +257,10 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
                             }
                           }}
                           disabled={toggleStatusMutation.isPending}
-                          className={`px-2.5 py-1 rounded-lg text-xs flex items-center space-x-1 border transition ${
+                          className={`min-h-[40px] px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition cursor-pointer focus-utility-ring ${
                             u.isActive
-                              ? "border-rose-900/60 bg-rose-950/40 hover:bg-rose-950/70 text-rose-300"
-                              : "border-emerald-900/60 bg-emerald-950/40 hover:bg-emerald-950/70 text-emerald-300"
+                              ? "border-[#fecaca] bg-[#fef2f2] hover:bg-[#fee2e2] text-[#b91c1c]"
+                              : "border-[#bbf7d0] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#15803d]"
                           }`}
                         >
                           {u.isActive ? (
@@ -284,37 +287,45 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
 
       {/* Temporary Password Success Dialog */}
       {tempPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center">
-            <div className="w-12 h-12 rounded-full bg-amber-950 border border-amber-800 text-amber-400 flex items-center justify-center mx-auto mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white border border-[#e2e8f0] rounded-2xl w-full max-w-sm p-6 shadow-xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] border border-[#fed7aa] text-[#b45309] flex items-center justify-center mx-auto shadow-xs">
               <KeyRound className="w-6 h-6" />
             </div>
 
-            <h3 className="text-base font-bold text-white mb-1">
-              Kata Sandi Baru Dihasilkan
-            </h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Kata sandi sementara untuk akun{" "}
-              <span className="font-semibold text-slate-200">
-                @{tempPasswordModal.username}
-              </span>
-              :
-            </p>
+            <div>
+              <h3 className="text-base font-bold text-[#0f172a]">
+                Kata Sandi Baru Dihasilkan
+              </h3>
+              <p className="text-xs text-[#64748b] mt-1">
+                Kata sandi sementara untuk akun{" "}
+                <span className="font-semibold text-[#0f172a]">
+                  @{tempPasswordModal.username}
+                </span>
+                :
+              </p>
+            </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 mb-5">
-              <span className="font-mono text-sm font-bold text-amber-400 select-all">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+              <span className="font-mono text-sm font-bold text-[#006877] select-all">
                 {tempPasswordModal.tempPass}
               </span>
               <button
                 type="button"
                 onClick={handleCopyPassword}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                className="min-h-[40px] px-2.5 py-1.5 rounded-lg border border-[#cbd5e1] hover:bg-[#f1f5f9] text-[#334155] text-xs font-semibold flex items-center gap-1 transition focus-utility-ring cursor-pointer"
                 title="Salin Kata Sandi"
               >
                 {copied ? (
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <>
+                    <Check className="w-4 h-4 text-[#16a34a]" />
+                    <span className="text-[#15803d]">Tersalin</span>
+                  </>
                 ) : (
-                  <Copy className="w-4 h-4" />
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Salin</span>
+                  </>
                 )}
               </button>
             </div>
@@ -322,7 +333,7 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
             <button
               type="button"
               onClick={() => setTempPasswordModal(null)}
-              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition"
+              className="w-full min-h-[44px] py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008b9e] text-white font-semibold text-xs transition focus-utility-ring cursor-pointer shadow-xs"
             >
               Tutup & Bagikan ke Pengguna
             </button>

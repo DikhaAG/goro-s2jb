@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
+  const sessionQuery = trpc.auth.getSession.useQuery();
+  const isSuperAdmin = sessionQuery.data?.role === "SUPER_ADMIN";
+
   const healthQuery = trpc.health.ping.useQuery(undefined, {
     refetchInterval: 10000,
   });
@@ -51,36 +54,33 @@ export default function HomePage() {
                   Sistem Validasi Eviden Rating PLN Mobile 2026
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight">
+              {/* <h1 className="text-2xl sm:text-3xl font-bold text-[#0f172a] tracking-tight">
                 Pusat Komando Operasional
               </h1>
               <p className="text-sm text-[#475569] leading-relaxed">
                 Platform terpadu pemantauan target rating PLN Mobile UID Sumatera Selatan,
-                Jambi, dan Bengkulu. Dilengkapi pipeline otomatisasi OCR, deteksi duplikasi
-                perceptual hashing 64-bit, dan verifikasi berjenjang.
-              </p>
+                Jambi, dan Bengkulu.
+              </p> */}
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
               <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
                 <span className="relative flex h-3 w-3">
                   <span
-                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                      isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
-                    }`}
+                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
+                      }`}
                   ></span>
                   <span
-                    className={`relative inline-flex rounded-full h-3 w-3 ${
-                      isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
-                    }`}
+                    className={`relative inline-flex rounded-full h-3 w-3 ${isHealthy ? "bg-[#16a34a]" : "bg-[#f59e0b]"
+                      }`}
                   ></span>
                 </span>
                 <span className="text-xs font-semibold text-[#0f172a]">
                   {healthQuery.isLoading
                     ? "Memeriksa..."
                     : isHealthy
-                    ? "Sistem Aktif Normal"
-                    : "Layanan Terdegradasi"}
+                      ? "Sistem Aktif Normal"
+                      : "Layanan Terdegradasi"}
                 </span>
               </div>
 
@@ -91,9 +91,8 @@ export default function HomePage() {
                 title="Muat Ulang Status Infrastruktur"
               >
                 <RefreshCw
-                  className={`w-4 h-4 text-[#64748b] ${
-                    healthQuery.isFetching ? "animate-spin" : ""
-                  }`}
+                  className={`w-4 h-4 text-[#64748b] ${healthQuery.isFetching ? "animate-spin" : ""
+                    }`}
                 />
                 <span>Segarkan</span>
               </button>
@@ -151,21 +150,23 @@ export default function HomePage() {
             </p>
           </Link>
 
-          <Link
-            href="/admin/users"
-            className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#16a34a] hover:shadow-xs transition duration-150 focus-utility-ring"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#ecfdf5] text-[#15803d] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-              <Users className="w-5 h-5" />
-            </div>
-            <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#15803d] transition-colors flex items-center justify-between">
-              <span>Manajemen Pengguna</span>
-              <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
-            </h2>
-            <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
-              Kelola akun operasional berjenjang, penugasan unit, dan catatan audit log.
-            </p>
-          </Link>
+          {isSuperAdmin && (
+            <Link
+              href="/admin/users"
+              className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#16a34a] hover:shadow-xs transition duration-150 focus-utility-ring"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#ecfdf5] text-[#15803d] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <Users className="w-5 h-5" />
+              </div>
+              <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#15803d] transition-colors flex items-center justify-between">
+                <span>Manajemen Pengguna</span>
+                <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
+              </h2>
+              <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
+                Kelola akun operasional berjenjang, penugasan unit, dan catatan audit log.
+              </p>
+            </Link>
+          )}
         </div>
 
         {/* Infrastructure Heartbeat Grid */}

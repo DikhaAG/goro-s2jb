@@ -91,26 +91,27 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden relative">
-        <div className="h-1 bg-gradient-to-r from-cyan-500 via-sky-400 to-indigo-500" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white border border-[#e2e8f0] rounded-2xl w-full max-w-lg shadow-xl overflow-hidden relative">
+        <div className="h-1 bg-[#00a2b9]" />
 
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-950/80 border border-cyan-800/80 flex items-center justify-center text-cyan-400">
-              <UserPlus className="w-5 h-5" />
+        <div className="px-6 py-5 border-b border-[#f1f5f9] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center shrink-0 shadow-xs">
+              <UserPlus className="w-5 h-5 text-[#00a2b9]" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Tambah Pengguna Baru</h2>
-              <p className="text-xs text-slate-400">
-                Pemberian hak akses & penugasan wilayah kerja sistem GORO
+              <h2 className="text-base font-bold text-[#0f172a]">Tambah Pengguna Baru</h2>
+              <p className="text-xs text-[#64748b]">
+                Pemberian hak akses dan penugasan wilayah kerja sistem GORO S2JB
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+            aria-label="Tutup Dialog"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-[#64748b] hover:text-[#0f172a] rounded-xl hover:bg-[#f1f5f9] transition focus-utility-ring cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -118,16 +119,16 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {formError && (
-            <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="p-3.5 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-[#b91c1c] text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-[#ef4444]" />
               <span>{formError}</span>
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Username / NIP <span className="text-rose-400">*</span>
+              <label className="block text-xs font-semibold text-[#334155] mb-1.5">
+                Username / NIP <span className="text-[#ef4444]">*</span>
               </label>
               <input
                 type="text"
@@ -135,13 +136,13 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="misal: petugas_kenten"
-                className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] text-xs sm:text-sm focus-utility-ring min-h-[44px]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Nama Lengkap <span className="text-rose-400">*</span>
+              <label className="block text-xs font-semibold text-[#334155] mb-1.5">
+                Nama Lengkap <span className="text-[#ef4444]">*</span>
               </label>
               <input
                 type="text"
@@ -149,20 +150,20 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="misal: Bambang Irawan"
-                className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] text-xs sm:text-sm focus-utility-ring min-h-[44px]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Peran Pengguna (RBAC) <span className="text-rose-400">*</span>
+              <label className="block text-xs font-semibold text-[#334155] mb-1.5">
+                Peran Pengguna (RBAC) <span className="text-[#ef4444]">*</span>
               </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as Role)}
-                className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] text-xs sm:text-sm focus-utility-ring min-h-[44px] cursor-pointer"
               >
                 <option value={Role.PETUGAS_LAPANGAN}>Petugas Lapangan (/intake)</option>
                 <option value={Role.PEGAWAI}>Pegawai Triase (/triage)</option>
@@ -172,26 +173,26 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Kata Sandi Awal <span className="text-rose-400">*</span>
+              <label className="block text-xs font-semibold text-[#334155] mb-1.5">
+                Kata Sandi Awal <span className="text-[#ef4444]">*</span>
               </label>
               <input
                 type="text"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] text-xs sm:text-sm focus-utility-ring min-h-[44px]"
               />
             </div>
           </div>
 
           {/* Unit Assignment (Crucial for Petugas Lapangan) */}
-          <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800 space-y-3">
-            <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
-              <Building className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[#1e293b]">
+              <Building className="w-3.5 h-3.5 text-[#006877]" />
               <span>Penugasan Wilayah Kerja Organisasi</span>
               {role === Role.PETUGAS_LAPANGAN && (
-                <span className="text-[10px] text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-800/50">
+                <span className="text-[10px] text-[#b45309] bg-[#fff7ed] px-2 py-0.5 rounded border border-[#fed7aa] font-semibold">
                   Wajib untuk Petugas Lapangan
                 </span>
               )}
@@ -199,13 +200,13 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-[11px] text-[#64748b] font-medium mb-1">
                   Pilih Unit UP3
                 </label>
                 <select
                   value={selectedUp3Id}
                   onChange={(e) => setSelectedUp3Id(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-3 py-2 bg-white border border-[#cbd5e1] rounded-lg text-[#0f172a] text-xs focus-utility-ring min-h-[40px] cursor-pointer"
                 >
                   <option value="">-- Pilih Unit UP3 --</option>
                   {up3s.map((up3) => (
@@ -217,14 +218,14 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-[11px] text-[#64748b] font-medium mb-1">
                   Pilih Kantor ULP
                 </label>
                 <select
                   disabled={!selectedUp3Id}
                   value={selectedUlpId}
                   onChange={(e) => setSelectedUlpId(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-40"
+                  className="w-full px-3 py-2 bg-white border border-[#cbd5e1] rounded-lg text-[#0f172a] text-xs focus-utility-ring min-h-[40px] cursor-pointer disabled:opacity-40"
                 >
                   <option value="">-- Pilih Kantor ULP --</option>
                   {ulps.map((ulp) => (
@@ -237,19 +238,19 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 flex items-center justify-end space-x-3">
+          <div className="pt-3 border-t border-[#f1f5f9] flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
               disabled={createUserMutation.isPending}
-              className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-300 text-sm hover:bg-slate-800 transition"
+              className="min-h-[44px] px-4 py-2.5 rounded-xl border border-[#cbd5e1] text-[#475569] hover:bg-[#f1f5f9] text-xs font-semibold transition focus-utility-ring cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={createUserMutation.isPending}
-              className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/20 flex items-center space-x-2 transition cursor-pointer"
+              className="min-h-[44px] px-5 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#0097a7] text-white font-semibold text-xs shadow-xs flex items-center gap-2 transition cursor-pointer focus-utility-ring disabled:opacity-50"
             >
               {createUserMutation.isPending ? (
                 <>
