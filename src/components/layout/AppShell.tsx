@@ -16,10 +16,12 @@ export function AppShell({ children, pageTitle }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[#f9f9ff] flex flex-col">
       {/* 1. Mobile Top Navigation Bar (< 1024px) */}
-      <TopHeader
-        onOpenMobileNav={() => setIsMobileNavOpen(true)}
-        title={pageTitle}
-      />
+      <div className="lg:hidden">
+        <TopHeader
+          onOpenMobileNav={() => setIsMobileNavOpen(true)}
+          title={pageTitle}
+        />
+      </div>
 
       {/* 2. Mobile Slide-Over Drawer (< 1024px) */}
       <MobileNavDrawer

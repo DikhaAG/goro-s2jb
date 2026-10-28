@@ -14,6 +14,7 @@ import {
   Database,
   ShieldAlert,
   LogOut,
+  LogIn,
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -35,31 +36,31 @@ const NAV_ITEMS: NavMenuItem[] = [
     label: "Beranda Komando",
     href: "/",
     icon: LayoutDashboard,
-    roles: ["PETUGAS_LAPANGAN", "PEGAWAI", "MANAGER", "SUPER_ADMIN"],
+    roles: ["GUEST", "PETUGAS_LAPANGAN", "PEGAWAI", "MANAGER", "SUPER_ADMIN"],
   },
   {
     label: "Entri Eviden Lapangan",
     href: "/intake",
     icon: FileUp,
-    roles: ["PETUGAS_LAPANGAN", "SUPER_ADMIN"],
+    roles: ["GUEST", "PETUGAS_LAPANGAN", "SUPER_ADMIN"],
   },
   {
     label: "Triase Ulasan",
     href: "/operator/triage",
     icon: CheckSquare,
-    roles: ["PEGAWAI", "SUPER_ADMIN"],
+    roles: ["GUEST", "PEGAWAI", "SUPER_ADMIN"],
   },
   {
     label: "Laporan Eksekutif",
     href: "/manager/reports",
     icon: BarChart3,
-    roles: ["MANAGER", "SUPER_ADMIN"],
+    roles: ["GUEST", "MANAGER", "SUPER_ADMIN"],
   },
   {
     label: "Manajemen Pengguna",
     href: "/admin/users",
     icon: Users,
-    roles: ["SUPER_ADMIN"],
+    roles: ["GUEST", "SUPER_ADMIN"],
   },
   {
     label: "Migrasi Data Eviden",
@@ -110,7 +111,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
       case "SUPER_ADMIN":
         return "Super Admin";
       default:
-        return role;
+        return "Tamu Operasional";
     }
   };
 
@@ -165,7 +166,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 focus-utility-ring",
+                  "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 focus-utility-ring min-h-[44px]",
                   isActive
                     ? "bg-[#e7eeff] text-[#006877] font-semibold border-l-4 border-[#00a2b9]"
                     : "text-[#64748b] hover:text-[#1e293b] hover:bg-[#f8fafc]"
@@ -184,30 +185,59 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
         </nav>
       </div>
 
-      {/* 3. Footer: User Profile & Logout */}
+      {/* 3. Footer: User Profile & Logout / Login CTA */}
       <div className="p-4 border-t border-[#f1f5f9] bg-[#f8fafc]/50">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-[#e7eeff] text-[#006877] font-bold text-sm flex items-center justify-center shrink-0 border border-[#cfdaf2]">
-            {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-          </div>
-          <div className="flex flex-col text-left overflow-hidden">
-            <span className="text-xs font-semibold text-[#0f172a] truncate">
-              {user?.name || "Pengguna"}
-            </span>
-            <span className="text-[11px] text-[#64748b] truncate">
-              {getRoleLabel(userRole)}
-            </span>
-          </div>
-        </div>
+        {user ? (
+          <>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-[#e7eeff] text-[#006877] font-bold text-sm flex items-center justify-center shrink-0 border border-[#cfdaf2]">
+                {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+              </div>
+              <div className="flex flex-col text-left overflow-hidden">
+                <span className="text-xs font-semibold text-[#0f172a] truncate">
+                  {user.name}
+                </span>
+                <span className="text-[11px] text-[#64748b] truncate">
+                  {getRoleLabel(userRole)}
+                </span>
+              </div>
+            </div>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[#b91c1c] hover:bg-[#fee2e2] transition-colors focus-utility-ring border border-transparent cursor-pointer min-h-[40px]"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Keluar dari Sesi</span>
-        </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[#b91c1c] hover:bg-[#fee2e2] transition-colors focus-utility-ring border border-transparent cursor-pointer min-h-[44px]"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Keluar dari Sesi</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-[#f1f5f9] text-[#64748b] font-bold text-sm flex items-center justify-center shrink-0 border border-[#e2e8f0]">
+                <Users className="w-5 h-5 text-[#64748b]" />
+              </div>
+              <div className="flex flex-col text-left overflow-hidden">
+                <span className="text-xs font-semibold text-[#0f172a] truncate">
+                  Tamu Operasional
+                </span>
+                <span className="text-[11px] text-[#64748b] truncate">
+                  Belum Masuk Sesi
+                </span>
+              </div>
+            </div>
+
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-[#00a2b9] hover:bg-[#008b9e] text-white transition-colors focus-utility-ring shadow-xs min-h-[44px]"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Masuk ke Sistem</span>
+            </Link>
+          </>
+        )}
       </div>
     </aside>
   );
