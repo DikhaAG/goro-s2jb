@@ -128,20 +128,53 @@ export const auth = betterAuth({
     get: async (key: string) => {
       try {
         const val = await redis.get(key);
-        return val ? JSON.parse(val) : null;
+        if (!val) return null;
+        try {
+          return JSON.parse(val);
+        } catch {
+          return val;
+        }
       } catch {
         return null;
       }
     },
+    getAndDelete: async (key: string) => {
+      try {
+        const val = await redis.get(key);
+        if (val) {
+          await redis.del(key);
+          try {
+            return JSON.parse(val);
+          } catch {
+            return val;
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
+    increment: async (key: string, ttl: number) => {
+      try {
+        const count = await redis.incr(key);
+        if (count === 1 && ttl) {
+          await redis.expire(key, ttl);
+        }
+        return count;
+      } catch {
+        return 1;
+      }
+    },
     set: async (key: string, value: any, ttl?: number) => {
       try {
+        const serialized = typeof value === "string" ? value : JSON.stringify(value);
         if (ttl) {
-          await redis.set(key, JSON.stringify(value), "EX", ttl);
+          await redis.set(key, serialized, "EX", ttl);
         } else {
-          await redis.set(key, JSON.stringify(value));
+          await redis.set(key, serialized);
         }
       } catch {
-        // Fallback to primary DB silently if redis temporarily unavailable
+        // Fallback silently if redis is unavailable
       }
     },
     delete: async (key: string) => {
