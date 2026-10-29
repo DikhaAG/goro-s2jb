@@ -150,5 +150,109 @@ describe("Resumable Migration Parser - startRowNumber Fast-Skip (Unit)", () => {
         }
       }
     });
+
+    it("should trigger early-exit on consecutive empty or ghost rows without inflating errors", async () => {
+      const ghostFixturePath = path.join(process.cwd(), "uploads", "test_ghost_rows_fixture.csv");
+      // 3 valid rows + 25 consecutive ghost rows with formula residue
+      const ghostLines = [
+        "Column 1,Column 2,Column 3,Column 4,Column 5,Column 6,Column 7,Column 8,Column 9,Column 10,Column 11,Column 12,Column 13",
+        "7/2/2026 11:02:22,UP3 OGAN ILIR,ULP TUGU MULYO,Rudi Tabuci,02/07/2026,https://drive.google.com/1,V5.2.79,rudi tabuci,Pelanggan,,TIDAK,TRUE,",
+        "7/2/2026 13:31:48,UP3 PALEMBANG,ULP PANGKALAN BALAI,Miki,02/07/2026,https://drive.google.com/2,V5.2.79,Miki,Pelanggan,,TIDAK,TRUE,",
+        "7/2/2026 13:33:40,UP3 PALEMBANG,ULP PANGKALAN BALAI,Eta,02/07/2026,https://drive.google.com/3,V5.2.79,Eta,Pelanggan,,TIDAK,TRUE,",
+      ];
+
+      for (let i = 0; i < 25; i++) {
+        ghostLines.push(",,,,,,,,,,TIDAK,FALSE,");
+      }
+
+      await fs.promises.writeFile(ghostFixturePath, ghostLines.join("\n"));
+
+      try {
+        const received: RawReviewRow[] = [];
+        const loggedErrors: any[] = [];
+
+        const res = await parseCsvStream(ghostFixturePath, {
+          maxConsecutiveEmptyRows: 5,
+          onBatch: async (batch) => { received.push(...batch); },
+          onError: async (err) => { loggedErrors.push(err); },
+        });
+
+        // 3 valid rows must be parsed, and 0 ghost rows should be treated as errors!
+        expect(res.totalProcessed).toBe(3);
+        expect(res.totalErrors).toBe(0);
+        expect(received.length).toBe(3);
+        expect(loggedErrors.length).toBe(0);
+      } finally {
+        if (fs.existsSync(ghostFixturePath)) {
+          await fs.promises.unlink(ghostFixturePath);
+        }
+      }
+    });
+
+    it("should safely skip an isolated empty row and continue processing valid rows", async () => {
+      const isolatedEmptyPath = path.join(process.cwd(), "uploads", "test_isolated_empty.csv");
+      const lines = [
+        "Column 1,Column 2,Column 3,Column 4,Column 5,Column 6,Column 7,Column 8,Column 9,Column 10,Column 11,Column 12,Column 13",
+        "7/2/2026 11:02:22,UP3 OGAN ILIR,ULP TUGU MULYO,User 1,02/07/2026,https://drive.google.com/1,V5.2.79,User 1,Pelanggan,,TIDAK,TRUE,",
+        ",,,,,,,,,,,,", // 1 isolated empty row
+        "7/2/2026 13:31:48,UP3 PALEMBANG,ULP PANGKALAN BALAI,User 2,02/07/2026,https://drive.google.com/2,V5.2.79,User 2,Pelanggan,,TIDAK,TRUE,",
+      ];
+
+      await fs.promises.writeFile(isolatedEmptyPath, lines.join("\n"));
+
+      try {
+        const received: RawReviewRow[] = [];
+        const loggedErrors: any[] = [];
+
+        const res = await parseCsvStream(isolatedEmptyPath, {
+          maxConsecutiveEmptyRows: 5,
+          onBatch: async (batch) => { received.push(...batch); },
+          onError: async (err) => { loggedErrors.push(err); },
+        });
+
+        expect(res.totalProcessed).toBe(2);
+        expect(res.totalErrors).toBe(0);
+        expect(received.length).toBe(2);
+        expect(received[0].playstoreReviewerName).toBe("User 1");
+        expect(received[1].playstoreReviewerName).toBe("User 2");
+      } finally {
+        if (fs.existsSync(isolatedEmptyPath)) {
+          await fs.promises.unlink(isolatedEmptyPath);
+        }
+      }
+    });
+
+    it("should record validation error for malformed non-empty row and reset consecutive counter", async () => {
+      const malformedPath = path.join(process.cwd(), "uploads", "test_malformed_row.csv");
+      const lines = [
+        "Column 1,Column 2,Column 3,Column 4,Column 5,Column 6,Column 7,Column 8,Column 9,Column 10,Column 11,Column 12,Column 13",
+        "7/2/2026 11:02:22,UP3 OGAN ILIR,ULP TUGU MULYO,User 1,02/07/2026,https://drive.google.com/1,V5.2.79,User 1,Pelanggan,,TIDAK,TRUE,",
+        "7/2/2026 12:00:00,,,Corrupted User,02/07/2026,https://drive.google.com/bad,V5.2.79,Corrupted,Pelanggan,,TIDAK,TRUE,", // missing UP3 & ULP
+        "7/2/2026 13:31:48,UP3 PALEMBANG,ULP PANGKALAN BALAI,User 2,02/07/2026,https://drive.google.com/2,V5.2.79,User 2,Pelanggan,,TIDAK,TRUE,",
+      ];
+
+      await fs.promises.writeFile(malformedPath, lines.join("\n"));
+
+      try {
+        const received: RawReviewRow[] = [];
+        const loggedErrors: any[] = [];
+
+        const res = await parseCsvStream(malformedPath, {
+          maxConsecutiveEmptyRows: 5,
+          onBatch: async (batch) => { received.push(...batch); },
+          onError: async (err) => { loggedErrors.push(err); },
+        });
+
+        expect(res.totalProcessed).toBe(2);
+        expect(res.totalErrors).toBe(1);
+        expect(loggedErrors.length).toBe(1);
+        expect(loggedErrors[0].rowNumber).toBe(3);
+        expect(loggedErrors[0].reason).toContain("Kolom wajib");
+      } finally {
+        if (fs.existsSync(malformedPath)) {
+          await fs.promises.unlink(malformedPath);
+        }
+      }
+    });
   });
 });

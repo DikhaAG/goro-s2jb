@@ -1,6 +1,19 @@
 import ExcelJS from "exceljs";
 import { RawReviewRow, parseExcelOrStandardDate } from "./csvStreamParser";
 
+export function isGhostOrBlankXlsxRow(values: any[]): boolean {
+  if (!values || values.length === 0) return true;
+
+  // In ExcelJS, values is 1-indexed (index 0 is undefined or null).
+  // Column 1 = Timestamp, Column 2 = UP3, Column 3 = ULP, Column 4 = Reviewer Name
+  const c1 = String(values[1] || "").trim();
+  const c2 = String(values[2] || "").trim();
+  const c3 = String(values[3] || "").trim();
+  const c4 = String(values[4] || "").trim();
+
+  return !c1 && !c2 && !c3 && !c4;
+}
+
 export async function parseXlsxStream(
   filePath: string,
   options: {
@@ -8,6 +21,7 @@ export async function parseXlsxStream(
     batchSize?: number;
     maxRows?: number;
     startRowNumber?: number;
+    maxConsecutiveEmptyRows?: number;
     onBatch: (batch: RawReviewRow[]) => Promise<void>;
     onError?: (error: { rowNumber: number; raw: any; reason: string }) => Promise<void>;
     onProgress?: (processed: number) => Promise<void>;
@@ -15,10 +29,12 @@ export async function parseXlsxStream(
 ): Promise<{ totalProcessed: number; totalErrors: number }> {
   const targetSheetName = options.sheetName || "Form Responses 1";
   const batchSize = options.batchSize || 1000;
+  const maxConsecutiveEmptyRows = options.maxConsecutiveEmptyRows || 10;
   let batch: RawReviewRow[] = [];
   let totalProcessed = 0;
   let totalErrors = 0;
   let currentRowNumber = 0;
+  let consecutiveEmptyRows = 0;
 
   const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(filePath, {
     entries: "emit",
@@ -47,9 +63,16 @@ export async function parseXlsxStream(
 
       try {
         const values = row.values as any[];
-        if (!values || values.length < 4) {
+        if (!values || values.length < 4 || isGhostOrBlankXlsxRow(values)) {
+          consecutiveEmptyRows++;
+          if (consecutiveEmptyRows >= maxConsecutiveEmptyRows) {
+            break;
+          }
           continue;
         }
+
+        // Reset consecutive empty rows counter since we encountered a non-empty row
+        consecutiveEmptyRows = 0;
 
         const up3 = String(values[2] || "").trim();
         const ulp = String(values[3] || "").trim();

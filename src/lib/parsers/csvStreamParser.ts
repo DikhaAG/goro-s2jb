@@ -104,21 +104,40 @@ export function parseExcelOrStandardDate(val: any): Date {
   return new Date();
 }
 
+export function isGhostOrBlankRow(row: (string | undefined | null)[]): boolean {
+  if (!row || row.length === 0) return true;
+  const allEmpty = row.every((c) => !c || String(c).trim() === "");
+  if (allEmpty) return true;
+
+  // Primary identifying columns: Timestamp (0), UP3 (1), ULP (2), Reviewer Name (3)
+  const c0 = (row[0] || "").trim();
+  const c1 = (row[1] || "").trim();
+  const c2 = (row[2] || "").trim();
+  const c3 = (row[3] || "").trim();
+
+  // If all 4 key identifier columns are empty, it is a ghost row (e.g. trailing formula row)
+  return !c0 && !c1 && !c2 && !c3;
+}
+
 export async function parseCsvStream(
   filePath: string,
   options: {
     batchSize?: number;
     startRowNumber?: number;
+    maxConsecutiveEmptyRows?: number;
     onBatch: (batch: RawReviewRow[]) => Promise<void>;
     onError?: (error: { rowNumber: number; raw: any; reason: string }) => Promise<void>;
     onProgress?: (processed: number) => Promise<void>;
   }
 ): Promise<{ totalProcessed: number; totalErrors: number }> {
   const batchSize = options.batchSize || 1000;
+  const maxConsecutiveEmptyRows = options.maxConsecutiveEmptyRows || 10;
   let batch: RawReviewRow[] = [];
   let totalProcessed = 0;
   let totalErrors = 0;
   let currentRowNumber = 0;
+  let consecutiveEmptyRows = 0;
+  let isEarlyExit = false;
 
   return new Promise((resolve, reject) => {
     const stream = fs.createReadStream(filePath);
@@ -130,6 +149,7 @@ export async function parseCsvStream(
         reject(error);
       })
       .on("data", async (row: string[]) => {
+        if (isEarlyExit) return;
         currentRowNumber++;
 
         // Fast-skip already processed rows if resuming from a checkpoint
@@ -144,6 +164,35 @@ export async function parseCsvStream(
         ) {
           return;
         }
+
+        // Detect consecutive empty or ghost rows (residu formula)
+        if (isGhostOrBlankRow(row)) {
+          consecutiveEmptyRows++;
+          if (consecutiveEmptyRows >= maxConsecutiveEmptyRows) {
+            isEarlyExit = true;
+            csvStream.destroy();
+            stream.destroy();
+
+            // Flush remaining buffer before exiting
+            try {
+              if (batch.length > 0) {
+                const toProcess = [...batch];
+                batch = [];
+                await options.onBatch(toProcess);
+                if (options.onProgress) {
+                  await options.onProgress(totalProcessed);
+                }
+              }
+              resolve({ totalProcessed, totalErrors });
+            } catch (err) {
+              reject(err);
+            }
+          }
+          return;
+        }
+
+        // Reset consecutive empty rows counter since we encountered a non-empty row
+        consecutiveEmptyRows = 0;
 
         try {
           // Validate minimum required columns
@@ -216,6 +265,7 @@ export async function parseCsvStream(
         }
       })
       .on("end", async () => {
+        if (isEarlyExit) return;
         try {
           // Process final remaining items in batch
           if (batch.length > 0) {
