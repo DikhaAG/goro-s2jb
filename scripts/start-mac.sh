@@ -54,11 +54,13 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM EXIT
 
+mkdir -p "$PROJECT_DIR/logs"
+
 # 2. Menjalankan Python OCR Microservice (Port 8001)
-echo -e "${BLUE}[1/3] Menjalankan Microservice Python OCR (Port 8001)...${NC}"
-OCR_PYTHON="python-services/ocr/venv/bin/python"
+echo -e "${BLUE}[1/4] Menjalankan Microservice Python OCR (Port 8001)...${NC}"
+OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python"
 if [ ! -f "$OCR_PYTHON" ]; then
-    OCR_PYTHON="python-services/ocr/venv/bin/python3"
+    OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python3"
 fi
 if [ ! -f "$OCR_PYTHON" ]; then
     OCR_PYTHON="python3"
@@ -66,20 +68,27 @@ fi
 
 (
     cd python-services/ocr
-    "$OCR_PYTHON" -m uvicorn main:app --host 127.0.0.1 --port 8001 --log-level warning
+    "$OCR_PYTHON" -m uvicorn main:app --host 127.0.0.1 --port 8001 --log-level info >> "$PROJECT_DIR/logs/ocr_service.log" 2>&1
 ) &
 OCR_PID=$!
 CHILD_PIDS+=($OCR_PID)
-echo -e "${GREEN}✓ Microservice OCR berjalan di latar belakang (PID: $OCR_PID)${NC}"
+echo -e "${GREEN}✓ Microservice OCR berjalan di latar belakang (PID: $OCR_PID, log: logs/ocr_service.log)${NC}"
 
-# 3. Menjalankan BullMQ OCR Queue Worker
-echo -e "${BLUE}[2/3] Menjalankan Background Worker BullMQ OCR...${NC}"
-npm run worker:ocr > /dev/null 2>&1 &
-WORKER_PID=$!
-CHILD_PIDS+=($WORKER_PID)
-echo -e "${GREEN}✓ Background Worker OCR berjalan di latar belakang (PID: $WORKER_PID)${NC}"
+# 3. Menjalankan Background Worker BullMQ OCR
+echo -e "${BLUE}[2/4] Menjalankan Background Worker BullMQ OCR...${NC}"
+npm run worker:ocr >> "$PROJECT_DIR/logs/worker_ocr.log" 2>&1 &
+WORKER_OCR_PID=$!
+CHILD_PIDS+=($WORKER_OCR_PID)
+echo -e "${GREEN}✓ Background Worker OCR berjalan di latar belakang (PID: $WORKER_OCR_PID, log: logs/worker_ocr.log)${NC}"
 
-# Tunggu sejenak agar background worker siap
+# 4. Menjalankan Background Worker BullMQ Bulk Import
+echo -e "${BLUE}[3/4] Menjalankan Background Worker BullMQ Import...${NC}"
+npm run worker:import >> "$PROJECT_DIR/logs/worker_import.log" 2>&1 &
+WORKER_IMPORT_PID=$!
+CHILD_PIDS+=($WORKER_IMPORT_PID)
+echo -e "${GREEN}✓ Background Worker Import berjalan di latar belakang (PID: $WORKER_IMPORT_PID, log: logs/worker_import.log)${NC}"
+
+# Tunggu sejenak agar background worker dan microservice siap
 sleep 2
 
 # 4. Tampilkan Panduan Akses Cepat
@@ -99,5 +108,5 @@ echo -e "------------------------------------------------------------------"
 echo -e "${YELLOW}Tekan Ctrl+C untuk menghentikan semua layanan sekaligus.${NC}\n"
 
 # 5. Menjalankan Next.js Web App di Foreground
-echo -e "${BLUE}[3/3] Memulai Next.js Web Server...${NC}"
+echo -e "${BLUE}[4/4] Memulai Next.js Web Server...${NC}"
 npm run dev

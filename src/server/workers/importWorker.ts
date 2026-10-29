@@ -18,12 +18,17 @@ export function createImportWorker() {
         where: { id: importBatchId },
       });
 
+      if (!existingBatch) {
+        console.warn(`[Import Worker] Batch ${importBatchId} not found in database. Discarding orphaned job.`);
+        return { success: false, reason: "Batch record not found in database" };
+      }
+
       // 2. Update batch status to PROCESSING
       await prisma.migrationBatch.update({
         where: { id: importBatchId },
         data: {
           status: "PROCESSING",
-          startedAt: existingBatch?.startedAt || new Date(),
+          startedAt: existingBatch.startedAt || new Date(),
         },
       });
 
@@ -194,14 +199,18 @@ export function createImportWorker() {
         };
       } catch (err: any) {
         console.error(`[Import Worker] Batch ${importBatchId} failed:`, err);
-        await prisma.migrationBatch.update({
-          where: { id: importBatchId },
-          data: {
-            status: "FAILED",
-            completedAt: new Date(),
-            errorMessage: err.message || "Unknown worker error",
-          },
-        });
+        try {
+          await prisma.migrationBatch.update({
+            where: { id: importBatchId },
+            data: {
+              status: "FAILED",
+              completedAt: new Date(),
+              errorMessage: err.message || "Unknown worker error",
+            },
+          });
+        } catch {
+          // Ignore if batch record was already removed
+        }
         throw err;
       }
     },
