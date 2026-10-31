@@ -1,15 +1,9 @@
-import React from "react";
 import { Role } from "@prisma/client";
-import { AppShell } from "@/components/layout/AppShell";
-import { requireServerAuth } from "@/lib/server-auth";
+import { createRoleLayout } from "@/components/layout/RoleLayout";
 
-export default async function OperatorLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Layer 2 Server Guard: Verify active session and role
-  await requireServerAuth([Role.PEGAWAI, Role.SUPER_ADMIN]);
+const OperatorLayout = createRoleLayout({
+  allowedRoles: [Role.PEGAWAI, Role.SUPER_ADMIN],
+  pageTitle: "Triase Ulasan Operator",
+});
 
-  return <AppShell pageTitle="Triase Ulasan Operator">{children}</AppShell>;
-}
+export default OperatorLayout;

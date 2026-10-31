@@ -1,15 +1,9 @@
-import React from "react";
 import { Role } from "@prisma/client";
-import { AppShell } from "@/components/layout/AppShell";
-import { requireServerAuth } from "@/lib/server-auth";
+import { createRoleLayout } from "@/components/layout/RoleLayout";
 
-export default async function FieldLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Layer 2 Server Guard: Verify active session and role
-  await requireServerAuth([Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN]);
+const FieldLayout = createRoleLayout({
+  allowedRoles: [Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN],
+  pageTitle: "Entri Eviden",
+});
 
-  return <AppShell pageTitle="Entri Eviden">{children}</AppShell>;
-}
+export default FieldLayout;

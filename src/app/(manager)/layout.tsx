@@ -1,15 +1,9 @@
-import React from "react";
 import { Role } from "@prisma/client";
-import { AppShell } from "@/components/layout/AppShell";
-import { requireServerAuth } from "@/lib/server-auth";
+import { createRoleLayout } from "@/components/layout/RoleLayout";
 
-export default async function ManagerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Layer 2 Server Guard: Verify active session and role
-  await requireServerAuth([Role.MANAGER, Role.SUPER_ADMIN]);
+const ManagerLayout = createRoleLayout({
+  allowedRoles: [Role.MANAGER, Role.SUPER_ADMIN],
+  pageTitle: "Laporan & Intelijen Manajer",
+});
 
-  return <AppShell pageTitle="Laporan & Intelijen Manajer">{children}</AppShell>;
-}
+export default ManagerLayout;
