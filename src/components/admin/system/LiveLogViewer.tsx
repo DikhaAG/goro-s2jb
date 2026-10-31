@@ -63,9 +63,9 @@ export function LiveLogViewer({
   };
 
   return (
-    <div className="bg-[#0b1329] rounded-2xl border border-slate-800 shadow-xl overflow-hidden flex flex-col h-[520px]">
+    <div className="bg-[#0b1329] rounded-2xl border border-[#1e293b] shadow-2xl overflow-hidden flex flex-col h-[520px]">
       {/* Top Bar: Tabs & Controls */}
-      <div className="p-3 bg-[#0f172a] border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-3 bg-[#0f172a] border-b border-[#1e293b] flex flex-wrap items-center justify-between gap-3">
         {/* Log File Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {AVAILABLE_LOGS.map((item) => (
@@ -73,14 +73,14 @@ export function LiveLogViewer({
               key={item.fileName}
               type="button"
               onClick={() => onSelectFile(item.fileName)}
-              className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+              className={`text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 min-h-[36px] focus-utility-ring cursor-pointer ${
                 activeFile === item.fileName
-                  ? "bg-[#00A3E0] text-white shadow-sm"
-                  : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                  ? "bg-[#00a2b9] text-white shadow-xs"
+                  : "bg-[#1e293b] text-[#94a3b8] hover:text-white hover:bg-[#334155]"
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              {item.label}
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
@@ -91,7 +91,7 @@ export function LiveLogViewer({
           <select
             value={lineCount}
             onChange={(e) => onChangeLineCount(parseInt(e.target.value, 10))}
-            className="text-xs h-7 px-2 rounded-md bg-slate-800 border border-slate-700 text-slate-300 focus:outline-none focus:ring-1 focus:ring-[#00A3E0]"
+            className="text-xs h-9 min-h-[36px] px-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-slate-200 font-bold focus-utility-ring"
           >
             <option value="50">50 Baris</option>
             <option value="100">100 Baris</option>
@@ -100,46 +100,43 @@ export function LiveLogViewer({
           </select>
 
           {/* Auto-scroll toggle */}
-          <Button
-            size="sm"
-            variant="ghost"
+          <button
+            type="button"
             onClick={() => setAutoScroll(!autoScroll)}
-            className={`h-7 px-2 text-xs rounded-md ${
-              autoScroll ? "text-[#00A3E0] bg-[#00A3E0]/10" : "text-slate-400 hover:text-slate-200"
+            className={`min-h-[36px] px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1 focus-utility-ring cursor-pointer ${
+              autoScroll ? "text-[#5eead4] bg-[#00a2b9]/20 border border-[#00a2b9]/40" : "text-slate-400 hover:text-slate-200 bg-[#1e293b]"
             }`}
             title="Auto-Scroll ke bagian bawah"
           >
-            <ArrowDown className="w-3.5 h-3.5 mr-1" />
-            Auto-Scroll
-          </Button>
+            <ArrowDown className="w-3.5 h-3.5" />
+            <span>Auto-Scroll</span>
+          </button>
 
           {/* Copy button */}
-          <Button
-            size="sm"
-            variant="ghost"
+          <button
+            type="button"
             onClick={handleCopy}
-            className="h-7 px-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-md"
+            className="min-h-[36px] px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#1e293b] hover:bg-[#334155] rounded-xl transition-all flex items-center gap-1 focus-utility-ring cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
-            {copied ? "Tersalin" : "Salin"}
-          </Button>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? "Tersalin" : "Salin"}</span>
+          </button>
 
           {/* Refresh button */}
-          <Button
-            size="sm"
-            variant="ghost"
+          <button
+            type="button"
             disabled={isLoading}
             onClick={onRefresh}
-            className="h-7 px-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-md"
+            className="min-h-[36px] px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#1e293b] hover:bg-[#334155] rounded-xl transition-all flex items-center gap-1 focus-utility-ring cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isLoading ? "animate-spin text-[#00A3E0]" : ""}`} />
-            Segarkan
-          </Button>
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-[#00a2b9]" : ""}`} />
+            <span>Segarkan</span>
+          </button>
         </div>
       </div>
 
       {/* Terminal Content Body */}
-      <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed text-slate-300 selection:bg-[#00A3E0]/30 selection:text-white">
+      <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed text-slate-300 selection:bg-[#00a2b9]/40 selection:text-white">
         {lines.length === 0 ? (
           <div className="flex items-center justify-center h-full text-slate-500">
             <Terminal className="w-5 h-5 mr-2 opacity-50" />
@@ -170,11 +167,11 @@ export function LiveLogViewer({
       </div>
 
       {/* Terminal Footer Bar */}
-      <div className="px-4 py-2 bg-[#090e1f] border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+      <div className="px-4 py-2.5 bg-[#090e1f] border-t border-[#1e293b] text-[11px] font-mono text-slate-400 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span>Berkas: <strong className="text-slate-300">{activeFile}</strong></span>
-          <span>Ukuran: <strong className="text-slate-300">{formatFileSize(sizeBytes)}</strong></span>
-          <span>Total: <strong className="text-slate-300">{totalLines} baris</strong></span>
+          <span>Berkas: <strong className="text-slate-200">{activeFile}</strong></span>
+          <span>Ukuran: <strong className="text-slate-200">{formatFileSize(sizeBytes)}</strong></span>
+          <span>Total: <strong className="text-slate-200">{totalLines} baris</strong></span>
         </div>
         {lastModified && (
           <div className="text-slate-500">

@@ -11,6 +11,9 @@ import {
   Layers,
   FileText,
   Activity,
+  Zap,
+  Server,
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ServiceStatusGrid } from "@/components/admin/system/ServiceStatusGrid";
@@ -111,83 +114,95 @@ export default function SystemProcessesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* 1. Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+      {/* 1. Enterprise Command Header Banner */}
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="p-1.5 bg-[#00A3E0]/10 text-[#00A3E0] rounded-lg">
-              <Terminal className="w-5 h-5" />
+          {/* Brand Badges Bar */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#006877]/10 text-[#006877] text-xs font-bold">
+              <Zap className="w-3.5 h-3.5 fill-[#006877]" />
+              PLN UID S2JB
             </span>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Pusat Kontrol Layanan & Proses Sistem Lokal
-            </h1>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs font-semibold">
+              <Server className="w-3.5 h-3.5 text-[#64748b]" />
+              Host System &amp; OS Daemon Controller
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              System Engine Active
+            </span>
           </div>
-          <p className="text-xs text-slate-500 max-w-2xl">
-            Pemantauan langsung port TCP, Process ID (PID), penggunaan sumber daya host, pembacaan log real-time, serta pengendalian siklus hidup proses latar belakang.
-          </p>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center shrink-0 border border-[#bae6fd]">
+              <Terminal className="w-5 h-5 text-[#006877]" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-[#0f172a] tracking-tight">
+                Pusat Kontrol Layanan &amp; Proses Sistem Lokal
+              </h1>
+              <p className="text-xs sm:text-sm text-[#475569] mt-0.5">
+                Pemantauan langsung port TCP, Process ID (PID), penggunaan sumber daya host, pembacaan log real-time, serta pengendalian siklus hidup proses latar belakang.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Global Control Buttons */}
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
+        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+          <button
+            type="button"
             disabled={cleanOrphansMutation.isPending}
             onClick={() => cleanOrphansMutation.mutate({})}
-            className="h-9 text-xs px-3 rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50 font-medium transition-colors"
+            className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold border border-[#fed7aa] bg-[#fff7ed] hover:bg-[#ffedd5] text-[#b45309] shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
             title="Hentikan proses detached / zombie yang tidak terikat terminal"
           >
-            <Sparkles className={`w-3.5 h-3.5 mr-1.5 ${cleanOrphansMutation.isPending ? "animate-spin" : ""}`} />
-            Bersihkan Proses Zombie
-          </Button>
+            <Sparkles className={`w-3.5 h-3.5 ${cleanOrphansMutation.isPending ? "animate-spin text-[#f59e0b]" : "text-[#b45309]"}`} />
+            <span>Bersihkan Zombie</span>
+          </button>
 
-          <Button
-            size="sm"
+          <button
+            type="button"
             onClick={handleRefreshAll}
             disabled={overviewQuery.isFetching}
-            className="h-9 text-xs px-3.5 rounded-xl bg-[#00A3E0] hover:bg-[#0072A3] text-white font-medium shadow-sm transition-all"
+            className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-[#00a2b9] hover:bg-[#008c9f] text-white shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${overviewQuery.isFetching ? "animate-spin" : ""}`} />
-            Segarkan Status
-          </Button>
+            <RotateCw className={`w-3.5 h-3.5 ${overviewQuery.isFetching ? "animate-spin text-white" : "text-white"}`} />
+            <span>Segarkan Status</span>
+          </button>
         </div>
       </div>
 
-      {/* Floating Feedback Notification */}
+      {/* Floating Dark Toast Notification */}
       {feedback && (
         <div
-          className={`p-4 rounded-xl text-xs font-medium border flex items-center justify-between shadow-sm animate-in slide-in-from-top-2 duration-150 ${
-            feedback.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-rose-50 text-rose-800 border-rose-200"
-          }`}
+          role="status"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 animate-in fade-in duration-200"
         >
-          <div className="flex items-center gap-2">
-            {feedback.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
-            )}
-            <span>{feedback.message}</span>
-          </div>
+          {feedback.type === "success" ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+          )}
+          <span className="text-xs font-semibold">{feedback.message}</span>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 hover:text-white font-bold ml-2 text-xs focus-utility-ring rounded p-1"
           >
-            ✕
+            x
           </button>
         </div>
       )}
 
       {/* 2. Service Status Grid */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#00A3E0]" />
-            Status Port Layanan Inti
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#006877]" />
+            <span>Status Port Layanan Inti</span>
           </h2>
-          <span className="text-xs text-slate-400">Pembaruan otomatis setiap 5 detik</span>
+          <span className="text-xs font-mono text-[#64748b]">Pembaruan otomatis setiap 5 detik</span>
         </div>
         <ServiceStatusGrid
           services={overviewQuery.data?.services || []}
@@ -198,11 +213,11 @@ export default function SystemProcessesPage() {
       </div>
 
       {/* 3. System Hardware & Runtime Telemetry */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-purple-600" />
-            Telemetri Sumber Daya Sistem Host
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[#006877]" />
+            <span>Telemetri Sumber Daya Sistem Host</span>
           </h2>
         </div>
         <SystemResourceGauge resources={overviewQuery.data?.resources || null} />
@@ -216,13 +231,13 @@ export default function SystemProcessesPage() {
       />
 
       {/* 5. Live Log Viewer Terminal */}
-      <div id="log-viewer-section">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#00A3E0]" />
-            Inspeksi Berkas Log Real-Time
+      <div id="log-viewer-section" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
+            <FileText className="w-4 h-4 text-[#006877]" />
+            <span>Inspeksi Berkas Log Real-Time</span>
           </h2>
-          <span className="text-xs text-slate-400">Stream dari direktori logs/</span>
+          <span className="text-xs font-mono text-[#64748b]">Stream dari direktori logs/</span>
         </div>
         <LiveLogViewer
           activeFile={activeLogFile}

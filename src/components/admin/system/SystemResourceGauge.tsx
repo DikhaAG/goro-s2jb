@@ -52,90 +52,90 @@ export function SystemResourceGauge({ resources }: SystemResourceGaugeProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* 1. Hardware Memory */}
-      <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between">
         <div>
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-              <HardDrive className="w-4 h-4 text-[#00A3E0]" />
+          <div className="flex items-center justify-between text-[#64748b] mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#0f172a]">
+              <HardDrive className="w-4 h-4 text-[#006877]" />
               Memori RAM Host
             </span>
-            <span className="text-xs font-mono font-medium text-slate-800">
+            <span className="text-xs font-mono font-bold text-[#006877]">
               {resources.memUsagePercent}% Terpakai
             </span>
           </div>
 
-          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-2">
+          <div className="w-full h-2.5 bg-[#f1f5f9] rounded-full overflow-hidden mt-2 border border-[#e2e8f0]">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
                 resources.memUsagePercent > 85
-                  ? "bg-rose-500"
+                  ? "bg-[#dc2626]"
                   : resources.memUsagePercent > 70
-                  ? "bg-amber-500"
-                  : "bg-[#00A3E0]"
+                  ? "bg-[#f59e0b]"
+                  : "bg-[#00a2b9]"
               }`}
               style={{ width: `${Math.min(resources.memUsagePercent, 100)}%` }}
             />
           </div>
 
-          <div className="mt-3 flex justify-between text-xs text-slate-500">
-            <span>Terpakai: <strong className="text-slate-800">{formatBytes(resources.usedMemBytes)}</strong></span>
-            <span>Total: <strong className="text-slate-800">{formatBytes(resources.totalMemBytes)}</strong></span>
+          <div className="mt-3 flex justify-between text-xs text-[#64748b]">
+            <span>Terpakai: <strong className="font-mono text-[#0f172a]">{formatBytes(resources.usedMemBytes)}</strong></span>
+            <span>Total: <strong className="font-mono text-[#0f172a]">{formatBytes(resources.totalMemBytes)}</strong></span>
           </div>
         </div>
       </div>
 
       {/* 2. Node.js Runtime Memory */}
-      <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between">
         <div>
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-              <Activity className="w-4 h-4 text-purple-600" />
+          <div className="flex items-center justify-between text-[#64748b] mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#0f172a]">
+              <Activity className="w-4 h-4 text-[#006877]" />
               Runtime Node.js
             </span>
-            <span className="text-xs font-mono text-slate-500">
+            <span className="text-xs font-mono text-[#64748b]">
               {resources.platform} ({resources.arch})
             </span>
           </div>
 
           <div className="mt-2 space-y-1.5 text-xs">
             <div className="flex justify-between">
-              <span className="text-slate-400">Heap Terpakai:</span>
-              <span className="font-mono font-medium text-slate-800">{formatMb(resources.nodeMemory.heapUsed)}</span>
+              <span className="text-[#64748b]">Heap Terpakai:</span>
+              <span className="font-mono font-bold text-[#0f172a]">{formatMb(resources.nodeMemory.heapUsed)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Resident Set Size (RSS):</span>
-              <span className="font-mono font-medium text-slate-800">{formatMb(resources.nodeMemory.rss)}</span>
+              <span className="text-[#64748b]">Resident Set Size (RSS):</span>
+              <span className="font-mono font-bold text-[#0f172a]">{formatMb(resources.nodeMemory.rss)}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* 3. Uptime & CPU Core */}
-      <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between">
         <div>
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold flex items-center gap-1.5 text-slate-700">
-              <Cpu className="w-4 h-4 text-emerald-600" />
-              CPU & Waktu Aktif
+          <div className="flex items-center justify-between text-[#64748b] mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#0f172a]">
+              <Cpu className="w-4 h-4 text-[#16a34a]" />
+              CPU &amp; Waktu Aktif
             </span>
-            <span className="text-xs font-mono text-slate-500">
+            <span className="text-xs font-mono font-bold text-[#0f172a]">
               {resources.cpuCount} Cores
             </span>
           </div>
 
           <div className="mt-2 space-y-1.5 text-xs">
             <div className="flex justify-between items-center">
-              <span className="text-slate-400 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-slate-400" />
+              <span className="text-[#64748b] flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-[#64748b]" />
                 Uptime Sistem:
               </span>
-              <span className="font-mono font-medium text-slate-800">
+              <span className="font-mono font-bold text-[#0f172a]">
                 {formatDuration(resources.systemUptimeSeconds)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Uptime Proses Server:</span>
-              <span className="font-mono font-medium text-slate-800">
+              <span className="text-[#64748b]">Uptime Proses Server:</span>
+              <span className="font-mono font-bold text-[#0f172a]">
                 {formatDuration(resources.processUptimeSeconds)}
               </span>
             </div>

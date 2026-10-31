@@ -2,9 +2,7 @@
 
 import React, { useState } from "react";
 import { Search, Shield, AlertOctagon, Terminal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 
 export interface ManagedProcessItem {
   pid: number;
@@ -46,21 +44,21 @@ export function RunningProcessTable({
   const getServiceBadge = (type: string) => {
     switch (type) {
       case "IMPORT_WORKER":
-        return <Badge className="bg-blue-50 text-blue-700 border-blue-200">Worker Impor</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd]">Worker Impor</span>;
       case "OCR_WORKER":
-        return <Badge className="bg-purple-50 text-purple-700 border-purple-200">Worker OCR</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#faf5ff] text-[#7e22ce] border border-[#e9d5ff]">Worker OCR</span>;
       case "PYTHON_OCR":
-        return <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">Python OCR</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">Python OCR</span>;
       case "WEB_SERVER":
-        return <Badge className="bg-cyan-50 text-cyan-700 border-cyan-200">Web Next.js</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#f0fdfa] text-[#006877] border border-[#99f6e4]">Web Next.js</span>;
       case "REDIS":
-        return <Badge className="bg-rose-50 text-rose-700 border-rose-200">Redis Daemon</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]">Redis Daemon</span>;
       case "POSTGRES":
-        return <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200">PostgreSQL</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">PostgreSQL</span>;
       case "CLI_TASK":
-        return <Badge className="bg-amber-50 text-amber-700 border-amber-200">CLI Runner</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">CLI Runner</span>;
       default:
-        return <Badge className="bg-slate-50 text-slate-700 border-slate-200">Proses</Badge>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Proses</span>;
     }
   };
 
@@ -81,15 +79,15 @@ export function RunningProcessTable({
   });
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-xs overflow-hidden">
       {/* Header & Filter Controls */}
-      <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-[#e2e8f0] bg-[#f8fafc] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-[#00A3E0]" />
-            Daftar Proses Sistem Operasi Lokal
+          <h3 className="text-base font-bold text-[#0f172a] tracking-tight flex items-center gap-2">
+            <Terminal className="w-4 h-4 text-[#006877]" />
+            <span>Daftar Proses Sistem Operasi Lokal</span>
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-[#64748b] mt-0.5">
             Menampilkan seluruh proses aktif yang terafiliasi dengan ekosistem GORO S2JB.
           </p>
         </div>
@@ -99,23 +97,24 @@ export function RunningProcessTable({
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="text-xs h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A3E0]/30"
+            className="text-xs h-10 min-h-[38px] px-3.5 rounded-xl border border-[#cbd5e1] bg-white text-[#0f172a] font-bold focus-utility-ring transition-all"
           >
             <option value="ALL">Semua Layanan</option>
             <option value="WORKER">Worker BullMQ</option>
             <option value="PYTHON">Python OCR</option>
             <option value="WEB">Server Web</option>
-            <option value="DATABASE">Database & Redis</option>
+            <option value="DATABASE">Database &amp; Redis</option>
           </select>
 
           {/* Search Box */}
-          <div className="relative flex-1 sm:w-60">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+            <input
+              type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari PID atau perintah..."
-              className="pl-8.5 h-9 text-xs rounded-xl border-slate-200 focus-visible:ring-[#00A3E0]/30"
+              className="w-full pl-9 pr-3 h-10 min-h-[38px] text-xs rounded-xl border border-[#cbd5e1] bg-white text-[#0f172a] placeholder:text-[#94a3b8] focus-utility-ring transition-all"
             />
           </div>
         </div>
@@ -125,67 +124,65 @@ export function RunningProcessTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-slate-50/75 border-b border-slate-100 text-slate-500 font-medium">
+            <tr className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[11px] font-bold text-[#64748b] uppercase tracking-wider">
               <th className="py-3 px-4 w-28">PID / PPID</th>
               <th className="py-3 px-4 w-36">Layanan</th>
-              <th className="py-3 px-4">Perintah (*Command*)</th>
+              <th className="py-3 px-4">Perintah (Command)</th>
               <th className="py-3 px-4 w-20 text-right">CPU</th>
               <th className="py-3 px-4 w-24 text-right">RAM (RSS)</th>
               <th className="py-3 px-4 w-24 text-center">Waktu Aktif</th>
               <th className="py-3 px-4 w-28 text-center">Tindakan</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[#f1f5f9]">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-400">
-                  <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-[#00A3E0] border-t-transparent mr-2 align-middle" />
+                <td colSpan={7} className="py-12 text-center text-[#64748b] animate-pulse">
                   Memindai proses sistem lokal...
                 </td>
               </tr>
             ) : filteredProcesses.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-400">
+                <td colSpan={7} className="py-12 text-center text-[#64748b]">
                   Tidak ada proses aktif yang sesuai dengan filter pencarian.
                 </td>
               </tr>
             ) : (
               filteredProcesses.map((proc) => (
-                <tr key={proc.pid} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="py-3 px-4 font-mono font-medium text-slate-900">
+                <tr key={proc.pid} className="hover:bg-[#f8fafc] transition-colors">
+                  <td className="py-3.5 px-4 font-mono font-bold text-[#0f172a]">
                     <div>{proc.pid}</div>
-                    <div className="text-[10px] text-slate-400">PPID: {proc.ppid}</div>
+                    <div className="text-[10px] text-[#64748b]">PPID: {proc.ppid}</div>
                   </td>
-                  <td className="py-3 px-4">{getServiceBadge(proc.serviceType)}</td>
-                  <td className="py-3 px-4 font-mono text-slate-700 max-w-xs md:max-w-md truncate" title={proc.command}>
+                  <td className="py-3.5 px-4">{getServiceBadge(proc.serviceType)}</td>
+                  <td className="py-3.5 px-4 font-mono text-[#0f172a] max-w-xs md:max-w-md truncate" title={proc.command}>
                     {proc.command}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-medium">
-                    <span className={proc.cpuPercent > 50 ? "text-rose-600 font-bold" : "text-slate-700"}>
+                  <td className="py-3.5 px-4 text-right font-mono font-bold">
+                    <span className={proc.cpuPercent > 50 ? "text-[#b91c1c]" : "text-[#0f172a]"}>
                       {proc.cpuPercent.toFixed(1)}%
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right font-mono text-slate-700">
+                  <td className="py-3.5 px-4 text-right font-mono font-bold text-[#0f172a]">
                     {formatRss(proc.rssKb)}
                   </td>
-                  <td className="py-3 px-4 text-center font-mono text-slate-500">
+                  <td className="py-3.5 px-4 text-center font-mono text-[#64748b]">
                     {proc.elapsedTime}
                   </td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-3.5 px-4 text-center">
                     {proc.isSafeToKill ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      <button
+                        type="button"
                         onClick={() => onSelectProcessToKill(proc)}
-                        className="h-7 text-xs px-2.5 rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-medium transition-colors"
+                        className="min-h-[36px] text-xs px-3 py-1.5 rounded-xl border border-[#fecaca] text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fee2e2] font-bold transition-all focus-utility-ring cursor-pointer inline-flex items-center gap-1.5"
                       >
-                        <AlertOctagon className="w-3 h-3 mr-1" />
-                        Hentikan
-                      </Button>
+                        <AlertOctagon className="w-3.5 h-3.5" />
+                        <span>Hentikan</span>
+                      </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100">
-                        <Shield className="w-2.5 h-2.5 text-slate-400" />
-                        Dilindungi
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#64748b] font-bold px-2.5 py-1 rounded-lg bg-[#f8fafc] border border-[#e2e8f0]">
+                        <Shield className="w-3 h-3 text-[#64748b]" />
+                        <span>Dilindungi</span>
                       </span>
                     )}
                   </td>
