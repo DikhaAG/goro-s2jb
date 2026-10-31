@@ -49,80 +49,81 @@ export function AbortMigrationModal({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-[#0f172a]/50 backdrop-blur-xs transition-opacity"
         onClick={() => !isLoading && onClose()}
         aria-hidden="true"
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10 p-6 transition-all transform animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#e2e8f0] overflow-hidden z-10 p-6 transition-all transform animate-in fade-in zoom-in-95 duration-150">
         <button
           type="button"
           onClick={onClose}
           disabled={isLoading}
           aria-label="Tutup dialog"
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 rounded-lg p-1.5 hover:bg-slate-100 transition-colors focus-utility-ring disabled:opacity-50"
+          className="absolute top-4 right-4 text-[#94a3b8] hover:text-[#0f172a] rounded-xl p-1.5 hover:bg-[#f1f5f9] transition-colors focus-utility-ring disabled:opacity-50"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3.5 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
-            <AlertTriangle className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl bg-[#fef2f2] text-[#dc2626] flex items-center justify-center shrink-0 border border-[#fecaca]">
+            <AlertTriangle className="w-6 h-6 text-[#dc2626]" />
           </div>
           <div>
             <h3
               id="abort-modal-title"
-              className="text-lg font-bold text-slate-900 leading-tight"
+              className="text-lg font-bold text-[#0f172a] leading-tight"
             >
               Hentikan Proses Migrasi?
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#64748b] mt-0.5">
               Tindakan ini akan menghentikan pembacaan berkas
             </p>
           </div>
         </div>
 
-        <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 mb-5 text-xs text-slate-600 space-y-2">
-          <div className="flex justify-between items-center text-slate-700">
-            <span className="font-medium">Berkas Target:</span>
-            <span className="font-semibold text-slate-900 truncate max-w-[200px]" title={batchFileName}>
+        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3.5 mb-5 text-xs text-[#475569] space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-[#64748b]">Berkas Target:</span>
+            <span className="font-bold text-[#0f172a] truncate max-w-[200px]" title={batchFileName}>
               {batchFileName}
             </span>
           </div>
-          <div className="flex justify-between items-center text-slate-700">
-            <span className="font-medium">Baris Tersimpan:</span>
-            <span className="font-bold text-[#006877]">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-[#64748b]">Baris Tersimpan:</span>
+            <span className="font-mono font-bold text-[#006877]">
               {processedRows.toLocaleString("id-ID")} baris
             </span>
           </div>
-          <p className="pt-2 border-t border-slate-200/60 text-slate-500 leading-relaxed">
-            Data ulasan yang telah berhasil disimpan ke basis data akan tetap tersimpan secara aman. Worker akan menghentikan stream pembacaan dan menandai status batch sebagai <span className="font-semibold text-rose-700">CANCELLED</span>.
+          <p className="pt-2 border-t border-[#e2e8f0] text-[#64748b] leading-relaxed">
+            Data ulasan yang telah berhasil disimpan ke basis data akan tetap tersimpan secara aman. Worker akan menghentikan stream pembacaan dan menandai status batch sebagai <span className="font-bold text-[#b91c1c]">CANCELLED</span>.
           </p>
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row items-center gap-2.5">
+        <div className="flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="w-full sm:w-1/2 py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors focus-utility-ring min-h-[44px] cursor-pointer disabled:opacity-50"
+            className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-white border border-[#cbd5e1] text-[#334155] hover:bg-[#f1f5f9] transition-all focus-utility-ring disabled:opacity-50 cursor-pointer"
           >
-            Tetap Lanjutkan
+            Batal
           </button>
+
           <button
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className="w-full sm:w-1/2 py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors focus-utility-ring flex items-center justify-center gap-2 min-h-[44px] shadow-xs cursor-pointer disabled:opacity-70"
+            className="min-h-[44px] px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#dc2626] hover:bg-[#b91c1c] transition-all shadow-xs focus-utility-ring disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
                 <span>Menghentikan...</span>
               </>
             ) : (
-              <span>Hentikan Sekarang</span>
+              <span>Ya, Hentikan Migrasi</span>
             )}
           </button>
         </div>

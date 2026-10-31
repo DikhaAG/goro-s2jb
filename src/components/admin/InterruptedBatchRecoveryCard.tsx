@@ -1,8 +1,6 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertCircle,
   Play,
@@ -60,7 +58,7 @@ export function InterruptedBatchRecoveryCard({
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#fde68a] pb-3">
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#d97706] text-white flex items-center justify-center shrink-0 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-[#d97706] text-white flex items-center justify-center shrink-0 shadow-xs">
             <AlertCircle className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -72,14 +70,15 @@ export function InterruptedBatchRecoveryCard({
             </p>
           </div>
         </div>
-        <Badge variant="warning" className="self-start sm:self-auto bg-[#fef3c7] text-[#92400e] border-[#fde68a]">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#fef3c7] text-[#92400e] border border-[#fde68a] self-start sm:self-auto">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
           Status: {batch.status}
-        </Badge>
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-        <div className="p-3 rounded-xl bg-white border border-[#fde68a] space-y-1">
-          <span className="text-[#78350f] font-medium flex items-center gap-1">
+        <div className="p-3.5 rounded-xl bg-white border border-[#fde68a] space-y-1 shadow-2xs">
+          <span className="text-[#78350f] font-bold text-[11px] uppercase tracking-wider flex items-center gap-1">
             <FileSpreadsheet className="w-3.5 h-3.5 text-[#d97706]" />
             Nama Berkas
           </span>
@@ -88,16 +87,16 @@ export function InterruptedBatchRecoveryCard({
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-white border border-[#fde68a] space-y-1">
-          <span className="text-[#78350f] font-medium flex items-center gap-1">
+        <div className="p-3.5 rounded-xl bg-white border border-[#fde68a] space-y-1 shadow-2xs">
+          <span className="text-[#78350f] font-bold text-[11px] uppercase tracking-wider flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-[#d97706]" />
             Waktu Terhenti
           </span>
           <div className="font-semibold text-[#0f172a]">{formattedDate}</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-white border border-[#fde68a] space-y-1">
-          <span className="text-[#78350f] font-medium flex items-center gap-1">
+        <div className="p-3.5 rounded-xl bg-white border border-[#fde68a] space-y-1 shadow-2xs">
+          <span className="text-[#78350f] font-bold text-[11px] uppercase tracking-wider flex items-center gap-1">
             <RotateCw className="w-3.5 h-3.5 text-[#d97706]" />
             Posisi Checkpoint Baris
           </span>
@@ -111,22 +110,21 @@ export function InterruptedBatchRecoveryCard({
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
-        <Button
+        <button
           type="button"
-          variant="outline"
           onClick={handleCancel}
           disabled={isActionLoading}
-          className="w-full sm:w-auto border-[#d97706] text-[#92400e] hover:bg-[#fef3c7] min-h-[44px] text-xs font-semibold"
+          className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#d97706] text-[#92400e] bg-white hover:bg-[#fef3c7] min-h-[44px] text-xs font-bold transition-all flex items-center justify-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
         >
-          <XCircle className="w-4 h-4 mr-1.5" />
+          <XCircle className="w-4 h-4" />
           <span>Batalkan Batch</span>
-        </Button>
+        </button>
 
-        <Button
+        <button
           type="button"
           onClick={handleResume}
           disabled={isActionLoading}
-          className="w-full sm:w-auto bg-[#006877] hover:bg-[#00515d] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008c9f] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all focus-utility-ring cursor-pointer disabled:opacity-50"
         >
           {isActionLoading ? (
             <>
@@ -139,7 +137,7 @@ export function InterruptedBatchRecoveryCard({
               <span>Lanjutkan Migrasi dari Checkpoint</span>
             </>
           )}
-        </Button>
+        </button>
       </div>
     </div>
   );

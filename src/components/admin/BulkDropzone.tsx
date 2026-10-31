@@ -149,10 +149,10 @@ export function BulkDropzone() {
               Streaming parser memproses berkas skala besar (&gt;140.000 baris) dengan penggunaan memori stabil.
             </p>
           </div>
-          <Badge variant="outline" className="border-[#00a2b9] text-[#006877] bg-[#f0fdfa] self-start sm:self-auto gap-1 text-xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#00a2b9] text-[#006877] bg-[#f0fdfa] text-xs font-bold self-start sm:self-auto">
             <Database className="w-3.5 h-3.5 text-[#00a2b9]" />
             <span>Resumable Stream Parser</span>
-          </Badge>
+          </span>
         </div>
 
         <div className="p-5 sm:p-6 space-y-6">
@@ -172,18 +172,18 @@ export function BulkDropzone() {
 
           {/* Target Schema Selector */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-[#0f172a] flex items-center space-x-1.5">
+            <label className="text-xs font-bold text-[#0f172a] uppercase tracking-wider flex items-center space-x-1.5">
               <Layers className="w-3.5 h-3.5 text-[#006877]" />
-              <span>Target Skema Data</span>
+              <span>Pilih Target Skema Data</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setTargetType("FORM_RESPONSES_RAW")}
                 disabled={isProcessing}
-                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] ${
+                className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] focus-utility-ring ${
                   targetType === "FORM_RESPONSES_RAW"
-                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-1 ring-[#00a2b9]"
+                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-2 ring-[#00a2b9]"
                     : "bg-[#f8fafc] border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1]"
                 }`}
               >
@@ -193,7 +193,7 @@ export function BulkDropzone() {
                     <CheckCircle2 className="w-4 h-4 text-[#00a2b9]" />
                   )}
                 </div>
-                <p className="text-[11px] text-[#64748b] mt-1">
+                <p className="text-xs text-[#64748b] mt-1">
                   Data ulasan mentah Play Store dari Google Forms historis.
                 </p>
               </button>
@@ -202,9 +202,9 @@ export function BulkDropzone() {
                 type="button"
                 onClick={() => setTargetType("HISTORICAL_REPORTS")}
                 disabled={isProcessing}
-                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] ${
+                className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] focus-utility-ring ${
                   targetType === "HISTORICAL_REPORTS"
-                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-1 ring-[#00a2b9]"
+                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-2 ring-[#00a2b9]"
                     : "bg-[#f8fafc] border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1]"
                 }`}
               >
@@ -214,7 +214,7 @@ export function BulkDropzone() {
                     <CheckCircle2 className="w-4 h-4 text-[#00a2b9]" />
                   )}
                 </div>
-                <p className="text-[11px] text-[#64748b] mt-1">
+                <p className="text-xs text-[#64748b] mt-1">
                   Rekap capaian historis unit dan perbandingan target operasional.
                 </p>
               </button>
@@ -224,11 +224,19 @@ export function BulkDropzone() {
           {/* Drag & Drop File Zone */}
           <div
             onClick={() => !isProcessing && fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 ${
+            className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 focus-utility-ring ${
               file
                 ? "border-[#00a2b9] bg-[#f0fdfa]"
-                : "border-[#cbd5e1] bg-[#f8fafc] hover:bg-[#f1f5f9] hover:border-[#006877]"
+                : "border-[#cbd5e1] bg-[#f8fafc] hover:bg-[#f1f5f9] hover:border-[#00a2b9]"
             } ${isProcessing ? "opacity-60 cursor-not-allowed" : ""}`}
+            tabIndex={0}
+            role="button"
+            aria-label="Unggah berkas migrasi spreadsheet"
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" || e.key === " ") && !isProcessing) {
+                fileInputRef.current?.click();
+              }
+            }}
           >
             <div className="w-14 h-14 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center text-[#006877] shadow-xs">
               {file ? (
@@ -238,12 +246,12 @@ export function BulkDropzone() {
               )}
             </div>
             <div>
-              <div className="text-sm font-semibold text-[#0f172a]">
+              <div className="text-sm font-bold text-[#0f172a]">
                 {file ? file.name : "Pilih atau Seret Berkas CSV / XLSX ke Sini"}
               </div>
               <p className="text-xs text-[#64748b] mt-1">
                 {file
-                  ? `${(file.size / 1024 / 1024).toFixed(2)} MB • Berkas siap dimigrasikan`
+                  ? `${(file.size / 1024 / 1024).toFixed(2)} MB (Berkas siap dimigrasikan)`
                   : "Mendukung format .csv, .xlsx, atau .xls (Ukuran >100 MB didukung melalui streaming)"}
               </p>
             </div>
@@ -261,31 +269,39 @@ export function BulkDropzone() {
           {/* Realtime Live Progress Bar and Metrics Panel */}
           {activeBatchId && batchData && (
             <div
-              className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] space-y-4"
+              className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] space-y-4 shadow-xs"
               aria-live="polite"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2e8f0] pb-3">
                 <div className="flex items-center space-x-2">
                   <Activity className="w-4 h-4 text-[#006877] animate-pulse" />
-                  <span className="text-xs font-semibold text-[#0f172a]">
+                  <span className="text-xs font-bold text-[#0f172a]">
                     Progres Migrasi Aktif
                   </span>
                   <span className="text-[11px] font-mono text-[#64748b]">
                     ({batchData.id})
                   </span>
                 </div>
-                <Badge
-                  variant={
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
                     isFinished
-                      ? "success"
+                      ? "bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]"
                       : isFailed
-                      ? "destructive"
-                      : "warning"
-                  }
-                  className="self-start sm:self-auto"
+                      ? "bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]"
+                      : "bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]"
+                  }`}
                 >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isFinished
+                        ? "bg-[#16a34a]"
+                        : isFailed
+                        ? "bg-[#ef4444]"
+                        : "bg-[#f59e0b]"
+                    }`}
+                  />
                   {batchData.status}
-                </Badge>
+                </span>
               </div>
 
               {/* Progress Bar Container with ARIA */}
@@ -298,7 +314,7 @@ export function BulkDropzone() {
                       ? "Migrasi selesai sepenuhnya"
                       : "Migrasi dihentikan"}
                   </span>
-                  <span className="font-mono text-[#006877]">
+                  <span className="font-mono font-bold text-[#006877]">
                     {batchData.totalRows && batchData.totalRows > 0
                       ? `${progressPercentage}%`
                       : `${batchData.processedRows.toLocaleString("id-ID")} baris`}
@@ -315,45 +331,45 @@ export function BulkDropzone() {
                 >
                   {batchData.totalRows && batchData.totalRows > 0 ? (
                     <div
-                      className="h-full bg-[#006877] transition-all duration-300 rounded-full"
+                      className="h-full bg-[#00a2b9] transition-all duration-300 rounded-full"
                       style={{ width: `${progressPercentage}%` }}
                     />
                   ) : isProcessing ? (
-                    <div className="h-full bg-gradient-to-r from-[#006877] via-[#00a2b9] to-[#006877] animate-pulse w-full rounded-full" />
+                    <div className="h-full bg-linear-to-r from-[#006877] via-[#00a2b9] to-[#006877] animate-pulse w-full rounded-full" />
                   ) : (
                     <div
-                      className="h-full bg-[#006877] rounded-full"
+                      className="h-full bg-[#00a2b9] rounded-full"
                       style={{ width: "100%" }}
                     />
                   )}
                 </div>
               </div>
 
-              {/* 3 Metric Cards */}
+              {/* 3 Metric Cards (Enterprise Monospace Numbers) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs">
-                  <span className="text-[10px] uppercase font-bold text-[#64748b]">
+                <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs">
+                  <span className="text-[11px] uppercase font-bold text-[#64748b] tracking-wider block">
                     Baris Sukses
                   </span>
-                  <div className="text-2xl font-bold font-mono text-[#15803d] mt-0.5">
+                  <div className="text-2xl font-bold font-mono text-[#15803d] mt-1">
                     {batchData.processedRows.toLocaleString("id-ID")}
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs">
-                  <span className="text-[10px] uppercase font-bold text-[#64748b]">
+                <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs">
+                  <span className="text-[11px] uppercase font-bold text-[#64748b] tracking-wider block">
                     Baris Gagal (Terisolasi)
                   </span>
-                  <div className="text-2xl font-bold font-mono text-[#b91c1c] mt-0.5">
+                  <div className="text-2xl font-bold font-mono text-[#b91c1c] mt-1">
                     {batchData.failedRows.toLocaleString("id-ID")}
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-white border border-[#e2e8f0] shadow-2xs">
-                  <span className="text-[10px] uppercase font-bold text-[#64748b]">
+                <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs">
+                  <span className="text-[11px] uppercase font-bold text-[#64748b] tracking-wider block">
                     Kecepatan Streaming
                   </span>
-                  <div className="text-2xl font-bold font-mono text-[#006877] mt-0.5 flex items-baseline gap-1">
+                  <div className="text-2xl font-bold font-mono text-[#006877] mt-1 flex items-baseline gap-1">
                     <span>{throughput > 0 ? throughput.toLocaleString("id-ID") : "-"}</span>
                     <span className="text-xs font-normal text-[#64748b]">baris/dtk</span>
                   </div>
@@ -363,7 +379,7 @@ export function BulkDropzone() {
               {/* Error list preview if any */}
               {batchData.errors && batchData.errors.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  <div className="text-xs font-semibold text-[#b91c1c] flex items-center space-x-1">
+                  <div className="text-xs font-bold text-[#b91c1c] flex items-center space-x-1">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     <span>Log Galat Baris Terisolasi (Proses Tidak Dihentikan):</span>
                   </div>
@@ -382,9 +398,8 @@ export function BulkDropzone() {
 
         {/* Footer Actions */}
         <div className="p-4 sm:p-5 border-t border-[#f1f5f9] bg-[#f8fafc] flex flex-col sm:flex-row gap-3 justify-between items-center">
-          <Button
+          <button
             type="button"
-            variant="ghost"
             onClick={() => {
               setFile(null);
               setActiveBatchId(null);
@@ -392,17 +407,17 @@ export function BulkDropzone() {
               if (fileInputRef.current) fileInputRef.current.value = "";
             }}
             disabled={isProcessing}
-            className="w-full sm:w-auto text-xs text-[#64748b] hover:text-[#0f172a] min-h-[44px]"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-xs font-bold text-[#334155] transition-all min-h-[44px] flex items-center justify-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
           >
-            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+            <RotateCcw className="w-3.5 h-3.5" />
             <span>Bersihkan Pilihan</span>
-          </Button>
+          </button>
 
-          <Button
+          <button
             type="button"
             onClick={handleStartImport}
             disabled={!file || isProcessing || isUploading}
-            className="w-full sm:w-auto min-w-[220px] bg-[#006877] hover:bg-[#00515d] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2"
+            className="w-full sm:w-auto min-w-[220px] px-5 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008c9f] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all focus-utility-ring cursor-pointer disabled:opacity-50"
           >
             {isUploading ? (
               <>
@@ -421,7 +436,7 @@ export function BulkDropzone() {
                 <ArrowRight className="w-4 h-4 text-white" />
               </>
             )}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

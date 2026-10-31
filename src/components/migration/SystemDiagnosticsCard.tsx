@@ -69,154 +69,159 @@ export function SystemDiagnosticsCard({ telemetry }: SystemDiagnosticsProps) {
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 1. Redis Memory & Server Engine */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-[#f1f5f9]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
-                <HardDrive className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-[#fef2f2] text-[#dc2626] flex items-center justify-center border border-[#fee2e2]">
+                <HardDrive className="w-4 h-4 text-[#dc2626]" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                <h4 className="text-xs font-bold text-[#0f172a] leading-tight">
                   Redis In-Memory Engine
                 </h4>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[10px] text-[#64748b] font-mono">
                   v{telemetry.redis.version}
                 </span>
               </div>
             </div>
-            <Badge
-              variant="outline"
-              className={
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                 telemetry.redis.healthy
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]"
-                  : "bg-rose-50 text-rose-700 border-rose-200 text-[10px]"
-              }
+                  ? "bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]"
+                  : "bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]"
+              }`}
             >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  telemetry.redis.healthy ? "bg-[#16a34a]" : "bg-[#ef4444]"
+                }`}
+              />
               {telemetry.redis.latencyMs}ms
-            </Badge>
+            </span>
           </div>
 
-          <div className="space-y-2 mt-3 text-xs text-slate-600">
+          <div className="space-y-2.5 mt-3 text-xs text-[#475569]">
             <div className="flex justify-between items-center">
               <span>Penggunaan Memori:</span>
-              <span className="font-bold text-slate-900">
+              <span className="font-mono font-bold text-[#0f172a]">
                 {telemetry.redis.usedMemory}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span>Puncak Memori:</span>
-              <span className="font-semibold text-slate-700">
+              <span className="font-mono font-semibold text-[#0f172a]">
                 {telemetry.redis.peakMemory}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span>Fragmentasi Memori:</span>
-              <span className="font-semibold text-slate-700">
+              <span className="font-mono font-semibold text-[#0f172a]">
                 {telemetry.redis.fragmentationRatio}x
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span>Koneksi Klien Aktif:</span>
-              <span className="font-semibold text-slate-700">
-                {telemetry.redis.connectedClients} clients
+              <span className="font-mono font-semibold text-[#0f172a]">
+                {telemetry.redis.connectedClients} klien
               </span>
             </div>
-            <div className="flex justify-between items-center pt-1 border-t border-slate-100 text-[11px] text-slate-400">
+            <div className="flex justify-between items-center pt-2 border-t border-[#f1f5f9] text-[11px] text-[#64748b]">
               <span>Uptime Engine:</span>
-              <span>{formatUptime(telemetry.redis.uptimeSeconds)}</span>
+              <span className="font-mono">{formatUptime(telemetry.redis.uptimeSeconds)}</span>
             </div>
           </div>
         </div>
 
         {/* 2. Node.js Worker Runtime */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-[#f1f5f9]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-teal-50 text-[#006877] flex items-center justify-center border border-teal-100">
-                <Cpu className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center border border-[#bae6fd]">
+                <Cpu className="w-4 h-4 text-[#006877]" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                <h4 className="text-xs font-bold text-[#0f172a] leading-tight">
                   Node.js Server Runtime
                 </h4>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[10px] text-[#64748b] font-mono">
                   v20.x TSX Process
                 </span>
               </div>
             </div>
-            <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 text-[10px]">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
               Sehat
-            </Badge>
+            </span>
           </div>
 
-          <div className="space-y-2 mt-3 text-xs text-slate-600">
+          <div className="space-y-2.5 mt-3 text-xs text-[#475569]">
             <div className="flex justify-between items-center">
               <span>Heap Terpakai:</span>
-              <span className="font-bold text-slate-900">
+              <span className="font-mono font-bold text-[#0f172a]">
                 {telemetry.node.heapUsedMb} MB
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span>Alokasi Heap:</span>
-              <span className="font-semibold text-slate-700">
+              <span className="font-mono font-semibold text-[#0f172a]">
                 {telemetry.node.heapTotalMb} MB
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span>Resident Set (RSS):</span>
-              <span className="font-semibold text-slate-700">
+              <span className="font-mono font-semibold text-[#0f172a]">
                 {telemetry.node.rssMb} MB
               </span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+            <div className="flex justify-between items-center pt-2 border-t border-[#f1f5f9] text-[11px] text-[#64748b]">
               <span>Uptime Proses:</span>
-              <span>{formatUptime(telemetry.node.uptimeSeconds)}</span>
+              <span className="font-mono">{formatUptime(telemetry.node.uptimeSeconds)}</span>
             </div>
           </div>
         </div>
 
         {/* 3. PostgreSQL Database Summary */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-[#f1f5f9]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-                <Database className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-[#f0f9ff] text-[#0369a1] flex items-center justify-center border border-[#bae6fd]">
+                <Database className="w-4 h-4 text-[#0369a1]" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                <h4 className="text-xs font-bold text-[#0f172a] leading-tight">
                   PostgreSQL Data State
                 </h4>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-[#64748b]">
                   Prisma Model RatingReview
                 </span>
               </div>
             </div>
-            <span className="text-xs font-bold text-slate-900">
+            <span className="text-xs font-bold font-mono text-[#006877]">
               {telemetry.database.totalReviews.toLocaleString("id-ID")}
             </span>
           </div>
 
           {/* Breakdown progress line */}
           <div className="mt-3">
-            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+            <div className="w-full bg-[#f1f5f9] h-2.5 rounded-full overflow-hidden flex border border-[#e2e8f0]">
               <div
                 style={{ width: `${approvedPct}%` }}
-                className="bg-emerald-500 h-full"
+                className="bg-[#16a34a] h-full"
                 title={`Disetujui: ${approvedPct}%`}
               />
               <div
                 style={{ width: `${needsReviewPct}%` }}
-                className="bg-amber-400 h-full"
+                className="bg-[#f59e0b] h-full"
                 title={`Perlu Triase: ${needsReviewPct}%`}
               />
               <div
                 style={{ width: `${pendingPct}%` }}
-                className="bg-blue-400 h-full"
+                className="bg-[#0284c7] h-full"
                 title={`Pending OCR: ${pendingPct}%`}
               />
               <div
                 style={{ width: `${rejectedPct}%` }}
-                className="bg-rose-500 h-full"
+                className="bg-[#dc2626] h-full"
                 title={`Ditolak: ${rejectedPct}%`}
               />
             </div>
@@ -224,30 +229,30 @@ export function SystemDiagnosticsCard({ telemetry }: SystemDiagnosticsProps) {
 
           <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-slate-600 truncate">Disetujui:</span>
-              <span className="font-semibold text-slate-900">
+              <span className="w-2 h-2 rounded-full bg-[#16a34a] shrink-0" />
+              <span className="text-[#64748b] truncate">Disetujui:</span>
+              <span className="font-mono font-bold text-[#0f172a]">
                 {telemetry.database.approvedReviews.toLocaleString("id-ID")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-              <span className="text-slate-600 truncate">Triase:</span>
-              <span className="font-semibold text-slate-900">
+              <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0" />
+              <span className="text-[#64748b] truncate">Triase:</span>
+              <span className="font-mono font-bold text-[#0f172a]">
                 {telemetry.database.needsReviewReviews.toLocaleString("id-ID")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
-              <span className="text-slate-600 truncate">Pending:</span>
-              <span className="font-semibold text-slate-900">
+              <span className="w-2 h-2 rounded-full bg-[#0284c7] shrink-0" />
+              <span className="text-[#64748b] truncate">Pending:</span>
+              <span className="font-mono font-bold text-[#0f172a]">
                 {telemetry.database.pendingReviews.toLocaleString("id-ID")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-              <span className="text-slate-600 truncate">Ditolak:</span>
-              <span className="font-semibold text-slate-900">
+              <span className="w-2 h-2 rounded-full bg-[#dc2626] shrink-0" />
+              <span className="text-[#64748b] truncate">Ditolak:</span>
+              <span className="font-mono font-bold text-[#0f172a]">
                 {telemetry.database.rejectedReviews.toLocaleString("id-ID")}
               </span>
             </div>

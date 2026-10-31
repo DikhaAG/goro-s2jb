@@ -13,6 +13,8 @@ import {
   HardDrive,
   CheckCircle2,
   AlertCircle,
+  Zap,
+  RotateCw,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useMigrationGuard } from "@/context/MigrationGuardContext";
@@ -181,44 +183,60 @@ export default function MigrationMonitorPage() {
   };
 
   return (
-    <div className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* 1. Header Navigation & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e2e8f0]">
+    <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* 1. Enterprise Command Header Banner */}
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <Link
-              href="/migration"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors focus-utility-ring rounded"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Kembali ke Unggah Migrasi
-            </Link>
+          {/* Brand Badges Bar */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#006877]/10 text-[#006877] text-xs font-bold">
+              <Zap className="w-3.5 h-3.5 fill-[#006877]" />
+              PLN UID S2JB
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs font-semibold">
+              <Layers className="w-3.5 h-3.5 text-[#64748b]" />
+              BullMQ Diagnostics & Telemetry
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live Pipeline Monitoring
+            </span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-teal-50 text-[#006877] flex items-center justify-center shrink-0 border border-teal-100">
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center shrink-0 border border-[#bae6fd]">
               <Activity className="w-5 h-5 text-[#006877]" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[#0f172a] tracking-tight">
                 Pusat Pemantauan & Manajemen Worker
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Pengelolaan komprehensif daemon worker BullMQ, diagnostik telemetri, dan kontrol operasional
+              <p className="text-xs sm:text-sm text-[#475569] mt-0.5">
+                Pengelolaan komprehensif daemon worker BullMQ, diagnostik telemetri antrean, dan kontrol operasional.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+          <Link
+            href="/migration"
+            className="min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#f8fafc] text-[#334155] border border-[#cbd5e1] text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 focus-utility-ring"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#64748b]" />
+            <span>Kembali ke Unggah</span>
+          </Link>
+
           <button
             type="button"
             onClick={handleManualRefresh}
             title="Segarkan status secara manual"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 bg-white border border-slate-200/80 hover:bg-slate-50 transition-colors focus-utility-ring shadow-xs min-h-[40px] cursor-pointer"
+            className="min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#f8fafc] text-[#334155] border border-[#cbd5e1] text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 focus-utility-ring cursor-pointer"
           >
-            <RefreshCw
+            <RotateCw
               className={`w-3.5 h-3.5 ${
-                detailedWorkerQuery.isRefetching ? "animate-spin text-[#006877]" : "text-slate-500"
+                detailedWorkerQuery.isRefetching ? "animate-spin text-[#006877]" : "text-[#64748b]"
               }`}
             />
             <span>Segarkan</span>
@@ -226,36 +244,30 @@ export default function MigrationMonitorPage() {
 
           <Link
             href="/migration"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-[#006877] hover:bg-[#00525e] transition-colors focus-utility-ring shadow-xs min-h-[40px]"
+            className="min-h-[44px] px-4 py-2 bg-[#00a2b9] hover:bg-[#008c9f] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 focus-utility-ring"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>Mulai Impor Baru</span>
+            <PlusCircle className="w-4 h-4 text-white" />
+            <span>Impor Baru</span>
           </Link>
         </div>
       </div>
 
-      {/* Floating Alert / Toast */}
+      {/* Floating Dark Toast Notification (Harmonized with Design Source of Truth) */}
       {feedback && (
         <div
           role="status"
-          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs animate-in fade-in duration-200 ${
-            feedback.type === "success"
-              ? "bg-teal-50 text-teal-800 border-teal-200"
-              : "bg-rose-50 text-rose-800 border-rose-200"
-          }`}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 animate-in fade-in duration-200"
         >
-          <div className="flex items-center gap-2">
-            {feedback.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            )}
-            <span className="font-medium">{feedback.message}</span>
-          </div>
+          {feedback.type === "success" ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          )}
+          <span className="text-xs font-semibold">{feedback.message}</span>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-slate-400 hover:text-slate-600 font-bold ml-3"
+            className="text-slate-400 hover:text-white font-bold ml-2 text-xs focus-utility-ring rounded p-1"
           >
             x
           </button>
@@ -278,15 +290,15 @@ export default function MigrationMonitorPage() {
         </section>
       )}
 
-      {/* 3. Segmented Navigation Tabs (Apple Style) */}
-      <div className="bg-slate-100 p-1.5 rounded-2xl flex flex-wrap sm:flex-nowrap items-center gap-1">
+      {/* 3. Segmented Navigation Tabs */}
+      <div className="bg-[#f1f5f9] p-1.5 rounded-2xl flex flex-wrap sm:flex-nowrap items-center gap-1.5 border border-[#e2e8f0]">
         <button
           type="button"
           onClick={() => setActiveTab("overview")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
             activeTab === "overview"
-              ? "bg-white text-slate-900 shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-white text-[#0f172a] shadow-xs"
+              : "text-[#64748b] hover:text-[#0f172a]"
           }`}
         >
           <Activity className="w-4 h-4 text-[#006877]" />
@@ -296,10 +308,10 @@ export default function MigrationMonitorPage() {
         <button
           type="button"
           onClick={() => setActiveTab("jobs")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
             activeTab === "jobs"
-              ? "bg-white text-slate-900 shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-white text-[#0f172a] shadow-xs"
+              : "text-[#64748b] hover:text-[#0f172a]"
           }`}
         >
           <Terminal className="w-4 h-4 text-indigo-600" />
@@ -309,10 +321,10 @@ export default function MigrationMonitorPage() {
         <button
           type="button"
           onClick={() => setActiveTab("history")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
             activeTab === "history"
-              ? "bg-white text-slate-900 shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-white text-[#0f172a] shadow-xs"
+              : "text-[#64748b] hover:text-[#0f172a]"
           }`}
         >
           <History className="w-4 h-4 text-sky-600" />
@@ -322,10 +334,10 @@ export default function MigrationMonitorPage() {
         <button
           type="button"
           onClick={() => setActiveTab("telemetry")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[40px] ${
             activeTab === "telemetry"
-              ? "bg-white text-slate-900 shadow-xs"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-white text-[#0f172a] shadow-xs"
+              : "text-[#64748b] hover:text-[#0f172a]"
           }`}
         >
           <HardDrive className="w-4 h-4 text-amber-600" />
@@ -347,7 +359,7 @@ export default function MigrationMonitorPage() {
               }
             />
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center text-slate-400 text-xs animate-pulse">
+            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-12 text-center text-[#64748b] text-xs animate-pulse">
               Memuat data pipeline dan status antrean worker...
             </div>
           )}
@@ -418,7 +430,7 @@ export default function MigrationMonitorPage() {
           {detailedWorkerQuery.data ? (
             <SystemDiagnosticsCard telemetry={detailedWorkerQuery.data} />
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center text-slate-400 text-xs animate-pulse">
+            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-12 text-center text-[#64748b] text-xs animate-pulse">
               Memuat diagnostik sistem...
             </div>
           )}

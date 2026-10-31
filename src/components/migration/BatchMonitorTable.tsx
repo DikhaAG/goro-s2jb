@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AbortMigrationModal } from "./AbortMigrationModal";
@@ -97,48 +98,52 @@ export function BatchMonitorTable({
     switch (status) {
       case "PROCESSING":
         return (
-          <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 animate-pulse">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mr-1.5" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd] animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7]" />
             Sedang Berjalan
-          </Badge>
+          </span>
         );
       case "PENDING":
         return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-            <Clock className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]">
+            <Clock className="w-3 h-3 text-[#64748b]" />
             Menunggu
-          </Badge>
+          </span>
         );
       case "COMPLETED":
         return (
-          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
+            <CheckCircle2 className="w-3 h-3 text-[#16a34a]" />
             Selesai
-          </Badge>
+          </span>
         );
       case "PAUSED":
         return (
-          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-            <PauseCircle className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
+            <PauseCircle className="w-3 h-3 text-[#f59e0b]" />
             Dijeda
-          </Badge>
+          </span>
         );
       case "CANCELLED":
         return (
-          <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
-            <XCircle className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#f8fafc] text-[#475569] border border-[#cbd5e1]">
+            <XCircle className="w-3 h-3 text-[#64748b]" />
             Dibatalkan
-          </Badge>
+          </span>
         );
       case "FAILED":
         return (
-          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">
-            <AlertTriangle className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]">
+            <AlertTriangle className="w-3 h-3 text-[#ef4444]" />
             Gagal
-          </Badge>
+          </span>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+            {status}
+          </span>
+        );
     }
   };
 
@@ -155,34 +160,34 @@ export function BatchMonitorTable({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-xs overflow-hidden">
         {/* Table Header & Status Filter Controls */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-b border-[#e2e8f0] bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-base font-bold text-slate-900 leading-tight">
+            <h3 className="text-base font-bold text-[#0f172a] leading-tight">
               Riwayat & Daftar Batch Migrasi
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#64748b] mt-0.5">
               {isSuperAdmin
-                ? "Menampilkan seluruh batch dari semua pengguna (Super Admin)"
+                ? "Menampilkan seluruh batch dari semua pengguna (Super Admin View)"
                 : "Menampilkan riwayat migrasi yang diunggah oleh Anda"}
             </p>
           </div>
 
           {/* Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            <span className="text-xs text-slate-400 mr-1 flex items-center gap-1 shrink-0">
-              <Filter className="w-3 h-3" /> Filter:
+            <span className="text-xs font-bold text-[#64748b] mr-1 flex items-center gap-1 shrink-0 uppercase tracking-wider">
+              <Filter className="w-3 h-3 text-[#006877]" /> Filter:
             </span>
             {statusOptions.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => onStatusChange(opt.value)}
-                className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors shrink-0 focus-utility-ring ${
+                className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 focus-utility-ring cursor-pointer ${
                   selectedStatus === opt.value
-                    ? "bg-[#006877] text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+                    ? "bg-[#00a2b9] text-white shadow-xs"
+                    : "bg-white text-[#475569] border border-[#cbd5e1] hover:bg-[#f1f5f9]"
                 }`}
               >
                 {opt.label}
@@ -195,7 +200,7 @@ export function BatchMonitorTable({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <tr className="border-b border-[#e2e8f0] bg-[#f8fafc] text-[11px] font-bold text-[#64748b] uppercase tracking-wider">
                 <th className="py-3 px-4">Berkas & Waktu</th>
                 {isSuperAdmin && <th className="py-3 px-4">Pengunggah</th>}
                 <th className="py-3 px-4">Status</th>
@@ -204,12 +209,12 @@ export function BatchMonitorTable({
                 <th className="py-3 px-4 text-center">Aksi Operasional</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-[#f1f5f9] text-xs">
               {isLoading ? (
                 <tr>
                   <td
                     colSpan={isSuperAdmin ? 6 : 5}
-                    className="py-12 text-center text-slate-400"
+                    className="py-12 text-center text-[#64748b] animate-pulse"
                   >
                     Memuat data antrean migrasi...
                   </td>
@@ -218,7 +223,7 @@ export function BatchMonitorTable({
                 <tr>
                   <td
                     colSpan={isSuperAdmin ? 6 : 5}
-                    className="py-12 text-center text-slate-400"
+                    className="py-12 text-center text-[#64748b]"
                   >
                     Tidak ada catatan batch migrasi untuk filter ini.
                   </td>
@@ -227,23 +232,24 @@ export function BatchMonitorTable({
                 batches.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-slate-50/60 transition-colors"
+                    className="hover:bg-[#f8fafc] transition-colors"
                   >
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-900 truncate max-w-[240px]">
-                        {item.fileName}
+                      <div className="font-bold text-[#0f172a] truncate max-w-[240px] flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-4 h-4 text-[#15803d] shrink-0" />
+                        <span title={item.fileName}>{item.fileName}</span>
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
+                      <div className="text-[11px] font-mono text-[#64748b] mt-0.5">
                         {formatDate(item.createdAt)}
                       </div>
                     </td>
 
                     {isSuperAdmin && (
                       <td className="py-3.5 px-4">
-                        <div className="font-medium text-slate-800">
+                        <div className="font-semibold text-[#0f172a]">
                           {item.uploadedBy?.name || "Sistem"}
                         </div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-[11px] font-mono text-[#64748b]">
                           {item.uploadedBy?.email || "internal"}
                         </div>
                       </td>
@@ -253,22 +259,22 @@ export function BatchMonitorTable({
                       {getStatusBadge(item.status)}
                     </td>
 
-                    <td className="py-3.5 px-4 text-right font-medium text-slate-800">
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-[#0f172a]">
                       {item.processedRows.toLocaleString("id-ID")}
                       {item.totalRows > 0 && (
-                        <span className="text-[11px] text-slate-400 font-normal">
+                        <span className="text-[11px] text-[#64748b] font-normal">
                           {" "}/ {item.totalRows.toLocaleString("id-ID")}
                         </span>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 text-right font-medium">
+                    <td className="py-3.5 px-4 text-right font-mono font-bold">
                       {item.failedRows > 0 ? (
-                        <span className="text-rose-600 font-semibold">
+                        <span className="text-[#b91c1c]">
                           {item.failedRows.toLocaleString("id-ID")}
                         </span>
                       ) : (
-                        <span className="text-slate-400">0</span>
+                        <span className="text-[#94a3b8]">0</span>
                       )}
                     </td>
 
@@ -279,7 +285,7 @@ export function BatchMonitorTable({
                             type="button"
                             onClick={() => onResumeBatch(item.id)}
                             title="Lanjutkan migrasi dari baris terakhir"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-[#006877] bg-teal-50 hover:bg-teal-100 border border-teal-200 transition-colors focus-utility-ring"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#006877] bg-[#f0fdfa] hover:bg-[#ccfbf1] border border-[#99f6e4] transition-all focus-utility-ring cursor-pointer min-h-[36px]"
                           >
                             <Play className="w-3 h-3 fill-current" />
                             <span>Lanjut</span>
@@ -293,7 +299,7 @@ export function BatchMonitorTable({
                             type="button"
                             onClick={() => setAbortTarget(item)}
                             title="Hentikan dan batalkan proses"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors focus-utility-ring"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fee2e2] border border-[#fecaca] transition-all focus-utility-ring cursor-pointer min-h-[36px]"
                           >
                             <XCircle className="w-3 h-3" />
                             <span>Batal</span>
@@ -306,7 +312,7 @@ export function BatchMonitorTable({
                             type="button"
                             onClick={() => setErrorLogTarget(item)}
                             title="Buka rincian baris galat batch ini"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors focus-utility-ring"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fee2e2] border border-[#fecaca] transition-all focus-utility-ring cursor-pointer min-h-[36px]"
                           >
                             <AlertTriangle className="w-3 h-3" />
                             <span>Galat ({item.failedRows || item._count?.errors})</span>
@@ -317,7 +323,7 @@ export function BatchMonitorTable({
                           item.status !== "PENDING" &&
                           item.status !== "PAUSED" &&
                           item.failedRows === 0 && (
-                            <span className="text-slate-400 text-[11px]">
+                            <span className="text-[#94a3b8] text-[11px] font-semibold">
                               Tuntas
                             </span>
                           )}
@@ -332,10 +338,10 @@ export function BatchMonitorTable({
 
         {/* Pagination Footer */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+          <div className="p-4 border-t border-[#e2e8f0] bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#64748b]">
             <div>
-              Menampilkan Halaman <span className="font-bold">{currentPage}</span> dari{" "}
-              <span className="font-bold">{totalPages}</span> ({totalBatches} total data)
+              Menampilkan Halaman <span className="font-bold text-[#0f172a]">{currentPage}</span> dari{" "}
+              <span className="font-bold text-[#0f172a]">{totalPages}</span> ({totalBatches} total data)
             </div>
 
             <div className="flex items-center gap-2">
@@ -343,7 +349,7 @@ export function BatchMonitorTable({
                 type="button"
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage <= 1}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-medium"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-bold text-xs text-[#334155] min-h-[36px]"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Sebelumnya
@@ -353,7 +359,7 @@ export function BatchMonitorTable({
                 type="button"
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage >= totalPages}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-medium"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-bold text-xs text-[#334155] min-h-[36px]"
               >
                 Berikutnya
                 <ChevronRight className="w-4 h-4" />

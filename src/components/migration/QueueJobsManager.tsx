@@ -146,28 +146,28 @@ export function QueueJobsManager({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-xs overflow-hidden">
       {/* Header with Queue Selector and Bulk Actions */}
-      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-[#e2e8f0] bg-[#f8fafc] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-slate-900 leading-tight flex items-center gap-2">
+          <h3 className="text-base font-bold text-[#0f172a] leading-tight flex items-center gap-2">
             <span>Manajemen Antrean & Inspeksi Job BullMQ</span>
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Kelola, periksa muatan data (payload), dan coba ulang job secara mendalam
+          <p className="text-xs text-[#64748b] mt-0.5">
+            Kelola, periksa muatan data (payload), dan coba ulang job secara mendalam.
           </p>
         </div>
 
         {/* Queue Selector Tabs */}
         <div className="flex items-center gap-2">
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1">
+          <div className="bg-[#f1f5f9] p-1 rounded-xl flex items-center gap-1 border border-[#e2e8f0]">
             <button
               type="button"
               onClick={() => onQueueNameChange("import")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors focus-utility-ring ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[36px] ${
                 queueName === "import"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-[#0f172a] shadow-xs"
+                  : "text-[#64748b] hover:text-[#0f172a]"
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-[#006877]" />
@@ -177,13 +177,13 @@ export function QueueJobsManager({
             <button
               type="button"
               onClick={() => onQueueNameChange("ocr")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors focus-utility-ring ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[36px] ${
                 queueName === "ocr"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-white text-[#0f172a] shadow-xs"
+                  : "text-[#64748b] hover:text-[#0f172a]"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <Sparkles className="w-3.5 h-3.5 text-[#f59e0b]" />
               <span>Worker OCR</span>
             </button>
           </div>
@@ -191,7 +191,7 @@ export function QueueJobsManager({
       </div>
 
       {/* Sub-bar: Status Tabs & Bulk Action Controls */}
-      <div className="px-4 py-3 bg-slate-50/70 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="px-4 py-3 bg-white border-b border-[#f1f5f9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto">
           {statusTabs.map((tab) => (
@@ -199,10 +199,10 @@ export function QueueJobsManager({
               key={tab.value}
               type="button"
               onClick={() => onStatusChange(tab.value as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors focus-utility-ring shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all focus-utility-ring shrink-0 cursor-pointer min-h-[36px] ${
                 status === tab.value
-                  ? "bg-[#006877] text-white shadow-xs font-semibold"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/60"
+                  ? "bg-[#00a2b9] text-white shadow-xs"
+                  : "bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9] border border-[#cbd5e1]"
               }`}
             >
               {tab.label}
@@ -218,9 +218,9 @@ export function QueueJobsManager({
                 type="button"
                 onClick={handleBulkRetry}
                 disabled={bulkLoading}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 transition-colors focus-utility-ring disabled:opacity-50 min-h-[32px] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#006877] bg-[#f0fdfa] hover:bg-[#ccfbf1] border border-[#99f6e4] transition-all focus-utility-ring disabled:opacity-50 min-h-[36px] cursor-pointer"
               >
-                <RotateCw className={`w-3 h-3 ${bulkLoading ? "animate-spin" : ""}`} />
+                <RotateCw className={`w-3.5 h-3.5 ${bulkLoading ? "animate-spin" : ""}`} />
                 <span>Coba Ulang Semua</span>
               </button>
             )}
@@ -230,9 +230,9 @@ export function QueueJobsManager({
                 type="button"
                 onClick={() => handleBulkClean("failed")}
                 disabled={bulkLoading}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors focus-utility-ring disabled:opacity-50 min-h-[32px] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fee2e2] border border-[#fecaca] transition-all focus-utility-ring disabled:opacity-50 min-h-[36px] cursor-pointer"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="w-3.5 h-3.5" />
                 <span>Bersihkan Gagal</span>
               </button>
             )}
@@ -242,9 +242,9 @@ export function QueueJobsManager({
                 type="button"
                 onClick={() => handleBulkClean("completed")}
                 disabled={bulkLoading}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors focus-utility-ring disabled:opacity-50 min-h-[32px] cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#334155] bg-white border border-[#cbd5e1] hover:bg-[#f1f5f9] transition-all focus-utility-ring disabled:opacity-50 min-h-[36px] cursor-pointer"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="w-3.5 h-3.5" />
                 <span>Bersihkan Selesai</span>
               </button>
             )}
@@ -253,14 +253,14 @@ export function QueueJobsManager({
       </div>
 
       {/* Jobs Content List */}
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-[#f1f5f9]">
         {isLoading ? (
-          <div className="py-12 text-center text-slate-400 text-xs">
+          <div className="py-12 text-center text-[#64748b] text-xs animate-pulse">
             Memuat daftar job dari antrean {queueName}...
           </div>
         ) : jobs.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-xs">
-            Tidak ada job pada status <span className="font-semibold">{status}</span> saat ini.
+          <div className="py-12 text-center text-[#64748b] text-xs">
+            Tidak ada job pada status <span className="font-bold text-[#0f172a]">{status}</span> saat ini.
           </div>
         ) : (
           jobs.map((job) => {
@@ -268,40 +268,40 @@ export function QueueJobsManager({
             const isProcessingThisJob = actionLoadingJobId === job.id;
 
             return (
-              <div key={job.id} className="p-4 hover:bg-slate-50/60 transition-colors">
+              <div key={job.id} className="p-4 hover:bg-[#f8fafc] transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5">
+                    <div className="mt-0.5 shrink-0">
                       {status === "active" && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping" />
+                        <div className="w-3 h-3 rounded-full bg-[#0284c7] animate-ping" />
                       )}
                       {status === "waiting" && (
-                        <Clock className="w-4 h-4 text-blue-500" />
+                        <Clock className="w-4 h-4 text-[#0284c7]" />
                       )}
                       {status === "failed" && (
-                        <AlertTriangle className="w-4 h-4 text-rose-500" />
+                        <AlertTriangle className="w-4 h-4 text-[#dc2626]" />
                       )}
                       {status === "completed" && (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
                       )}
                     </div>
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-xs text-slate-900">
+                        <span className="font-mono font-bold text-xs text-[#0f172a]">
                           Job #{job.id}
                         </span>
-                        <Badge variant="outline" className="text-[10px] bg-slate-50 font-normal">
+                        <span className="text-[10px] font-mono font-bold bg-[#f1f5f9] text-[#475569] border border-[#e2e8f0] px-2 py-0.5 rounded-md">
                           {job.name}
-                        </Badge>
+                        </span>
                         {job.attemptsMade > 0 && (
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-[#64748b]">
                             Percobaan: {job.attemptsMade}x
                           </span>
                         )}
                       </div>
 
-                      <div className="text-xs text-slate-600 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                      <div className="text-xs text-[#64748b] mt-1 flex flex-wrap gap-x-3 gap-y-1">
                         <span>Waktu: {formatTimestamp(job.timestamp)}</span>
                         {job.processedOn && (
                           <span>Durasi: {formatDuration(job.processedOn, job.finishedOn)}</span>
@@ -315,9 +315,9 @@ export function QueueJobsManager({
                     <button
                       type="button"
                       onClick={() => setExpandedJobId(isExpanded ? null : job.id || null)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors focus-utility-ring"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#334155] bg-white border border-[#cbd5e1] hover:bg-[#f1f5f9] transition-all focus-utility-ring cursor-pointer min-h-[36px]"
                     >
-                      <Code className="w-3 h-3" />
+                      <Code className="w-3.5 h-3.5 text-[#006877]" />
                       <span>{isExpanded ? "Tutup Data" : "Lihat Data"}</span>
                     </button>
 
@@ -327,10 +327,10 @@ export function QueueJobsManager({
                         onClick={() => job.id && handleRetry(job.id)}
                         disabled={isProcessingThisJob || !job.id}
                         title="Coba ulang job ini"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 transition-colors focus-utility-ring disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#006877] bg-[#f0fdfa] hover:bg-[#ccfbf1] border border-[#99f6e4] transition-all focus-utility-ring disabled:opacity-50 min-h-[36px] cursor-pointer"
                       >
                         <RotateCw
-                          className={`w-3 h-3 ${isProcessingThisJob ? "animate-spin" : ""}`}
+                          className={`w-3.5 h-3.5 ${isProcessingThisJob ? "animate-spin" : ""}`}
                         />
                         <span>Coba Ulang</span>
                       </button>
@@ -342,9 +342,9 @@ export function QueueJobsManager({
                         onClick={() => job.id && handleRemove(job.id)}
                         disabled={isProcessingThisJob || !job.id}
                         title="Hapus job dari antrean"
-                        className="inline-flex items-center gap-1 p-1 rounded-md text-xs font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors focus-utility-ring disabled:opacity-50"
+                        className="inline-flex items-center gap-1 p-2 rounded-xl text-xs font-semibold text-[#94a3b8] hover:text-[#b91c1c] hover:bg-[#fef2f2] border border-transparent hover:border-[#fecaca] transition-all focus-utility-ring disabled:opacity-50 min-h-[36px] cursor-pointer"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -352,9 +352,9 @@ export function QueueJobsManager({
 
                 {/* Failure Reason Pill */}
                 {job.failedReason && (
-                  <div className="mt-2.5 bg-rose-50/80 border border-rose-200/70 rounded-xl p-2.5 text-xs text-rose-800">
-                    <div className="font-semibold flex items-center gap-1 mb-0.5">
-                      <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                  <div className="mt-2.5 bg-[#fef2f2] border border-[#fecaca] rounded-xl p-3 text-xs text-[#991b1b]">
+                    <div className="font-bold flex items-center gap-1 mb-0.5 text-[#b91c1c]">
+                      <AlertCircle className="w-3.5 h-3.5" />
                       Penyebab Kegagalan:
                     </div>
                     <div className="font-mono text-[11px] break-all">
@@ -365,18 +365,18 @@ export function QueueJobsManager({
 
                 {/* Expanded Details / Payload JSON */}
                 {isExpanded && (
-                  <div className="mt-3 bg-slate-900 text-slate-200 rounded-xl p-3 text-xs font-mono overflow-x-auto space-y-2">
+                  <div className="mt-3 bg-[#0f172a] text-slate-200 rounded-xl p-4 text-xs font-mono overflow-x-auto space-y-2 border border-[#334155] shadow-xs">
                     <div>
-                      <span className="text-slate-400 text-[10px]">Payload Data (JSON):</span>
-                      <pre className="text-[11px] mt-1 text-teal-300">
+                      <span className="text-[#94a3b8] text-[10px] uppercase font-bold tracking-wider">Payload Data (JSON):</span>
+                      <pre className="text-[11px] mt-1 text-[#5eead4]">
                         {JSON.stringify(job.data, null, 2)}
                       </pre>
                     </div>
 
                     {job.stacktrace && job.stacktrace.length > 0 && (
-                      <div className="pt-2 border-t border-slate-800">
-                        <span className="text-rose-400 text-[10px]">Stack Trace:</span>
-                        <pre className="text-[10px] mt-1 text-rose-300 overflow-x-auto">
+                      <div className="pt-2 border-t border-[#334155]">
+                        <span className="text-[#fca5a5] text-[10px] uppercase font-bold tracking-wider">Stack Trace:</span>
+                        <pre className="text-[10px] mt-1 text-[#fca5a5] overflow-x-auto">
                           {job.stacktrace.join("\n")}
                         </pre>
                       </div>
@@ -391,10 +391,10 @@ export function QueueJobsManager({
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+        <div className="p-4 border-t border-[#e2e8f0] bg-[#f8fafc] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#64748b]">
           <div>
-            Halaman <span className="font-bold">{currentPage}</span> dari{" "}
-            <span className="font-bold">{totalPages}</span> ({totalJobs} total job)
+            Halaman <span className="font-bold text-[#0f172a]">{currentPage}</span> dari{" "}
+            <span className="font-bold text-[#0f172a]">{totalPages}</span> ({totalJobs} total job)
           </div>
 
           <div className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export function QueueJobsManager({
               type="button"
               onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage <= 1}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-medium"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-bold text-xs text-[#334155] min-h-[36px]"
             >
               <ChevronLeft className="w-4 h-4" />
               Sebelumnya
@@ -412,7 +412,7 @@ export function QueueJobsManager({
               type="button"
               onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage >= totalPages}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-medium"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-utility-ring font-bold text-xs text-[#334155] min-h-[36px]"
             >
               Berikutnya
               <ChevronRight className="w-4 h-4" />
