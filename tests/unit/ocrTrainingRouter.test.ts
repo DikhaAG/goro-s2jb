@@ -12,11 +12,45 @@ vi.mock("@/server/services/ocrTrainerService", () => ({
   }),
 }));
 
-describe("Subtask 19.1 & 19.2: OCR Training Router Unit Test Suite", () => {
+vi.mock("@/server/services/ocrTrainingTriggerService", () => ({
+  REDIS_TRAINING_ACTIVE_KEY: "ocr:training:active",
+  getTriggerStatus: vi.fn().mockResolvedValue({
+    isTrainingActive: false,
+    activeJobData: null,
+    totalApprovedSamples: 145,
+    lastModelSamplesCount: 100,
+    newSamplesCount: 45,
+    threshold: 100,
+    canAutoTrain: false,
+    isCooldownActive: false,
+    cooldownRemainingSeconds: 0,
+    lastTrainedAt: new Date("2026-10-31T12:00:00.000Z"),
+  }),
+  enqueueManualTraining: vi.fn().mockResolvedValue({
+    success: true,
+    jobId: "job-queued-1",
+    targetVersion: "v1.2345.0",
+    datasetSize: 145,
+  }),
+  cancelTrainingJob: vi.fn().mockResolvedValue({
+    id: "job-1",
+    status: "FAILED",
+    logs: ["Cancelled by user"],
+  }),
+}));
+
+describe("Subtask 19.1, 19.2 & 19.3: OCR Training Router Unit Test Suite", () => {
   let mockPrisma: any;
+  let mockRedis: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mockRedis = {
+      get: vi.fn(),
+      set: vi.fn(),
+      del: vi.fn(),
+    };
 
     mockPrisma = {
       ocrTrainingSample: {
@@ -48,7 +82,7 @@ describe("Subtask 19.1 & 19.2: OCR Training Router Unit Test Suite", () => {
   const createCaller = (role: Role = Role.PEGAWAI) => {
     return ocrTrainingRouter.createCaller({
       prisma: mockPrisma,
-      redis: {} as any,
+      redis: mockRedis,
       user: {
         id: "usr-operator-1",
         name: "Operator Budi",
@@ -203,7 +237,7 @@ describe("Subtask 19.1 & 19.2: OCR Training Router Unit Test Suite", () => {
     it("should reject PETUGAS_LAPANGAN from accessing dataset procedures", async () => {
       const caller = ocrTrainingRouter.createCaller({
         prisma: mockPrisma,
-        redis: {} as any,
+        redis: mockRedis,
         user: {
           id: "field-1",
           name: "Petugas",
@@ -214,6 +248,88 @@ describe("Subtask 19.1 & 19.2: OCR Training Router Unit Test Suite", () => {
       });
 
       await expect(caller.getDatasetStats()).rejects.toThrow();
+    });
+  });
+
+  describe("8. getTriggerStatus Procedure (Subtask 19.3)", () => {
+    it("should return trigger status from trigger service", async () => {
+      const caller = createCaller();
+      const status = await caller.getTriggerStatus();
+
+      expect(status.threshold).toBe(100);
+      expect(status.newSamplesCount).toBe(45);
+      expect(status.canAutoTrain).toBe(false);
+    });
+  });
+
+  describe("9. enqueueManualTraining Procedure (Subtask 19.3)", () => {
+    it("should enqueue manual training job and record audit log", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.enqueueManualTraining({
+        epochs: 10,
+        batchSize: 16,
+      });
+
+      expect(res.jobId).toBe("job-queued-1");
+      expect(res.success).toBe(true);
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "ENQUEUE_MANUAL_OCR_TRAINING",
+            entityId: "job-queued-1",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("10. getActiveJobStatus Procedure (Subtask 19.3)", () => {
+    it("should return parsed active job from redis if present", async () => {
+      mockRedis.get.mockResolvedValueOnce(
+        JSON.stringify({
+          jobId: "job-active-1",
+          progressPercent: 60,
+          currentEpoch: 3,
+          totalEpochs: 5,
+        })
+      );
+
+      const caller = createCaller();
+      const active = await caller.getActiveJobStatus();
+
+      expect(active).not.toBeNull();
+      expect(active.jobId).toBe("job-active-1");
+      expect(active.progressPercent).toBe(60);
+    });
+
+    it("should return null if no active job in redis", async () => {
+      mockRedis.get.mockResolvedValueOnce(null);
+
+      const caller = createCaller();
+      const active = await caller.getActiveJobStatus();
+
+      expect(active).toBeNull();
+    });
+  });
+
+  describe("11. cancelJob Procedure (Subtask 19.3)", () => {
+    it("should cancel job via trigger service and create audit log", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.cancelJob({
+        jobId: "job-1",
+        reason: "Salah konfigurasi parameter",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.job.status).toBe("FAILED");
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "CANCEL_OCR_TRAINING_JOB",
+            entityId: "job-1",
+          }),
+        })
+      );
     });
   });
 });

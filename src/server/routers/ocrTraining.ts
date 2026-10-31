@@ -7,6 +7,12 @@ import {
   coldStartHarvestFromHistoricalSpreadsheet,
 } from "../services/ocrDatasetHarvester";
 import { runOcrTrainingPipeline } from "../services/ocrTrainerService";
+import {
+  getTriggerStatus,
+  enqueueManualTraining,
+  cancelTrainingJob,
+} from "../services/ocrTrainingTriggerService";
+import { REDIS_TRAINING_ACTIVE_KEY } from "../workers/ocrTrainingWorker";
 
 export const ocrTrainingRouter = router({
   /**
@@ -234,6 +240,100 @@ export const ocrTrainingRouter = router({
           },
         },
       });
+    }),
+
+  /**
+   * 7. Get Automatic Trigger & Cooldown Status
+   */
+  getTriggerStatus: operatorProcedure.query(async ({ ctx }) => {
+    return getTriggerStatus(ctx.prisma, ctx.redis);
+  }),
+
+  /**
+   * 8. Enqueue Manual Training Job to BullMQ (Asynchronous background)
+   */
+  enqueueManualTraining: operatorProcedure
+    .input(
+      z.object({
+        epochs: z.number().int().min(1).max(100).default(5),
+        batchSize: z.number().int().min(2).max(64).default(8),
+        learningRate: z.number().min(0.00001).max(0.1).default(0.001),
+        targetVersion: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await enqueueManualTraining(
+        input,
+        ctx.user.id,
+        ctx.prisma,
+        ctx.redis
+      );
+
+      await ctx.prisma.auditLog.create({
+        data: {
+          userId: ctx.user.id,
+          action: "ENQUEUE_MANUAL_OCR_TRAINING",
+          entityType: "OcrTrainingJob",
+          entityId: result.jobId,
+          metadata: {
+            actorRole: ctx.user.role,
+            ...input,
+          },
+        },
+      });
+
+      return result;
+    }),
+
+  /**
+   * 9. Get Live Active Training Job Status from Redis
+   */
+  getActiveJobStatus: operatorProcedure.query(async ({ ctx }) => {
+    const raw = await ctx.redis?.get(REDIS_TRAINING_ACTIVE_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }),
+
+  /**
+   * 10. Cancel Running Training Job
+   */
+  cancelJob: operatorProcedure
+    .input(
+      z.object({
+        jobId: z.string(),
+        reason: z.string().min(3, "Alasan pembatalan minimal 3 karakter."),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const cancelled = await cancelTrainingJob(
+        input.jobId,
+        input.reason,
+        ctx.user.id,
+        ctx.prisma,
+        ctx.redis
+      );
+
+      await ctx.prisma.auditLog.create({
+        data: {
+          userId: ctx.user.id,
+          action: "CANCEL_OCR_TRAINING_JOB",
+          entityType: "OcrTrainingJob",
+          entityId: input.jobId,
+          metadata: {
+            actorRole: ctx.user.role,
+            reason: input.reason,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        job: cancelled,
+      };
     }),
 });
 

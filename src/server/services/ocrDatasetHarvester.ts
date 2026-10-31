@@ -5,6 +5,7 @@ import {
   ValidationStatus,
   PrismaClient,
 } from "@prisma/client";
+import { checkAndTriggerThresholdTraining } from "./ocrTrainingTriggerService";
 
 export interface HarvestOptions {
   source?: OcrSampleSource;
@@ -77,6 +78,9 @@ export async function harvestFromApprovedReview(
       verifiedById: options.actorId || review.verifiedById,
     },
   });
+
+  // Fire-and-forget threshold trigger check (Dual-Trigger active learning)
+  checkAndTriggerThresholdTraining(options.actorId, db).catch(() => {});
 
   return sample;
 }
