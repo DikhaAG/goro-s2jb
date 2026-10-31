@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   XCircle,
   Download,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ interface BulkActionBarProps {
   onBulkRetryOcr: () => void;
   onBulkApprove: () => void;
   onBulkReject: () => void;
+  onBulkDelete: () => void;
   onBulkExport: () => void;
   isProcessing?: boolean;
 }
@@ -29,6 +31,7 @@ export function BulkActionBar({
   onBulkRetryOcr,
   onBulkApprove,
   onBulkReject,
+  onBulkDelete,
   onBulkExport,
   isProcessing = false,
 }: BulkActionBarProps) {
@@ -112,6 +115,18 @@ export function BulkActionBar({
           >
             <Download className="w-3.5 h-3.5 text-slate-300" />
             <span className="hidden lg:inline">Ekspor</span>
+          </button>
+
+          {/* Hapus Terpilih */}
+          <button
+            type="button"
+            onClick={onBulkDelete}
+            disabled={isProcessing}
+            className="min-h-[38px] h-9 px-3 rounded-xl bg-red-950/80 hover:bg-red-900 border border-red-700/60 text-red-200 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer focus-utility-ring"
+            title="Hapus / tindakan kuratif untuk ulasan terpilih"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            <span className="hidden sm:inline">Hapus</span>
           </button>
         </div>
 

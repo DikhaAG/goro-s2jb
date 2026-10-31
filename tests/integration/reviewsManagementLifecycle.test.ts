@@ -286,7 +286,117 @@ describe("Task 18: Reviews Management & Lifecycle Integration Test Suite", () =>
     });
   });
 
-  describe("7. Defensive RBAC Boundary for Non-Operator Roles", () => {
+  describe("7. reviews.bulkDelete and deleteAll Procedures", () => {
+    let bulkTestReview1Id: string;
+    let bulkTestReview2Id: string;
+
+    beforeAll(async () => {
+      const b1 = await prisma.ratingReview.create({
+        data: {
+          up3Id: testUp3Id,
+          ulpId: testUlpId,
+          appVersionId: testAppVersionId,
+          playstoreReviewerName: "Bulk User 1",
+          originalReviewerName: "bulk1@gmail.com",
+          evidenceImagePath: "uploads/test/bulk1.png",
+          validationStatus: ValidationStatus.PENDING,
+          ocrStatus: OcrProcessingStatus.COMPLETED,
+          confidenceScore: 90.0,
+          entryDate: new Date("2026-03-05T08:00:00Z"),
+          timestamp: new Date("2026-03-05T08:00:00Z"),
+        },
+      });
+      const b2 = await prisma.ratingReview.create({
+        data: {
+          up3Id: testUp3Id,
+          ulpId: testUlpId,
+          appVersionId: testAppVersionId,
+          playstoreReviewerName: "Bulk User 2",
+          originalReviewerName: "bulk2@gmail.com",
+          evidenceImagePath: "uploads/test/bulk2.png",
+          validationStatus: ValidationStatus.PENDING,
+          ocrStatus: OcrProcessingStatus.COMPLETED,
+          confidenceScore: 85.0,
+          entryDate: new Date("2026-03-05T09:00:00Z"),
+          timestamp: new Date("2026-03-05T09:00:00Z"),
+        },
+      });
+      bulkTestReview1Id = b1.id;
+      bulkTestReview2Id = b2.id;
+      createdReviewIds.push(b1.id, b2.id);
+    });
+
+    it("should permit Pegawai to execute bulk SOFT_REJECT", async () => {
+      const caller = getCaller(pegawaiUser);
+      const res = await caller.reviews.bulkDelete({
+        ids: [bulkTestReview1Id, bulkTestReview2Id],
+        mode: "SOFT_REJECT",
+        reason: "Tolak massal integrasi",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("SOFT_REJECT");
+      expect(res.count).toBe(2);
+
+      const items = await prisma.ratingReview.findMany({
+        where: { id: { in: [bulkTestReview1Id, bulkTestReview2Id] } },
+      });
+      expect(items.every((i) => i.validationStatus === ValidationStatus.REJECTED)).toBe(true);
+    });
+
+    it("should reject Pegawai attempting bulk PERMANENT delete", async () => {
+      const caller = getCaller(pegawaiUser);
+      await expect(
+        caller.reviews.bulkDelete({
+          ids: [bulkTestReview1Id, bulkTestReview2Id],
+          mode: "PERMANENT",
+          reason: "Hapus permanen tanpa hak akses",
+        })
+      ).rejects.toThrow("Hanya Super Admin yang berhak menghapus data ulasan secara permanen.");
+    });
+
+    it("should permit Super Admin to execute bulk PERMANENT delete", async () => {
+      const caller = getCaller(adminUser);
+      const res = await caller.reviews.bulkDelete({
+        ids: [bulkTestReview1Id, bulkTestReview2Id],
+        mode: "PERMANENT",
+        reason: "Hapus permanen oleh Super Admin",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("PERMANENT");
+      expect(res.count).toBe(2);
+
+      const count = await prisma.ratingReview.count({
+        where: { id: { in: [bulkTestReview1Id, bulkTestReview2Id] } },
+      });
+      expect(count).toBe(0);
+    });
+
+    it("should validate confirmText on deleteAll", async () => {
+      const caller = getCaller(adminUser);
+      await expect(
+        caller.reviews.deleteAll({
+          mode: "PERMANENT",
+          reason: "Uji coba hapus semua",
+          confirmText: "HAPUS",
+        })
+      ).rejects.toThrow("Konfirmasi teks harus tepat 'HAPUS SEMUA'.");
+    });
+
+    it("should reject Pegawai from executing PERMANENT on deleteAll", async () => {
+      const caller = getCaller(pegawaiUser);
+      await expect(
+        caller.reviews.deleteAll({
+          mode: "PERMANENT",
+          reason: "Uji coba hapus semua",
+          confirmText: "HAPUS SEMUA",
+        })
+      ).rejects.toThrow("Hanya Super Admin yang berhak menghapus data ulasan secara permanen.");
+    });
+  });
+
+  describe("8. Defensive RBAC Boundary for Non-Operator Roles", () => {
     it("should reject PETUGAS_LAPANGAN from accessing any review management procedures", async () => {
       const caller = getCaller(fieldUser);
 

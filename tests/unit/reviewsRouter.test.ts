@@ -53,6 +53,7 @@ describe("Task 18: Reviews Router Unit Test Suite", () => {
         }),
         updateMany: vi.fn().mockResolvedValue({ count: 5 }),
         delete: vi.fn().mockResolvedValue({ id: "rev-1" }),
+        deleteMany: vi.fn().mockResolvedValue({ count: 5 }),
       },
       uLP: {
         findFirst: vi.fn().mockResolvedValue({ id: "ulp-1", up3Id: "up3-1" }),
@@ -282,7 +283,144 @@ describe("Task 18: Reviews Router Unit Test Suite", () => {
     });
   });
 
-  describe("7. getFilterOptions Procedure", () => {
+  describe("7. bulkDelete Procedure", () => {
+    it("should permit bulk soft reject for role PEGAWAI", async () => {
+      const caller = createCaller(Role.PEGAWAI);
+      const res = await caller.bulkDelete({
+        ids: ["rev-1", "rev-2", "rev-3"],
+        mode: "SOFT_REJECT",
+        reason: "Tolak massal eviden duplikat",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("SOFT_REJECT");
+      expect(res.count).toBe(5);
+      expect(mockPrisma.ratingReview.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: { in: ["rev-1", "rev-2", "rev-3"] } },
+          data: expect.objectContaining({
+            validationStatus: ValidationStatus.REJECTED,
+          }),
+        })
+      );
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "BULK_SOFT_REJECT_REVIEWS",
+          }),
+        })
+      );
+    });
+
+    it("should reject bulk permanent delete if caller is role PEGAWAI", async () => {
+      const caller = createCaller(Role.PEGAWAI);
+      await expect(
+        caller.bulkDelete({
+          ids: ["rev-1", "rev-2"],
+          mode: "PERMANENT",
+          reason: "Hapus permanen tanpa izin",
+        })
+      ).rejects.toThrow("Hanya Super Admin");
+    });
+
+    it("should permit bulk permanent delete if caller is SUPER_ADMIN", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.bulkDelete({
+        ids: ["rev-1", "rev-2"],
+        mode: "PERMANENT",
+        reason: "Pembersihan batch data uji coba",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("PERMANENT");
+      expect(res.count).toBe(5);
+      expect(mockPrisma.ratingReview.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ["rev-1", "rev-2"] } },
+      });
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "BULK_PERMANENT_DELETE_REVIEWS",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("8. deleteAll Procedure", () => {
+    it("should reject if confirmText is invalid", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      await expect(
+        caller.deleteAll({
+          mode: "PERMANENT",
+          reason: "Pembersihan total",
+          confirmText: "HAPUS",
+        })
+      ).rejects.toThrow("Konfirmasi teks harus tepat 'HAPUS SEMUA'");
+    });
+
+    it("should reject permanent purge all if caller is role PEGAWAI", async () => {
+      const caller = createCaller(Role.PEGAWAI);
+      await expect(
+        caller.deleteAll({
+          mode: "PERMANENT",
+          reason: "Pembersihan total",
+          confirmText: "HAPUS SEMUA",
+        })
+      ).rejects.toThrow("Hanya Super Admin");
+    });
+
+    it("should permit permanent purge all if caller is SUPER_ADMIN", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.deleteAll({
+        mode: "PERMANENT",
+        reason: "Reset total data pengujian lingkungan sandbox",
+        confirmText: "HAPUS SEMUA",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("PERMANENT");
+      expect(res.count).toBe(5);
+      expect(mockPrisma.ratingReview.deleteMany).toHaveBeenCalledWith({});
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "PURGE_ALL_REVIEWS",
+          }),
+        })
+      );
+    });
+
+    it("should permit soft reject all for role PEGAWAI", async () => {
+      const caller = createCaller(Role.PEGAWAI);
+      const res = await caller.deleteAll({
+        mode: "SOFT_REJECT",
+        reason: "Arsip tolak seluruh data ulasan",
+        confirmText: "HAPUS SEMUA",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("SOFT_REJECT");
+      expect(res.count).toBe(5);
+      expect(mockPrisma.ratingReview.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { validationStatus: { not: ValidationStatus.REJECTED } },
+          data: expect.objectContaining({
+            validationStatus: ValidationStatus.REJECTED,
+          }),
+        })
+      );
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "BULK_REJECT_ALL_REVIEWS",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("9. getFilterOptions Procedure", () => {
     it("should return up3s, ulps, and appVersions", async () => {
       const caller = createCaller();
       const res = await caller.getFilterOptions();

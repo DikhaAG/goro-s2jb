@@ -631,7 +631,152 @@ export const reviewsRouter = router({
     }),
 
   /**
-   * 8. Get Filter Options
+   * 8. Bulk Delete Reviews (Selected)
+   * Soft reject in bulk or permanent deletion (Super Admin exclusive).
+   */
+  bulkDelete: operatorProcedure
+    .input(
+      z.object({
+        ids: z.array(z.string()).min(1).max(500),
+        mode: z.enum(["SOFT_REJECT", "PERMANENT"]),
+        reason: z.string().min(3, "Alasan wajib diisi minimal 3 karakter"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.mode === "PERMANENT") {
+        if (ctx.user.role !== Role.SUPER_ADMIN) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Hanya Super Admin yang berhak menghapus data ulasan secara permanen.",
+          });
+        }
+
+        const [deleted] = await ctx.prisma.$transaction([
+          ctx.prisma.ratingReview.deleteMany({
+            where: { id: { in: input.ids } },
+          }),
+          ctx.prisma.auditLog.create({
+            data: {
+              userId: ctx.user.id,
+              action: "BULK_PERMANENT_DELETE_REVIEWS",
+              entityType: "RatingReview",
+              metadata: {
+                count: input.ids.length,
+                reason: input.reason,
+                targetIds: input.ids.slice(0, 50),
+              },
+            },
+          }),
+        ]);
+
+        return { success: true, mode: "PERMANENT", count: deleted.count };
+      }
+
+      // Mode SOFT_REJECT
+      const [updated] = await ctx.prisma.$transaction([
+        ctx.prisma.ratingReview.updateMany({
+          where: { id: { in: input.ids } },
+          data: {
+            validationStatus: ValidationStatus.REJECTED,
+            reviewRemarks: `Ditolak Kuratif Massal: ${input.reason}`,
+            verifiedById: ctx.user.id,
+            verifiedAt: new Date(),
+          },
+        }),
+        ctx.prisma.auditLog.create({
+          data: {
+            userId: ctx.user.id,
+            action: "BULK_SOFT_REJECT_REVIEWS",
+            entityType: "RatingReview",
+            metadata: {
+              count: input.ids.length,
+              reason: input.reason,
+              targetIds: input.ids.slice(0, 50),
+            },
+          },
+        }),
+      ]);
+
+      return { success: true, mode: "SOFT_REJECT", count: updated.count };
+    }),
+
+  /**
+   * 9. Delete All Reviews (Purge / Reject All)
+   * Purge all reviews or soft-reject all pending/approved reviews.
+   */
+  deleteAll: operatorProcedure
+    .input(
+      z.object({
+        mode: z.enum(["SOFT_REJECT", "PERMANENT"]),
+        reason: z.string().min(3, "Alasan wajib diisi minimal 3 karakter"),
+        confirmText: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.confirmText !== "HAPUS SEMUA") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Konfirmasi teks harus tepat 'HAPUS SEMUA'.",
+        });
+      }
+
+      if (input.mode === "PERMANENT") {
+        if (ctx.user.role !== Role.SUPER_ADMIN) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Hanya Super Admin yang berhak menghapus data ulasan secara permanen.",
+          });
+        }
+
+        const [deleted] = await ctx.prisma.$transaction([
+          ctx.prisma.ratingReview.deleteMany({}),
+          ctx.prisma.auditLog.create({
+            data: {
+              userId: ctx.user.id,
+              action: "PURGE_ALL_REVIEWS",
+              entityType: "RatingReview",
+              metadata: {
+                reason: input.reason,
+                purgedBy: ctx.user.name,
+                purgedAt: new Date().toISOString(),
+              },
+            },
+          }),
+        ]);
+
+        return { success: true, mode: "PERMANENT", count: deleted.count };
+      }
+
+      // Mode SOFT_REJECT: update all that are not REJECTED
+      const [updated] = await ctx.prisma.$transaction([
+        ctx.prisma.ratingReview.updateMany({
+          where: { validationStatus: { not: ValidationStatus.REJECTED } },
+          data: {
+            validationStatus: ValidationStatus.REJECTED,
+            reviewRemarks: `Ditolak Kuratif Seluruh Data: ${input.reason}`,
+            verifiedById: ctx.user.id,
+            verifiedAt: new Date(),
+          },
+        }),
+        ctx.prisma.auditLog.create({
+          data: {
+            userId: ctx.user.id,
+            action: "BULK_REJECT_ALL_REVIEWS",
+            entityType: "RatingReview",
+            metadata: {
+              reason: input.reason,
+              rejectedBy: ctx.user.name,
+              rejectedAt: new Date().toISOString(),
+            },
+          },
+        }),
+      ]);
+
+      return { success: true, mode: "SOFT_REJECT", count: updated.count };
+    }),
+
+  /**
+   * 10. Get Filter Options
    * Helper to supply UP3, ULP, and AppVersion lists for filter bars and edit forms.
    */
   getFilterOptions: operatorProcedure.query(async ({ ctx }) => {

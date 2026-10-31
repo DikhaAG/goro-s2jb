@@ -11,6 +11,7 @@ import {
   Download,
   CheckCircle2,
   AlertCircle,
+  Trash2,
   X,
   Zap,
 } from "lucide-react";
@@ -22,6 +23,8 @@ import { ReviewDetailDrawer } from "./ReviewDetailDrawer";
 import { BulkActionBar } from "./BulkActionBar";
 import { BulkReassignUnitModal } from "./BulkReassignUnitModal";
 import { DeleteReviewModal } from "./DeleteReviewModal";
+import { BulkDeleteReviewModal } from "./BulkDeleteReviewModal";
+import { PurgeAllReviewsModal } from "./PurgeAllReviewsModal";
 
 export function ReviewsDashboard() {
   // Session to check user role
@@ -52,6 +55,9 @@ export function ReviewsDashboard() {
 
   const [reviewToDelete, setReviewToDelete] = useState<{ id: string; playstoreReviewerName: string } | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isPurgeAllModalOpen, setIsPurgeAllModalOpen] = useState(false);
 
   const [isBulkReassignModalOpen, setIsBulkReassignModalOpen] = useState(false);
   const [retryingSingleId, setRetryingSingleId] = useState<string | null>(null);
@@ -144,6 +150,38 @@ export function ReviewsDashboard() {
     },
     onError: (err) => {
       showToast("error", err.message || "Gagal melakukan tindakan kuratif.");
+    },
+  });
+
+  const bulkDeleteMutation = trpc.reviews.bulkDelete.useMutation({
+    onSuccess: (res) => {
+      if (res.mode === "PERMANENT") {
+        showToast("success", `${res.count} baris ulasan berhasil dihapus secara permanen.`);
+      } else {
+        showToast("success", `${res.count} baris ulasan berhasil ditandai REJECTED (kuratif massal).`);
+      }
+      setIsBulkDeleteModalOpen(false);
+      setSelectedIds([]);
+      refetchList();
+    },
+    onError: (err) => {
+      showToast("error", err.message || "Gagal melakukan tindakan kuratif massal.");
+    },
+  });
+
+  const deleteAllMutation = trpc.reviews.deleteAll.useMutation({
+    onSuccess: (res) => {
+      if (res.mode === "PERMANENT") {
+        showToast("success", `Seluruh data ulasan (${res.count} baris) berhasil dihapus permanen.`);
+      } else {
+        showToast("success", `Seluruh data ulasan (${res.count} baris) berhasil ditandai REJECTED.`);
+      }
+      setIsPurgeAllModalOpen(false);
+      setSelectedIds([]);
+      refetchList();
+    },
+    onError: (err) => {
+      showToast("error", err.message || "Gagal melakukan tindakan pada seluruh data ulasan.");
     },
   });
 
@@ -411,6 +449,18 @@ export function ReviewsDashboard() {
               <span className="hidden sm:inline">Ekspor CSV</span>
             </button>
 
+            {/* Purge All Reviews Button */}
+            <button
+              type="button"
+              onClick={() => setIsPurgeAllModalOpen(true)}
+              className="min-h-[44px] h-11 px-3.5 rounded-xl bg-[#fef2f2] border border-[#fecaca] hover:bg-[#fee2e2] text-[#dc2626] hover:text-[#b91c1c] text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs"
+              title="Hapus atau tolak seluruh data ulasan sekaligus"
+            >
+              <Trash2 className="w-4 h-4 text-[#dc2626]" />
+              <span className="hidden xl:inline">Hapus Seluruh Data</span>
+              <span className="inline xl:hidden">Hapus Semua</span>
+            </button>
+
             {/* New Review Entry Link */}
             <Link
               href="/intake"
@@ -492,9 +542,12 @@ export function ReviewsDashboard() {
         onBulkRetryOcr={handleBulkRetryOcr}
         onBulkApprove={handleBulkApprove}
         onBulkReject={handleBulkReject}
+        onBulkDelete={() => setIsBulkDeleteModalOpen(true)}
         onBulkExport={() => handleExportCsv(true)}
         isProcessing={
-          bulkRetryOcrMutation.isPending || bulkUpdateMutation.isPending
+          bulkRetryOcrMutation.isPending ||
+          bulkUpdateMutation.isPending ||
+          bulkDeleteMutation.isPending
         }
       />
 
@@ -507,6 +560,34 @@ export function ReviewsDashboard() {
         ulps={filterOptions?.ulps || []}
         onConfirm={handleBulkReassignConfirm}
         isSubmitting={bulkUpdateMutation.isPending}
+      />
+
+      {/* Bulk Delete Selected Reviews Modal */}
+      <BulkDeleteReviewModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        selectedCount={selectedIds.length}
+        userRole={userRole}
+        onConfirmDelete={(data) => {
+          bulkDeleteMutation.mutate({
+            ids: selectedIds,
+            mode: data.mode,
+            reason: data.reason,
+          });
+        }}
+        isDeleting={bulkDeleteMutation.isPending}
+      />
+
+      {/* Purge / Delete All Reviews Modal */}
+      <PurgeAllReviewsModal
+        isOpen={isPurgeAllModalOpen}
+        onClose={() => setIsPurgeAllModalOpen(false)}
+        userRole={userRole}
+        totalCount={listData?.totalCount || 0}
+        onConfirmPurge={(data) => {
+          deleteAllMutation.mutate(data);
+        }}
+        isPurging={deleteAllMutation.isPending}
       />
 
       {/* Delete / Curative Rejection Modal */}
