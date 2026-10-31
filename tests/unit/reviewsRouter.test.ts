@@ -69,6 +69,11 @@ describe("Task 18: Reviews Router Unit Test Suite", () => {
         create: vi.fn().mockResolvedValue({ id: "log-1" }),
         findMany: vi.fn().mockResolvedValue([]),
       },
+      ocrTrainingSample: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        create: vi.fn().mockResolvedValue({ id: "sample-1" }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
       $transaction: vi.fn().mockImplementation((promises) => Promise.all(promises)),
     };
   });

@@ -9,6 +9,7 @@ import { reportRouter } from "./report";
 import { userRouter } from "./user";
 import { systemProcessesRouter } from "./systemProcesses";
 import { reviewsRouter } from "./reviews";
+import { ocrTrainingRouter } from "./ocrTraining";
 
 export const appRouter = router({
   health: healthRouter,
@@ -21,6 +22,7 @@ export const appRouter = router({
   report: reportRouter,
   systemProcesses: systemProcessesRouter,
   reviews: reviewsRouter,
+  ocrTraining: ocrTrainingRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -52,6 +52,10 @@ model User {
   verifiedReviews  RatingReview[] @relation("VerifiedReviews")
   migrations       MigrationBatch[]
   auditLogs        AuditLog[]
+  verifiedTrainingSamples OcrTrainingSample[] @relation("VerifiedTrainingSamples")
+  trainedOcrModels        OcrModelRegistry[]  @relation("TrainedOcrModels")
+  activatedOcrModels      OcrModelRegistry[]  @relation("ActivatedOcrModels")
+  createdTrainingJobs     OcrTrainingJob[]    @relation("CreatedTrainingJobs")
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -175,6 +179,7 @@ model RatingReview {
   duplicateChildren     RatingReview[]   @relation("ReviewDuplicates")
   submittedBy           User?            @relation("SubmittedReviews", fields: [submittedById], references: [id])
   verifiedBy            User?            @relation("VerifiedReviews", fields: [verifiedById], references: [id])
+  trainingSamples       OcrTrainingSample[]
 
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
@@ -250,4 +255,114 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
 }
+
+enum OcrSampleSource {
+  IMPORT_SPREADSHEET
+  TRIAGE_VALIDATION
+  CURATIVE_REVIEW
+  MANUAL_CURATION
+}
+
+enum OcrSampleInclusion {
+  APPROVED_FOR_TRAIN
+  PENDING_REVIEW
+  EXCLUDED
+}
+
+enum OcrModelStatus {
+  STAGING
+  ACTIVE
+  ARCHIVED
+  REJECTED
+}
+
+enum OcrTrainingJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model OcrTrainingSample {
+  id              String             @id @default(cuid())
+  reviewId        String?
+  review          RatingReview?      @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+  imagePath       String
+  imageHash       String?
+  groundTruthText String             @db.Text
+  reviewerName    String?
+  rawOcrText      String?            @db.Text
+  confidenceScore Float?
+  source          OcrSampleSource    @default(TRIAGE_VALIDATION)
+  inclusion       OcrSampleInclusion @default(APPROVED_FOR_TRAIN)
+  exclusionReason String?
+  cropBox         Json?
+  verifiedById    String?
+  verifiedBy      User?              @relation("VerifiedTrainingSamples", fields: [verifiedById], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([inclusion])
+  @@index([source])
+  @@index([reviewId])
+  @@index([imageHash])
+  @@index([createdAt])
+}
+
+model OcrModelRegistry {
+  id                   String             @id @default(cuid())
+  version              String             @unique
+  name                 String
+  description          String?
+  artifactPath         String
+  architecture         String             @default("CRNN_PYTORCH")
+  status               OcrModelStatus     @default(STAGING)
+  cerScore             Float?
+  werScore             Float?
+  accuracyScore        Float?
+  trainingSamplesCount Int                @default(0)
+  epochsTrained        Int                @default(0)
+  durationSeconds      Int                @default(0)
+  metadata             Json?
+  trainedById          String?
+  trainedBy            User?              @relation("TrainedOcrModels", fields: [trainedById], references: [id])
+  activatedById        String?
+  activatedBy          User?              @relation("ActivatedOcrModels", fields: [activatedById], references: [id])
+  activatedAt          DateTime?
+  trainingJobs         OcrTrainingJob[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([status])
+  @@index([version])
+  @@index([createdAt])
+}
+
+model OcrTrainingJob {
+  id                 String               @id @default(cuid())
+  status             OcrTrainingJobStatus @default(PENDING)
+  triggerType        String               // "MANUAL" | "THRESHOLD" | "SCHEDULED_CRON"
+  modelTargetVersion String
+  datasetSize        Int                  @default(0)
+  currentEpoch       Int                  @default(0)
+  totalEpochs        Int                  @default(10)
+  currentLoss        Float?
+  logs               Json?
+  errorMessage       String?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  durationSeconds    Int?
+  createdById        String?
+  createdBy          User?                @relation("CreatedTrainingJobs", fields: [createdById], references: [id])
+  modelRegistryId    String?
+  modelRegistry      OcrModelRegistry?    @relation(fields: [modelRegistryId], references: [id])
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([status])
+  @@index([triggerType])
+  @@index([createdAt])
+}
+
 
