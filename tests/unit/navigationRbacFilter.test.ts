@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { Role } from "@prisma/client";
-import { NAV_ITEMS, filterNavItemsByRole, NavMenuItem } from "@/components/layout/GlobalSidebar";
+import {
+  NAV_ITEMS,
+  filterNavItemsByRole,
+  NavMenuItem,
+  isNavItemActive,
+} from "@/components/layout/GlobalSidebar";
 
 describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test Suite", () => {
   const getHrefs = (items: NavMenuItem[]) => items.map((item) => item.href);
@@ -117,47 +122,55 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
   });
 
   describe("3. Active Route Matching Logic Verification", () => {
-    function isItemActive(itemHref: string, currentPathname: string): boolean {
-      if (itemHref === "/") {
-        return currentPathname === "/";
-      }
-      return (
-        currentPathname.startsWith(itemHref) ||
-        (itemHref === "/triage" && currentPathname.startsWith("/operator/triage")) ||
-        (itemHref === "/reports" && currentPathname.startsWith("/manager/reports")) ||
-        (itemHref === "/users" && currentPathname.startsWith("/admin/users"))
-      );
-    }
-
     it("should activate root dashboard ONLY on exact match '/'", () => {
-      expect(isItemActive("/", "/")).toBe(true);
-      expect(isItemActive("/", "/intake")).toBe(false);
-      expect(isItemActive("/", "/triage")).toBe(false);
-      expect(isItemActive("/", "/reports")).toBe(false);
-      expect(isItemActive("/", "/users")).toBe(false);
+      expect(isNavItemActive("/", "/")).toBe(true);
+      expect(isNavItemActive("/", "/intake")).toBe(false);
+      expect(isNavItemActive("/", "/triage")).toBe(false);
+      expect(isNavItemActive("/", "/reports")).toBe(false);
+      expect(isNavItemActive("/", "/users")).toBe(false);
     });
 
     it("should activate module items when pathname matches canonical route or sub-paths", () => {
-      expect(isItemActive("/intake", "/intake")).toBe(true);
-      expect(isItemActive("/intake", "/intake/step-2")).toBe(true);
+      expect(isNavItemActive("/intake", "/intake")).toBe(true);
+      expect(isNavItemActive("/intake", "/intake/step-2")).toBe(true);
 
-      expect(isItemActive("/triage", "/triage")).toBe(true);
-      expect(isItemActive("/triage", "/triage/review/123")).toBe(true);
+      expect(isNavItemActive("/triage", "/triage")).toBe(true);
+      expect(isNavItemActive("/triage", "/triage/review/123")).toBe(true);
 
-      expect(isItemActive("/reports", "/reports")).toBe(true);
-      expect(isItemActive("/reports", "/reports/daily")).toBe(true);
+      expect(isNavItemActive("/reports", "/reports")).toBe(true);
+      expect(isNavItemActive("/reports", "/reports/daily")).toBe(true);
 
-      expect(isItemActive("/users", "/users")).toBe(true);
-      expect(isItemActive("/users", "/users/create")).toBe(true);
+      expect(isNavItemActive("/users", "/users")).toBe(true);
+      expect(isNavItemActive("/users", "/users/create")).toBe(true);
 
-      expect(isItemActive("/migration", "/migration")).toBe(true);
-      expect(isItemActive("/audit-logs", "/audit-logs")).toBe(true);
+      expect(isNavItemActive("/migration", "/migration")).toBe(true);
+      expect(isNavItemActive("/audit-logs", "/audit-logs")).toBe(true);
+      expect(isNavItemActive("/system-processes", "/system-processes")).toBe(true);
+    });
+
+    it("should prevent prefix collision between /migration and /migration/monitor", () => {
+      // When on /migration/monitor, ONLY /migration/monitor should be active, NOT /migration
+      expect(isNavItemActive("/migration/monitor", "/migration/monitor")).toBe(true);
+      expect(isNavItemActive("/migration", "/migration/monitor")).toBe(false);
+
+      // When on /migration, ONLY /migration should be active, NOT /migration/monitor
+      expect(isNavItemActive("/migration", "/migration")).toBe(true);
+      expect(isNavItemActive("/migration/monitor", "/migration")).toBe(false);
+
+      // Sub-paths of /migration (that are not monitor) should keep /migration active
+      expect(isNavItemActive("/migration", "/migration/upload")).toBe(true);
+      expect(isNavItemActive("/migration/monitor", "/migration/upload")).toBe(false);
+
+      // Sub-paths of /migration/monitor should keep /migration/monitor active
+      expect(isNavItemActive("/migration/monitor", "/migration/monitor/worker-1")).toBe(true);
+      expect(isNavItemActive("/migration", "/migration/monitor/worker-1")).toBe(false);
     });
 
     it("should support backward-compatible rewrite paths for legacy aliases", () => {
-      expect(isItemActive("/triage", "/operator/triage")).toBe(true);
-      expect(isItemActive("/reports", "/manager/reports")).toBe(true);
-      expect(isItemActive("/users", "/admin/users")).toBe(true);
+      expect(isNavItemActive("/triage", "/operator/triage")).toBe(true);
+      expect(isNavItemActive("/reports", "/manager/reports")).toBe(true);
+      expect(isNavItemActive("/users", "/admin/users")).toBe(true);
+      expect(isNavItemActive("/migration", "/admin/migration")).toBe(true);
     });
   });
 });

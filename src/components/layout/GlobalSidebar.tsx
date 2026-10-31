@@ -95,6 +95,54 @@ export function filterNavItemsByRole(role: string): NavMenuItem[] {
   return NAV_ITEMS.filter((item) => item.roles.includes(role));
 }
 
+/**
+ * Accurately determines if a navigation item is active for the current pathname.
+ * Handles exact matches, legacy route aliases, and prevents prefix collision
+ * between parent and child routes (e.g. /migration vs /migration/monitor).
+ */
+export function isNavItemActive(
+  itemHref: string,
+  pathname: string,
+  allItemHrefs: string[] = NAV_ITEMS.map((item) => item.href)
+): boolean {
+  if (itemHref === "/") {
+    return pathname === "/";
+  }
+
+  // Normalize path if legacy aliases exist
+  let normalizedPath = pathname;
+  if (pathname.startsWith("/operator/triage")) {
+    normalizedPath = "/triage" + pathname.slice("/operator/triage".length);
+  } else if (pathname.startsWith("/manager/reports")) {
+    normalizedPath = "/reports" + pathname.slice("/manager/reports".length);
+  } else if (pathname.startsWith("/admin/users")) {
+    normalizedPath = "/users" + pathname.slice("/admin/users".length);
+  } else if (pathname.startsWith("/admin/audit-logs")) {
+    normalizedPath = "/audit-logs" + pathname.slice("/admin/audit-logs".length);
+  } else if (pathname.startsWith("/admin/migration")) {
+    normalizedPath = "/migration" + pathname.slice("/admin/migration".length);
+  }
+
+  // 1. Exact match
+  if (normalizedPath === itemHref) {
+    return true;
+  }
+
+  // 2. Sub-path match (e.g. /migration/step-1 or /triage/review/123)
+  // Only active if no other more specific menu item matches the current pathname
+  if (normalizedPath.startsWith(itemHref + "/")) {
+    const hasMoreSpecificMatch = allItemHrefs.some(
+      (otherHref) =>
+        otherHref !== itemHref &&
+        otherHref.length > itemHref.length &&
+        (normalizedPath === otherHref || normalizedPath.startsWith(otherHref + "/"))
+    );
+    return !hasMoreSpecificMatch;
+  }
+
+  return false;
+}
+
 export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -105,6 +153,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
 
   // Filter menu items by RBAC
   const visibleItems = filterNavItemsByRole(userRole);
+  const visibleHrefs = visibleItems.map((i) => i.href);
 
   const handleLogout = async () => {
     try {
@@ -170,13 +219,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
         <nav aria-label="Menu Navigasi Utama" className="p-3 space-y-1 mt-2">
           {visibleItems.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href) ||
-                (item.href === "/triage" && pathname.startsWith("/operator/triage")) ||
-                (item.href === "/reports" && pathname.startsWith("/manager/reports")) ||
-                (item.href === "/users" && pathname.startsWith("/admin/users"));
+            const isActive = isNavItemActive(item.href, pathname, visibleHrefs);
 
             return (
               <Link
