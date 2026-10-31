@@ -1,0 +1,12 @@
+# Line ceilings for the reference files, read by scripts/validate-skill-bundle.py.
+# One line per file: <file.md> <ceiling> [<YYYY-MM-DD> <reason for the last raise>]
+# Over its ceiling, a file with more than 12 load triggers is split by episode;
+# one with 12 or fewer is trimmed, or its ceiling raised with a dated reason.
+# A ceiling more than 3 lines above its file's count is lowered to the count.
+environments.md 1856 2026-10-26 scheduler and completion checks, an overdue review logged once, several config homes, project start-up for started sessions, harness memory in the backfill
+migration.md 262 2026-10-16 the test branch: the split store, a log.md beside the observation directory
+observation-log.md 1451
+signals.md 234
+skill-authoring.md 1439 2026-10-26 editing rule 4 covers the install copy list, the LICENSE is the unmodified legal text with the credit line in the README
+starter-principles.md 504 2026-10-16 the marker is written after the answer, cited bodies are read, entry 23 covers the unmeasured baseline
+weekly-review.md 2185 2026-10-26 retrieve before escalating, per-edit fork routing, state-file type and path checks, repository-exported installs, neutral family wording, pasted specs in briefs, timed keep-two, destination checks, install confirmation, the fan-out result-set check

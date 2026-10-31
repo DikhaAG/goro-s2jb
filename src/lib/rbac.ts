@@ -12,6 +12,13 @@ export interface RoutePermission {
  * Enforced across Edge Proxy, Server Layouts, Route Handlers, and UI Navigation.
  */
 export const ROUTE_PERMISSIONS: RoutePermission[] = [
+  // Reviews management CRUD module: Pegawai (Operator Triase) and Super Admin
+  {
+    pattern: /^\/reviews(\/.*)?$/,
+    prefix: "/reviews",
+    allowedRoles: [Role.PEGAWAI, Role.SUPER_ADMIN],
+    description: "Modul Manajemen & Pengelolaan Data Ulasan",
+  },
   // Migration module: Pegawai (Operator Triase) and Super Admin
   {
     pattern: /^\/migration(\/.*)?$/,

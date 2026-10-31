@@ -19,6 +19,7 @@ import {
   Lock,
   Activity,
   Terminal,
+  FolderKanban,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -51,6 +52,12 @@ export const NAV_ITEMS: NavMenuItem[] = [
     label: "Triase Ulasan",
     href: "/triage",
     icon: CheckSquare,
+    roles: ["PEGAWAI", "SUPER_ADMIN"],
+  },
+  {
+    label: "Kelola Data Ulasan",
+    href: "/reviews",
+    icon: FolderKanban,
     roles: ["PEGAWAI", "SUPER_ADMIN"],
   },
   {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { appRouter } from "@/server/routers/_app";
-import { Role, ValidationStatus } from "@prisma/client";
+import { Role, ValidationStatus, OcrProcessingStatus } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
 import { generateExecutiveWorkbook } from "@/lib/export/excelExporter";
@@ -193,6 +193,9 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
       evidenceFilename: "e2e_duplicate.jpg",
     });
 
+    // Allow intake job to be enqueued and settle
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // Simulate OCR worker matching identical perceptual hash
     await prisma.ratingReview.update({
       where: { id: secondSubmitRes.reviewId },
@@ -200,6 +203,7 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
         isDuplicate: true,
         duplicateOfId: createdReviewId,
         validationStatus: ValidationStatus.REJECTED,
+        ocrStatus: OcrProcessingStatus.COMPLETED,
         reviewRemarks: "Terdeteksi Duplikat Foto Eviden (Jarak Hamming: 0)",
       },
     });

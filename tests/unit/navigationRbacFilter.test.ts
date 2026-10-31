@@ -18,6 +18,7 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
         "/",
         "/intake",
         "/triage",
+        "/reviews",
         "/reports",
         "/users",
         "/migration",
@@ -68,12 +69,12 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/audit-logs");
     });
 
-    it("should return exactly 4 items for Pegawai Triase: ['/', '/triage', '/migration', '/migration/monitor']", () => {
+    it("should return exactly 5 items for Pegawai Triase: ['/', '/triage', '/reviews', '/migration', '/migration/monitor']", () => {
       const operatorItems = filterNavItemsByRole(Role.PEGAWAI);
       const hrefs = getHrefs(operatorItems);
 
-      expect(operatorItems).toHaveLength(4);
-      expect(hrefs).toEqual(["/", "/triage", "/migration", "/migration/monitor"]);
+      expect(operatorItems).toHaveLength(5);
+      expect(hrefs).toEqual(["/", "/triage", "/reviews", "/migration", "/migration/monitor"]);
 
       // Verify strict isolation
       expect(hrefs).not.toContain("/intake");
@@ -81,6 +82,7 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/users");
       expect(hrefs).toContain("/migration");
       expect(hrefs).toContain("/migration/monitor");
+      expect(hrefs).toContain("/reviews");
       expect(hrefs).not.toContain("/system-processes");
       expect(hrefs).not.toContain("/audit-logs");
     });
@@ -102,15 +104,16 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/audit-logs");
     });
 
-    it("should return all 9 items for Super Admin without omissions", () => {
+    it("should return all 10 items for Super Admin without omissions", () => {
       const adminItems = filterNavItemsByRole(Role.SUPER_ADMIN);
       const hrefs = getHrefs(adminItems);
 
-      expect(adminItems).toHaveLength(9);
+      expect(adminItems).toHaveLength(10);
       expect(hrefs).toEqual([
         "/",
         "/intake",
         "/triage",
+        "/reviews",
         "/reports",
         "/users",
         "/migration",

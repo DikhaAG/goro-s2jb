@@ -90,7 +90,7 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       expect(resManager.headers.get("location")).toContain("/reports");
     });
 
-    it("should block Petugas Lapangan from accessing /triage or /reports", async () => {
+    it("should block Petugas Lapangan from accessing /triage, /reports, or /reviews", async () => {
       const triageRes = await middleware(createMockRequest("/triage", fieldToken));
       expect(triageRes.status).toBe(307);
       expect(triageRes.headers.get("location")).toContain("/unauthorized");
@@ -98,9 +98,19 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       const reportRes = await middleware(createMockRequest("/reports", fieldToken));
       expect(reportRes.status).toBe(307);
       expect(reportRes.headers.get("location")).toContain("/unauthorized");
+
+      const reviewRes = await middleware(createMockRequest("/reviews", fieldToken));
+      expect(reviewRes.status).toBe(307);
+      expect(reviewRes.headers.get("location")).toContain("/unauthorized");
     });
 
-    it("should block Pegawai Operator from accessing /intake or /reports", async () => {
+    it("should allow Pegawai Operator to access /triage and /reviews, but block /intake or /reports", async () => {
+      const triageRes = await middleware(createMockRequest("/triage", operatorToken));
+      expect(triageRes.status).toBe(200);
+
+      const reviewRes = await middleware(createMockRequest("/reviews", operatorToken));
+      expect(reviewRes.status).toBe(200);
+
       const intakeRes = await middleware(createMockRequest("/intake", operatorToken));
       expect(intakeRes.status).toBe(307);
       expect(intakeRes.headers.get("location")).toContain("/unauthorized");
@@ -110,22 +120,29 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       expect(reportRes.headers.get("location")).toContain("/unauthorized");
     });
 
-    it("should block Manager from accessing /intake, /triage, or /admin", async () => {
+    it("should block Manager from accessing /intake, /triage, /reviews, or /admin", async () => {
       const intakeRes = await middleware(createMockRequest("/intake", managerToken));
       expect(intakeRes.status).toBe(307);
       expect(intakeRes.headers.get("location")).toContain("/unauthorized");
+
+      const reviewRes = await middleware(createMockRequest("/reviews", managerToken));
+      expect(reviewRes.status).toBe(307);
+      expect(reviewRes.headers.get("location")).toContain("/unauthorized");
 
       const adminRes = await middleware(createMockRequest("/users", managerToken));
       expect(adminRes.status).toBe(307);
       expect(adminRes.headers.get("location")).toContain("/unauthorized");
     });
 
-    it("should allow Super Admin to access all modules", async () => {
+    it("should allow Super Admin to access all modules including /reviews", async () => {
       const intakeRes = await middleware(createMockRequest("/intake", adminToken));
       expect(intakeRes.status).toBe(200);
 
       const triageRes = await middleware(createMockRequest("/triage", adminToken));
       expect(triageRes.status).toBe(200);
+
+      const reviewsRes = await middleware(createMockRequest("/reviews", adminToken));
+      expect(reviewsRes.status).toBe(200);
 
       const reportRes = await middleware(createMockRequest("/reports", adminToken));
       expect(reportRes.status).toBe(200);
@@ -172,6 +189,20 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       } as any);
 
       await expect(caller.triage.getQueue({})).rejects.toThrow(
+        "Hanya Pegawai Operator atau Super Admin yang diizinkan."
+      );
+    });
+
+    it("should reject non-operator from reviews procedures with FORBIDDEN error", async () => {
+      const caller = appRouter.createCaller({
+        prisma,
+        redis,
+        user: mockFieldUser,
+        ipAddress: "127.0.0.1",
+        userAgent: "test",
+      } as any);
+
+      await expect(caller.reviews.getList({})).rejects.toThrow(
         "Hanya Pegawai Operator atau Super Admin yang diizinkan."
       );
     });
