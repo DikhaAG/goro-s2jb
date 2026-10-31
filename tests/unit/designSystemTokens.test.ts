@@ -56,12 +56,13 @@ describe("Design System & Antislop Compliance", () => {
     const fieldItems = NAV_ITEMS.filter((i) => i.roles.includes("PETUGAS_LAPANGAN"));
     expect(fieldItems.map((i) => i.href)).toEqual(["/", "/intake"]);
 
-    // Operator Verifikator sees 5 items
+    // Operator Verifikator sees 6 items
     const operatorItems = NAV_ITEMS.filter((i) => i.roles.includes("PEGAWAI"));
     expect(operatorItems.map((i) => i.href)).toEqual([
       "/",
       "/triage",
       "/reviews",
+      "/ocr-training",
       "/migration",
       "/migration/monitor",
     ]);
@@ -70,14 +71,15 @@ describe("Design System & Antislop Compliance", () => {
     const managerItems = NAV_ITEMS.filter((i) => i.roles.includes("MANAGER"));
     expect(managerItems.map((i) => i.href)).toEqual(["/", "/reports"]);
 
-    // Super Admin sees all 10 items
+    // Super Admin sees all 11 items
     const adminItems = NAV_ITEMS.filter((i) => i.roles.includes("SUPER_ADMIN"));
-    expect(adminItems).toHaveLength(10);
+    expect(adminItems).toHaveLength(11);
     expect(adminItems.map((i) => i.href)).toEqual([
       "/",
       "/intake",
       "/triage",
       "/reviews",
+      "/ocr-training",
       "/reports",
       "/users",
       "/migration",
