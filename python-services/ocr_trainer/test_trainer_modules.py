@@ -12,7 +12,8 @@ from lexicon_builder import LexiconBuilder
 from model import CRNN
 from dataset import OcrDataset, ocr_collate_fn
 from evaluator import compute_cer, compute_wer, ctc_greedy_decode
-from predictor import predict_crnn
+from predictor import predict_crnn, select_device as predictor_select_device
+from trainer import select_device as trainer_select_device
 from PIL import Image
 
 class TestOcrTrainerModules(unittest.TestCase):
@@ -111,6 +112,20 @@ class TestOcrTrainerModules(unittest.TestCase):
             dummy_img = Image.new("L", (100, 32), color=255)
             pred = predict_crnn(dummy_img, ckpt_path, device=torch.device("cpu"))
             self.assertIsInstance(pred, str)
+
+    def test_cross_platform_device_selection(self):
+        dev_trainer = trainer_select_device()
+        dev_predictor = predictor_select_device()
+
+        # Device should be either mps, cuda, or cpu
+        self.assertIn(dev_trainer.type, ["mps", "cuda", "cpu"])
+        self.assertIn(dev_predictor.type, ["mps", "cuda", "cpu"])
+
+        # Forward pass on detected hardware device
+        model = CRNN(num_classes=self.lexicon.num_classes).to(dev_trainer)
+        dummy_input = torch.randn(1, 1, 32, 64).to(dev_trainer)
+        output = model(dummy_input)
+        self.assertEqual(output.size(1), 1)
 
 if __name__ == "__main__":
     unittest.main()

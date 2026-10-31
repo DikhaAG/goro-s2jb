@@ -266,6 +266,15 @@ export async function rollbackModel(
       });
     }
 
+    // Ensure any other stale active models are cleanly archived
+    await tx.ocrModelRegistry.updateMany({
+      where: {
+        status: OcrModelStatus.ACTIVE,
+        id: { not: options.targetModelId },
+      },
+      data: { status: OcrModelStatus.ARCHIVED },
+    });
+
     // 2. Set target model to ACTIVE
     return tx.ocrModelRegistry.update({
       where: { id: options.targetModelId },
