@@ -12,6 +12,8 @@ from lexicon_builder import LexiconBuilder
 from model import CRNN
 from dataset import OcrDataset, ocr_collate_fn
 from evaluator import compute_cer, compute_wer, ctc_greedy_decode
+from predictor import predict_crnn
+from PIL import Image
 
 class TestOcrTrainerModules(unittest.TestCase):
     def setUp(self):
@@ -96,6 +98,19 @@ class TestOcrTrainerModules(unittest.TestCase):
         decoded = ctc_greedy_decode(log_probs, self.lexicon)
         self.assertEqual(len(decoded), 1)
         self.assertEqual(decoded[0], char1)
+
+    def test_predictor_crnn(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model = CRNN(num_classes=self.lexicon.num_classes)
+            ckpt_path = os.path.join(tmpdir, "model.pt")
+            model.save_checkpoint(ckpt_path)
+
+            lex_path = os.path.join(tmpdir, "lexicon.json")
+            self.lexicon.save_lexicon(lex_path)
+
+            dummy_img = Image.new("L", (100, 32), color=255)
+            pred = predict_crnn(dummy_img, ckpt_path, device=torch.device("cpu"))
+            self.assertIsInstance(pred, str)
 
 if __name__ == "__main__":
     unittest.main()

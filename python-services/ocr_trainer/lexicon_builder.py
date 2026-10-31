@@ -85,6 +85,8 @@ class LexiconBuilder:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
+    save_lexicon = save_vocab
+
     @classmethod
     def load_vocab(cls, filepath: str) -> "LexiconBuilder":
         with open(filepath, "r", encoding="utf-8") as f:
@@ -92,4 +94,6 @@ class LexiconBuilder:
         builder = cls(charset=data.get("charset", DEFAULT_CHARSET))
         builder.domain_words = set(data.get("domain_words", []))
         return builder
+
+    load_lexicon = load_vocab
 

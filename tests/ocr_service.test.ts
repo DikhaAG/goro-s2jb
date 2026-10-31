@@ -34,4 +34,13 @@ describe("Python OCR & pHash Adapter (src/server/services/ocrService.ts)", () =>
     expect(result.success).toBe(false);
     expect(result.error).toContain("Image file not found");
   });
+
+  it("should accept optional modelPath parameter for hot-reload execution", async () => {
+    const result = await processEvidenceOcr(sampleImagePath, "Budi Santoso", {
+      modelPath: "non_existent_model.pt",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.extracted_text.toLowerCase()).toContain("budi");
+  });
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, operatorProcedure } from "../trpc";
-import { OcrSampleSource, OcrSampleInclusion, Prisma } from "@prisma/client";
+import { OcrSampleSource, OcrSampleInclusion, OcrModelStatus, Prisma } from "@prisma/client";
 import {
   getTrainingDatasetStats,
   updateSampleInclusion,
@@ -13,6 +13,15 @@ import {
   cancelTrainingJob,
 } from "../services/ocrTrainingTriggerService";
 import { REDIS_TRAINING_ACTIVE_KEY } from "../workers/ocrTrainingWorker";
+import {
+  listModels,
+  getModelById,
+  getActiveModel,
+  activateModel,
+  rollbackModel,
+  rejectModel,
+  compareModels,
+} from "../services/ocrModelRegistryService";
 
 export const ocrTrainingRouter = router({
   /**
@@ -334,6 +343,162 @@ export const ocrTrainingRouter = router({
         success: true,
         job: cancelled,
       };
+    }),
+
+  /**
+   * 11. List Registered OCR Models with Pagination & Status Filtering (Subtask 19.4)
+   */
+  listModels: operatorProcedure
+    .input(
+      z
+        .object({
+          status: z.nativeEnum(OcrModelStatus).optional(),
+          page: z.number().int().min(1).default(1),
+          pageSize: z.number().int().min(1).max(50).default(10),
+        })
+        .optional()
+    )
+    .query(async ({ ctx, input }) => {
+      return listModels(input, ctx.prisma);
+    }),
+
+  /**
+   * 12. Get Detailed Model Information by ID (Subtask 19.4)
+   */
+  getModelDetails: operatorProcedure
+    .input(
+      z.object({
+        modelId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return getModelById(input.modelId, ctx.prisma);
+    }),
+
+  /**
+   * 13. Get Currently Active Production Model (Subtask 19.4)
+   */
+  getActiveModel: operatorProcedure.query(async ({ ctx }) => {
+    return getActiveModel(ctx.prisma, ctx.redis);
+  }),
+
+  /**
+   * 14. Activate Model to Production (Hot-Reload) (Subtask 19.4)
+   */
+  activateModel: operatorProcedure
+    .input(
+      z.object({
+        modelId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await activateModel(
+        input.modelId,
+        ctx.user.id,
+        ctx.prisma,
+        ctx.redis
+      );
+
+      await ctx.prisma.auditLog.create({
+        data: {
+          userId: ctx.user.id,
+          action: "ACTIVATE_OCR_MODEL",
+          entityType: "OcrModelRegistry",
+          entityId: input.modelId,
+          metadata: {
+            actorRole: ctx.user.role,
+            version: result.model.version,
+            alreadyActive: result.alreadyActive,
+          },
+        },
+      });
+
+      return result;
+    }),
+
+  /**
+   * 15. Instant Safe Rollback to Previous Model (Subtask 19.4)
+   */
+  rollbackModel: operatorProcedure
+    .input(
+      z.object({
+        targetModelId: z.string(),
+        reason: z.string().min(3, "Alasan rollback minimal 3 karakter."),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await rollbackModel(
+        input,
+        ctx.user.id,
+        ctx.prisma,
+        ctx.redis
+      );
+
+      await ctx.prisma.auditLog.create({
+        data: {
+          userId: ctx.user.id,
+          action: "ROLLBACK_OCR_MODEL",
+          entityType: "OcrModelRegistry",
+          entityId: input.targetModelId,
+          metadata: {
+            actorRole: ctx.user.role,
+            reason: input.reason,
+            targetVersion: result.activeModel.version,
+            previousVersion: result.previousModel?.version ?? null,
+          },
+        },
+      });
+
+      return result;
+    }),
+
+  /**
+   * 16. Reject Staging Model (Subtask 19.4)
+   */
+  rejectModel: operatorProcedure
+    .input(
+      z.object({
+        modelId: z.string(),
+        reason: z.string().min(3, "Alasan penolakan minimal 3 karakter."),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await rejectModel(
+        input.modelId,
+        input.reason,
+        ctx.user.id,
+        ctx.prisma
+      );
+
+      await ctx.prisma.auditLog.create({
+        data: {
+          userId: ctx.user.id,
+          action: "REJECT_OCR_MODEL",
+          entityType: "OcrModelRegistry",
+          entityId: input.modelId,
+          metadata: {
+            actorRole: ctx.user.role,
+            reason: input.reason,
+            version: result.model.version,
+          },
+        },
+      });
+
+      return result;
+    }),
+
+  /**
+   * 17. Compare Two Models (Subtask 19.4)
+   */
+  compareModels: operatorProcedure
+    .input(
+      z.object({
+        modelAId: z.string(),
+        modelBId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return compareModels(input.modelAId, input.modelBId, ctx.prisma);
     }),
 });
 

@@ -11,6 +11,16 @@ from engine import extract_text_from_image
 from matcher import calculate_similarity
 from hasher import calculate_phash, hamming_distance, is_visual_duplicate
 
+# Try importing CRNN deep learning predictor from ocr_trainer
+crnn_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../ocr_trainer"))
+if crnn_dir not in sys.path:
+    sys.path.append(crnn_dir)
+
+try:
+    from predictor import predict_crnn
+except ImportError:
+    predict_crnn = None
+
 # FastAPI imports
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -24,6 +34,7 @@ app = FastAPI(
 class ProcessRequest(BaseModel):
     image_path: str
     target_name: Optional[str] = ""
+    model_path: Optional[str] = ""
 
 class ProcessResponse(BaseModel):
     success: bool
@@ -44,7 +55,11 @@ class CompareHashResponse(BaseModel):
     hamming_distance: int
     is_duplicate: bool
 
-def process_evidence(image_path: str, target_name: Optional[str] = "") -> Dict[str, Any]:
+def process_evidence(
+    image_path: str,
+    target_name: Optional[str] = "",
+    model_path: Optional[str] = ""
+) -> Dict[str, Any]:
     start_time = time.time()
 
     if not os.path.exists(image_path):
@@ -67,7 +82,16 @@ def process_evidence(image_path: str, target_name: Optional[str] = "") -> Dict[s
             # 2. Extract text with preprocessing and OCR
             extracted_text = extract_text_from_image(img)
 
-        # 3. Fuzzy match target reviewer name against extracted text
+            # 3. If deep learning model_path provided, run CRNN inference
+            if model_path and os.path.exists(model_path) and predict_crnn:
+                try:
+                    crnn_text = predict_crnn(img, model_path)
+                    if crnn_text:
+                        extracted_text = f"{crnn_text}\n{extracted_text}".strip()
+                except Exception as crnn_err:
+                    sys.stderr.write(f"Warning: CRNN inference failed: {crnn_err}\n")
+
+        # 4. Fuzzy match target reviewer name against extracted text
         similarity_score, zone, recommended_status = calculate_similarity(
             target_name or "", extracted_text
         )
@@ -102,7 +126,7 @@ def health():
 
 @app.post("/api/v1/process", response_model=ProcessResponse)
 def api_process(req: ProcessRequest):
-    result = process_evidence(req.image_path, req.target_name)
+    result = process_evidence(req.image_path, req.target_name, req.model_path)
     return result
 
 @app.post("/api/v1/compare-hash", response_model=CompareHashResponse)
@@ -115,9 +139,10 @@ def cli_main():
     parser = argparse.ArgumentParser(description="GORO S2JB OCR & pHash Extractor")
     parser.add_argument("--image", required=True, help="Path to evidence image")
     parser.add_argument("--expected-name", default="", help="Expected Play Store reviewer name")
+    parser.add_argument("--model-path", default="", help="Path to custom CRNN model checkpoint")
     args = parser.parse_args()
 
-    result = process_evidence(args.image, args.expected_name)
+    result = process_evidence(args.image, args.expected_name, args.model_path)
     print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":

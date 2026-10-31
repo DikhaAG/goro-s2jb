@@ -39,7 +39,48 @@ vi.mock("@/server/services/ocrTrainingTriggerService", () => ({
   }),
 }));
 
-describe("Subtask 19.1, 19.2 & 19.3: OCR Training Router Unit Test Suite", () => {
+vi.mock("@/server/services/ocrModelRegistryService", () => ({
+  listModels: vi.fn().mockResolvedValue({
+    items: [{ id: "m-1", version: "v1.0.0" }],
+    totalCount: 1,
+    totalPages: 1,
+    page: 1,
+    pageSize: 10,
+  }),
+  getModelById: vi.fn().mockResolvedValue({
+    id: "m-1",
+    version: "v1.0.0",
+    name: "Model v1",
+  }),
+  getActiveModel: vi.fn().mockResolvedValue({
+    id: "m-1",
+    version: "v1.0.0",
+    status: "ACTIVE",
+  }),
+  activateModel: vi.fn().mockResolvedValue({
+    success: true,
+    alreadyActive: false,
+    model: { id: "m-2", version: "v1.1.0", status: "ACTIVE" },
+  }),
+  rollbackModel: vi.fn().mockResolvedValue({
+    success: true,
+    previousModel: { id: "m-2", version: "v1.1.0" },
+    activeModel: { id: "m-1", version: "v1.0.0", status: "ACTIVE" },
+  }),
+  rejectModel: vi.fn().mockResolvedValue({
+    success: true,
+    model: { id: "m-3", version: "v1.2.0", status: "REJECTED" },
+  }),
+  compareModels: vi.fn().mockResolvedValue({
+    modelA: { id: "m-1", version: "v1.0.0" },
+    modelB: { id: "m-2", version: "v1.1.0" },
+    delta: { cer: -1.2, wer: -2.0, accuracy: 4.5, samples: 100 },
+    isModelBImprovement: true,
+    verdict: "MODEL_B_BETTER",
+  }),
+}));
+
+describe("Subtask 19.1, 19.2, 19.3 & 19.4: OCR Training Router Unit Test Suite", () => {
   let mockPrisma: any;
   let mockRedis: any;
 
@@ -330,6 +371,109 @@ describe("Subtask 19.1, 19.2 & 19.3: OCR Training Router Unit Test Suite", () =>
           }),
         })
       );
+    });
+  });
+
+  describe("12. listModels Procedure (Subtask 19.4)", () => {
+    it("should return model list from registry service", async () => {
+      const caller = createCaller();
+      const res = await caller.listModels({ page: 1, pageSize: 10 });
+
+      expect(res.items).toHaveLength(1);
+      expect(res.totalCount).toBe(1);
+    });
+  });
+
+  describe("13. getModelDetails Procedure (Subtask 19.4)", () => {
+    it("should return single model details", async () => {
+      const caller = createCaller();
+      const model = await caller.getModelDetails({ modelId: "m-1" });
+
+      expect(model.id).toBe("m-1");
+      expect(model.version).toBe("v1.0.0");
+    });
+  });
+
+  describe("14. getActiveModel Procedure (Subtask 19.4)", () => {
+    it("should return current active model", async () => {
+      const caller = createCaller();
+      const active = await caller.getActiveModel();
+
+      expect(active?.status).toBe("ACTIVE");
+      expect(active?.version).toBe("v1.0.0");
+    });
+  });
+
+  describe("15. activateModel Procedure (Subtask 19.4)", () => {
+    it("should activate model and create audit log", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.activateModel({ modelId: "m-2" });
+
+      expect(res.success).toBe(true);
+      expect(res.model.status).toBe("ACTIVE");
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "ACTIVATE_OCR_MODEL",
+            entityId: "m-2",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("16. rollbackModel Procedure (Subtask 19.4)", () => {
+    it("should rollback to previous model and create audit log", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.rollbackModel({
+        targetModelId: "m-1",
+        reason: "False negatives pada nama pengulas",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.activeModel.id).toBe("m-1");
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "ROLLBACK_OCR_MODEL",
+            entityId: "m-1",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("17. rejectModel Procedure (Subtask 19.4)", () => {
+    it("should mark model as rejected and create audit log", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.rejectModel({
+        modelId: "m-3",
+        reason: "Metrik WER terlalu tinggi",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.model.status).toBe("REJECTED");
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "REJECT_OCR_MODEL",
+            entityId: "m-3",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("18. compareModels Procedure (Subtask 19.4)", () => {
+    it("should compare two models and return metrics delta", async () => {
+      const caller = createCaller();
+      const comp = await caller.compareModels({
+        modelAId: "m-1",
+        modelBId: "m-2",
+      });
+
+      expect(comp.verdict).toBe("MODEL_B_BETTER");
+      expect(comp.delta.accuracy).toBe(4.5);
     });
   });
 });
