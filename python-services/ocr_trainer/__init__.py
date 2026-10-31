@@ -7,3 +7,4 @@ from .lexicon_builder import LexiconBuilder
 from .model import CRNN
 
 __all__ = ["predict_crnn", "LexiconBuilder", "CRNN"]
+

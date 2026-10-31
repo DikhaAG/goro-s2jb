@@ -26,3 +26,4 @@ __all__ = [
     "preprocess_for_crnn",
     "select_device",
 ]
+
