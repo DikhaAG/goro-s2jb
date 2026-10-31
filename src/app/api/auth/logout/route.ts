@@ -15,45 +15,8 @@ export async function POST(request: NextRequest) {
     if (sessionCookie) {
       const user = await verifySessionToken(sessionCookie);
       if (user) {
-        // Check query or body for force logout
-        const url = new URL(request.url);
-        let force = url.searchParams.get("force") === "true";
-        if (!force) {
-          try {
-            const body = await request.clone().json();
-            if (body && body.force === true) force = true;
-          } catch {
-            // No json body provided
-          }
-        }
-
-        // Check if user currently has an active migration in progress
-        const activeBatch = await prisma.migrationBatch.findFirst({
-          where: {
-            uploadedById: user.id,
-            status: { in: ["PROCESSING", "PENDING"] },
-          },
-        });
-
-        if (activeBatch && !force) {
-          return NextResponse.json(
-            {
-              error: "MIGRATION_ACTIVE",
-              message:
-                "Proses migrasi sedang berlangsung. Harap tunggu hingga migrasi selesai atau jeda migrasi terlebih dahulu sebelum keluar.",
-              batchId: activeBatch.id,
-            },
-            { status: 423 }
-          );
-        }
-
-        if (activeBatch && force) {
-          // Gracefully pause batch when forced logout occurs
-          await prisma.migrationBatch.update({
-            where: { id: activeBatch.id },
-            data: { status: "PAUSED" },
-          });
-        }
+        // Unrestricted logout: background migration runs autonomously in BullMQ worker
+        // User is allowed to logout or close browser at any time without interruption.
 
         await logAuditEvent({
           userId: user.id,

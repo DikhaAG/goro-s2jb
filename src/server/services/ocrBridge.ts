@@ -18,7 +18,7 @@ export async function executeOcrBridge(
   // 1. Attempt HTTP request to local FastAPI microservice
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
+    const timeout = setTimeout(() => controller.abort(), 12000);
 
     const res = await fetch(`${OCR_SERVICE_URL}/api/v1/process`, {
       method: "POST",

@@ -9,7 +9,7 @@ export interface MigrationBatchData {
   fileSize: number;
   filePath: string | null;
   targetType: string;
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "PAUSED";
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "PAUSED" | "CANCELLED";
   totalRows: number;
   processedRows: number;
   failedRows: number;
@@ -112,23 +112,7 @@ export function MigrationGuardProvider({ children }: { children: React.ReactNode
     }
   }, [activeBatch, isMigrationActive]);
 
-  // Protect against accidental tab close / navigation
-  useEffect(() => {
-    if (!isMigrationActive) return;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      const warningMessage =
-        "Proses migrasi sedang berlangsung. Jika Anda keluar atau menutup halaman ini, proses migrasi dapat terhenti.";
-      e.returnValue = warningMessage;
-      return warningMessage;
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [isMigrationActive]);
+  // Unrestricted browser lifecycle: background workers in BullMQ continue autonomously without locking navigation
 
   // Calculate progress percentage
   const progressPercentage = useMemo(() => {

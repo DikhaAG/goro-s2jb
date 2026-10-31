@@ -1,10 +1,36 @@
 import { Worker, Job } from "bullmq";
 import redis from "@/lib/redis";
 import prisma from "@/lib/prisma";
+import { OcrProcessingStatus } from "@prisma/client";
 import { IMPORT_QUEUE_NAME, ImportJobData } from "../queues/importQueue";
+import { ocrQueue } from "../queues/ocrQueue";
 import { parseCsvStream } from "@/lib/parsers/csvStreamParser";
 import { parseXlsxStream } from "@/lib/parsers/xlsxStreamParser";
+import { downloadEvidenceImage, isExternalUrl } from "../services/evidenceDownloader";
 import path from "path";
+import fs from "fs";
+
+/**
+ * Concurrently processes an array of items with a fixed maximum concurrency limit.
+ */
+async function mapConcurrent<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let currentIndex = 0;
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (currentIndex < items.length) {
+      const idx = currentIndex++;
+      results[idx] = await fn(items[idx], idx);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
 
 export function createImportWorker() {
   const worker = new Worker<ImportJobData>(
@@ -21,6 +47,20 @@ export function createImportWorker() {
       if (!existingBatch) {
         console.warn(`[Import Worker] Batch ${importBatchId} not found in database. Discarding orphaned job.`);
         return { success: false, reason: "Batch record not found in database" };
+      }
+
+      // Check if file physically exists on server disk
+      if (!fs.existsSync(filePath)) {
+        console.warn(`[Import Worker] File not found: ${filePath}. Marking batch as FAILED.`);
+        await prisma.migrationBatch.update({
+          where: { id: importBatchId },
+          data: {
+            status: "FAILED",
+            errorMessage: `Berkas sumber tidak ditemukan pada disk: ${filePath}`,
+            completedAt: new Date(),
+          },
+        });
+        return { success: false, reason: `File not found on disk: ${filePath}` };
       }
 
       // 2. Update batch status to PROCESSING
@@ -77,7 +117,29 @@ export function createImportWorker() {
           if (userRecord) validUserId = userRecord.id;
         }
 
+        const checkCancellation = async (): Promise<boolean> => {
+          try {
+            const cancelKey = await redis.get(`migration:cancel:${importBatchId}`);
+            if (cancelKey === "1") {
+              return true;
+            }
+            const dbBatch = await prisma.migrationBatch.findUnique({
+              where: { id: importBatchId },
+              select: { status: true },
+            });
+            return dbBatch?.status === "CANCELLED" || dbBatch?.status === "PAUSED";
+          } catch {
+            return false;
+          }
+        };
+
         const onBatchInsert = async (batchRows: any[]) => {
+          // Check cancellation before inserting
+          if (await checkCancellation()) {
+            return;
+          }
+
+          // Build rating data payload directly without blocking on external file downloads
           const ratingData = batchRows.map((row) => {
             const ulpEntry =
               ulpMap.get(row.ulpName.toUpperCase()) ||
@@ -106,21 +168,46 @@ export function createImportWorker() {
               fieldNotes: row.fieldNotes || null,
               isDuplicate: row.isDuplicate || false,
               validationStatus: row.validationStatus || "PENDING",
+              ocrStatus: OcrProcessingStatus.QUEUED,
               reviewRemarks: row.reviewRemarks || null,
               submittedById: validUserId,
             };
           });
 
-          await prisma.ratingReview.createMany({
+          // High-speed bulk insertion returning inserted review records
+          const insertedReviews = await prisma.ratingReview.createManyAndReturn({
             data: ratingData,
             skipDuplicates: true,
+            select: {
+              id: true,
+              evidenceImagePath: true,
+              playstoreReviewerName: true,
+            },
           });
+
+          // Non-blocking Tier 2: Asynchronously dispatch to OCR background queue
+          const ocrJobs = insertedReviews
+            .filter((r) => r.evidenceImagePath && r.evidenceImagePath.trim() !== "")
+            .map((r) => ({
+              name: "process-ocr",
+              data: {
+                reviewId: r.id,
+                evidenceImagePath: r.evidenceImagePath,
+                expectedReviewerName: r.playstoreReviewerName,
+              },
+              opts: { priority: 2 },
+            }));
+
+          if (ocrJobs.length > 0) {
+            await ocrQueue.addBulk(ocrJobs);
+          }
 
           const maxRowInBatch = Math.max(
             ...batchRows.map((r: any) => r.rowNumber || 0),
             effectiveStartRow
           );
           totalProcessedRows += batchRows.length;
+
           await prisma.migrationBatch.update({
             where: { id: importBatchId },
             data: {
@@ -159,21 +246,42 @@ export function createImportWorker() {
 
         if (ext === ".csv") {
           await parseCsvStream(filePath, {
-            batchSize: 2000,
+            batchSize: 1000,
             startRowNumber: effectiveStartRow,
+            shouldAbort: checkCancellation,
             onBatch: onBatchInsert,
             onError: onErrorLog,
           });
         } else if (ext === ".xlsx" || ext === ".xls") {
           await parseXlsxStream(filePath, {
             sheetName: "Form Responses 1",
-            batchSize: 2000,
+            batchSize: 1000,
             startRowNumber: effectiveStartRow,
+            shouldAbort: checkCancellation,
             onBatch: onBatchInsert,
             onError: onErrorLog,
           });
         } else {
           throw new Error(`Unsupported file extension for migration: ${ext}`);
+        }
+
+        // Check if aborted mid-way
+        if (await checkCancellation()) {
+          console.log(`[Import Worker] Batch ${importBatchId} was cancelled by user.`);
+          await prisma.migrationBatch.update({
+            where: { id: importBatchId },
+            data: {
+              status: "CANCELLED",
+              completedAt: new Date(),
+              errorMessage: "Dibatalkan oleh pengguna",
+            },
+          });
+          return {
+            success: false,
+            cancelled: true,
+            processedRows: totalProcessedRows,
+            failedRows: totalFailedRows,
+          };
         }
 
         // 3. Mark batch as COMPLETED
@@ -224,12 +332,24 @@ export function createImportWorker() {
     console.error(`[Import Worker] Job ${job?.id} failed with error:`, err);
   });
 
+  worker.on("error", (err) => {
+    console.error(`[Import Worker] BullMQ worker internal error:`, err);
+  });
+
   return worker;
 }
 
 if (require.main === module) {
   console.log("🚀 Starting standalone GORO S2JB Import Worker...");
   const worker = createImportWorker();
+
+  process.on("uncaughtException", (err) => {
+    console.error("[Import Worker] Uncaught Exception:", err);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    console.error("[Import Worker] Unhandled Rejection:", reason);
+  });
 
   process.on("SIGINT", async () => {
     console.log("Shutting down Import Worker...");

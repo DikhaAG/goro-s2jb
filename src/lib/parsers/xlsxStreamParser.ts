@@ -22,6 +22,7 @@ export async function parseXlsxStream(
     maxRows?: number;
     startRowNumber?: number;
     maxConsecutiveEmptyRows?: number;
+    shouldAbort?: () => Promise<boolean>;
     onBatch: (batch: RawReviewRow[]) => Promise<void>;
     onError?: (error: { rowNumber: number; raw: any; reason: string }) => Promise<void>;
     onProgress?: (processed: number) => Promise<void>;
@@ -35,6 +36,11 @@ export async function parseXlsxStream(
   let totalErrors = 0;
   let currentRowNumber = 0;
   let consecutiveEmptyRows = 0;
+  let fs = await import("fs");
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Berkas XLSX tidak ditemukan: ${filePath}`);
+  }
 
   const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(filePath, {
     entries: "emit",
@@ -134,12 +140,20 @@ export async function parseXlsxStream(
         totalProcessed++;
 
         if (batch.length >= batchSize) {
+          if (options.shouldAbort && (await options.shouldAbort())) {
+            break;
+          }
+
           const toProcess = [...batch];
           batch = [];
           await options.onBatch(toProcess);
 
           if (options.onProgress) {
             await options.onProgress(totalProcessed);
+          }
+
+          if (options.shouldAbort && (await options.shouldAbort())) {
+            break;
           }
         }
 

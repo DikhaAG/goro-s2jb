@@ -61,8 +61,8 @@ describe("Migration Logout Lock Guard (POST /api/auth/logout)", () => {
     expect(data.success).toBe(true);
   });
 
-  it("should return 423 Locked when user has an active migration running", async () => {
-    // Create an active batch for this user with required targetType
+  it("should allow unrestricted logout even when user has an active migration running (AC-4)", async () => {
+    // Create an active batch for this user
     const batch = await prisma.migrationBatch.create({
       data: {
         fileName: "active_import.csv",
@@ -82,32 +82,20 @@ describe("Migration Logout Lock Guard (POST /api/auth/logout)", () => {
     });
 
     const res = await postLogout(req);
-    expect(res.status).toBe(423);
-
-    const body = await res.json();
-    expect(body.error).toBe("MIGRATION_ACTIVE");
-    expect(body.batchId).toBe(batch.id);
-  });
-
-  it("should allow forced logout with ?force=true and pause the active migration", async () => {
-    const req = new NextRequest("http://localhost:3000/api/auth/logout?force=true", {
-      method: "POST",
-      headers: {
-        cookie: `${SESSION_COOKIE_NAME}=${testUserToken}`,
-      },
-    });
-
-    const res = await postLogout(req);
+    // Under Task 16, logout is never locked (returns 200, not 423)
     expect(res.status).toBe(200);
 
-    // Verify batch status was changed to PAUSED
-    const updatedBatch = await prisma.migrationBatch.findUnique({
-      where: { id: activeBatchId! },
+    const body = await res.json();
+    expect(body.success).toBe(true);
+
+    // Verify batch status is preserved as PROCESSING (uninterrupted background execution)
+    const currentBatch = await prisma.migrationBatch.findUnique({
+      where: { id: batch.id },
     });
-    expect(updatedBatch?.status).toBe("PAUSED");
+    expect(currentBatch?.status).toBe("PROCESSING");
   });
 
-  it("should allow logout without error when migration batch is PAUSED", async () => {
+  it("should allow logout cleanly when migration batch is PAUSED or CANCELLED", async () => {
     const req = new NextRequest("http://localhost:3000/api/auth/logout", {
       method: "POST",
       headers: {
@@ -117,5 +105,7 @@ describe("Migration Logout Lock Guard (POST /api/auth/logout)", () => {
 
     const res = await postLogout(req);
     expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
   });
 });

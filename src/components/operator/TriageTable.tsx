@@ -12,6 +12,7 @@ interface TriageTableProps {
   onOpenLightbox: (item: TriageRowData) => void;
   onApprove: (id: string) => void;
   onReject: (item: TriageRowData) => void;
+  onRetryOcr?: (id: string) => void;
 }
 
 export function TriageTable({
@@ -21,6 +22,7 @@ export function TriageTable({
   onOpenLightbox,
   onApprove,
   onReject,
+  onRetryOcr,
 }: TriageTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +100,7 @@ export function TriageTable({
                 onOpenLightbox={onOpenLightbox}
                 onApprove={onApprove}
                 onReject={onReject}
+                onRetryOcr={onRetryOcr}
               />
             </div>
           );

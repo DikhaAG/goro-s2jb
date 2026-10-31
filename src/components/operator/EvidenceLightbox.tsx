@@ -63,7 +63,7 @@ export function EvidenceLightbox({
   if (!isOpen || !item) return null;
 
   const imageUrl = item.evidenceImagePath.startsWith("http")
-    ? item.evidenceImagePath
+    ? `/api/evidence/proxy/${item.id}`
     : item.evidenceImagePath.startsWith("/")
     ? `/api/uploads${item.evidenceImagePath}`
     : `/api/uploads/${item.evidenceImagePath}`;

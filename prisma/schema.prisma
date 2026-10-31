@@ -22,6 +22,14 @@ enum ValidationStatus {
   NEEDS_REVIEW
 }
 
+enum OcrProcessingStatus {
+  QUEUED
+  DOWNLOADING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model User {
   id              String    @id @default(cuid())
   username        String    @unique
@@ -151,6 +159,7 @@ model RatingReview {
   isDuplicate           Boolean          @default(false)  // Column 11
   duplicateOfId         String?                           // Soft-flagging reference
   validationStatus      ValidationStatus @default(PENDING) // Column 12
+  ocrStatus             OcrProcessingStatus @default(QUEUED)
   confidenceScore       Float?                            // 0.0 - 100.0%
   extractedOcrText      String?          @db.Text
   reviewRemarks         String?                           // Column 13
@@ -174,6 +183,7 @@ model RatingReview {
   @@index([entryDate])
   @@index([ulpId])
   @@index([validationStatus])
+  @@index([ocrStatus])
   @@index([evidenceImageHash])
   @@index([isDuplicate])
 }
@@ -184,6 +194,7 @@ enum MigrationStatus {
   PAUSED
   COMPLETED
   FAILED
+  CANCELLED
 }
 
 model MigrationBatch {

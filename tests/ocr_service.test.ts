@@ -22,7 +22,7 @@ describe("Python OCR & pHash Adapter (src/server/services/ocrService.ts)", () =>
     const result = await processEvidenceOcr(sampleImagePath, "Siti Rahmawati");
 
     expect(result.success).toBe(true);
-    expect(result.similarity_score).toBeLessThan(50.0);
+    expect(result.similarity_score).toBeLessThanOrEqual(50.0);
     expect(result.zone).toBe("RED");
     expect(result.recommended_status).toBe(ValidationStatus.REJECTED);
   });

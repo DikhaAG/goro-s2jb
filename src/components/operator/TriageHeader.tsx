@@ -22,18 +22,18 @@ export function TriageHeader({
   return (
     <div className="space-y-4">
       {/* Top Title & User Profile Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#e2e8f0]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0f172a] flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-[#006877]" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-[#00A3E0]" />
               <span>Dasbor Verifikasi Triase Operator</span>
             </h1>
-            <span className="bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+            <span className="bg-[#00A3E0]/10 text-[#00A3E0] border border-[#00A3E0]/20 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
               Human-in-the-Loop
             </span>
           </div>
-          <p className="text-xs text-[#64748b] mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Peninjauan presisi untuk ulasan Zona Kuning (70% - 89.9%) dan eviden terindikasi manipulasi visual.
           </p>
         </div>

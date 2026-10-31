@@ -41,8 +41,8 @@ describe("Task 4: Triage Operator tRPC Procedure Integration & Audit Trail", () 
         validationStatus: "NEEDS_REVIEW",
         confidenceScore: 78.5,
         extractedOcrText: "Wahyu ... ulasan aplikasi lancar ...",
-        entryDate: new Date(),
-        timestamp: new Date(),
+        entryDate: new Date("1990-01-01T00:00:00Z"),
+        timestamp: new Date("1990-01-01T00:00:00Z"),
       },
     });
     testReviewId = rev.id;
@@ -86,6 +86,8 @@ describe("Task 4: Triage Operator tRPC Procedure Integration & Audit Trail", () 
 
     const result = await operatorCaller.triage.getQueue({
       status: "NEEDS_REVIEW",
+      dateFrom: "1990-01-01",
+      dateTo: "1990-01-02",
     });
 
     expect(result.items).toBeDefined();

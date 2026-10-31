@@ -62,6 +62,7 @@ export function TriageDashboard() {
         filters.tab === "ALL"
           ? ("ALL" as const)
           : ("NEEDS_REVIEW" as const),
+      ocrStatus: filters.ocrStatus || ("ALL" as const),
       isDuplicateOnly: filters.tab === "DUPLICATES",
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
@@ -72,6 +73,10 @@ export function TriageDashboard() {
   const queueQuery = trpc.triage.getQueue.useQuery(queryParams, {
     enabled: !!user && (user.role === "PEGAWAI" || user.role === "SUPER_ADMIN"),
     refetchOnWindowFocus: false,
+    refetchInterval: (query) => {
+      const activeCount = query.state.data?.metrics?.inProgressOcrCount ?? 0;
+      return activeCount > 0 ? 2500 : false;
+    },
   });
 
   // Local optimistic state for items
@@ -116,6 +121,19 @@ export function TriageDashboard() {
   // Mutations
   const submitDecisionMutation = trpc.triage.submitDecision.useMutation();
   const undoDecisionMutation = trpc.triage.undoDecision.useMutation();
+  const retryOcrMutation = trpc.triage.retryOcr.useMutation({
+    onSuccess: () => {
+      queueQuery.refetch();
+    },
+  });
+
+  const handleRetryOcr = async (reviewId: string) => {
+    try {
+      await retryOcrMutation.mutateAsync({ reviewId });
+    } catch (err: any) {
+      console.error("Gagal memicu ulang OCR:", err?.message);
+    }
+  };
 
   // Undo timer countdown
   useEffect(() => {
@@ -307,6 +325,9 @@ export function TriageDashboard() {
     yellowQueueCount: 0,
     verifiedTodayCount: 0,
     aiAutomationRate: 0,
+    totalReviewsCount: 0,
+    inProgressOcrCount: 0,
+    failedOcrCount: 0,
   };
 
   return (
@@ -318,11 +339,41 @@ export function TriageDashboard() {
         metrics={metrics}
       />
 
+      {/* Active OCR Processing Banner */}
+      {metrics.inProgressOcrCount > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#f0f9ff] border border-[#00a2b9]/30 rounded-2xl shadow-xs text-[#0f172a]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#00a2b9]/10 text-[#006877] flex items-center justify-center shrink-0 border border-[#00a2b9]/20">
+              <Loader2 className="w-5 h-5 text-[#006877] animate-spin" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-[#0f172a] flex items-center gap-2">
+                <span>Background OCR Worker & Image Proxy Sedang Berjalan</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#00a2b9] text-white">
+                  {metrics.inProgressOcrCount} baris sedang diproses
+                </span>
+              </div>
+              <p className="text-[11px] text-[#64748b] mt-0.5">
+                Citra eviden beresolusi tinggi sedang diunduh dari Google Drive dan diekstraksi teksnya secara asinkron. Halaman otomatis memperbarui progress setiap baris.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFilters({ ...filters, tab: "ALL", ocrStatus: "PROCESSING" })}
+            className="text-xs font-semibold text-[#006877] hover:underline self-start sm:self-auto cursor-pointer"
+          >
+            Lihat Baris yang Sedang Diproses &rarr;
+          </button>
+        </div>
+      )}
+
       {/* Filter Controls & Tabs */}
       <TriageFilterBar
         filters={filters}
         onFilterChange={setFilters}
         yellowCount={metrics.yellowQueueCount}
+        inProgressCount={metrics.inProgressOcrCount}
         up3List={up3List}
         ulpList={ulpList}
       />
@@ -341,6 +392,7 @@ export function TriageDashboard() {
           onOpenLightbox={(item) => setLightboxItem(item)}
           onApprove={handleApprove}
           onReject={handleOpenRejectDialog}
+          onRetryOcr={handleRetryOcr}
         />
       )}
 

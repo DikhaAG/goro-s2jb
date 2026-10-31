@@ -238,28 +238,28 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[#f1f5f9] flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
               disabled={createUserMutation.isPending}
-              className="min-h-[44px] px-4 py-2.5 rounded-xl border border-[#cbd5e1] text-[#475569] hover:bg-[#f1f5f9] text-xs font-semibold transition focus-utility-ring cursor-pointer"
+              className="h-9 px-4 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium transition cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={createUserMutation.isPending}
-              className="min-h-[44px] px-5 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#0097a7] text-white font-semibold text-xs shadow-xs flex items-center gap-2 transition cursor-pointer focus-utility-ring disabled:opacity-50"
+              className="h-9 px-4 rounded-xl bg-[#00A3E0] hover:bg-[#0072A3] text-white font-medium text-xs shadow-sm flex items-center gap-2 transition cursor-pointer active:scale-[0.98] disabled:opacity-50"
             >
               {createUserMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>Menyimpan...</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                   <span>Simpan Pengguna</span>
                 </>
               )}

@@ -16,6 +16,8 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
         "/reports",
         "/users",
         "/migration",
+        "/migration/monitor",
+        "/system-processes",
         "/audit-logs",
       ]);
 
@@ -56,21 +58,25 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/reports");
       expect(hrefs).not.toContain("/users");
       expect(hrefs).not.toContain("/migration");
+      expect(hrefs).not.toContain("/migration/monitor");
+      expect(hrefs).not.toContain("/system-processes");
       expect(hrefs).not.toContain("/audit-logs");
     });
 
-    it("should return exactly 3 items for Pegawai Triase: ['/', '/triage', '/migration']", () => {
+    it("should return exactly 4 items for Pegawai Triase: ['/', '/triage', '/migration', '/migration/monitor']", () => {
       const operatorItems = filterNavItemsByRole(Role.PEGAWAI);
       const hrefs = getHrefs(operatorItems);
 
-      expect(operatorItems).toHaveLength(3);
-      expect(hrefs).toEqual(["/", "/triage", "/migration"]);
+      expect(operatorItems).toHaveLength(4);
+      expect(hrefs).toEqual(["/", "/triage", "/migration", "/migration/monitor"]);
 
       // Verify strict isolation
       expect(hrefs).not.toContain("/intake");
       expect(hrefs).not.toContain("/reports");
       expect(hrefs).not.toContain("/users");
       expect(hrefs).toContain("/migration");
+      expect(hrefs).toContain("/migration/monitor");
+      expect(hrefs).not.toContain("/system-processes");
       expect(hrefs).not.toContain("/audit-logs");
     });
 
@@ -86,14 +92,16 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/triage");
       expect(hrefs).not.toContain("/users");
       expect(hrefs).not.toContain("/migration");
+      expect(hrefs).not.toContain("/migration/monitor");
+      expect(hrefs).not.toContain("/system-processes");
       expect(hrefs).not.toContain("/audit-logs");
     });
 
-    it("should return all 7 items for Super Admin without omissions", () => {
+    it("should return all 9 items for Super Admin without omissions", () => {
       const adminItems = filterNavItemsByRole(Role.SUPER_ADMIN);
       const hrefs = getHrefs(adminItems);
 
-      expect(adminItems).toHaveLength(7);
+      expect(adminItems).toHaveLength(9);
       expect(hrefs).toEqual([
         "/",
         "/intake",
@@ -101,6 +109,8 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
         "/reports",
         "/users",
         "/migration",
+        "/migration/monitor",
+        "/system-processes",
         "/audit-logs",
       ]);
     });

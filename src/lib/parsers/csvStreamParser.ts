@@ -125,6 +125,7 @@ export async function parseCsvStream(
     batchSize?: number;
     startRowNumber?: number;
     maxConsecutiveEmptyRows?: number;
+    shouldAbort?: () => Promise<boolean>;
     onBatch: (batch: RawReviewRow[]) => Promise<void>;
     onError?: (error: { rowNumber: number; raw: any; reason: string }) => Promise<void>;
     onProgress?: (processed: number) => Promise<void>;
@@ -140,7 +141,16 @@ export async function parseCsvStream(
   let isEarlyExit = false;
 
   return new Promise((resolve, reject) => {
+    if (!fs.existsSync(filePath)) {
+      reject(new Error(`Berkas CSV tidak ditemukan: ${filePath}`));
+      return;
+    }
+
     const stream = fs.createReadStream(filePath);
+    stream.on("error", (streamErr) => {
+      console.error("[CSV Stream] Read stream error:", streamErr);
+      reject(streamErr);
+    });
 
     const csvStream = csv
       .parse({ headers: false, trim: true, ignoreEmpty: true })
@@ -244,6 +254,15 @@ export async function parseCsvStream(
           // When batch is full, pause stream, process batch, then resume
           if (batch.length >= batchSize) {
             csvStream.pause();
+
+            if (options.shouldAbort && (await options.shouldAbort())) {
+              isEarlyExit = true;
+              csvStream.destroy();
+              stream.destroy();
+              resolve({ totalProcessed, totalErrors });
+              return;
+            }
+
             const toProcess = [...batch];
             batch = [];
             await options.onBatch(toProcess);
@@ -251,6 +270,15 @@ export async function parseCsvStream(
             if (options.onProgress) {
               await options.onProgress(totalProcessed);
             }
+
+            if (options.shouldAbort && (await options.shouldAbort())) {
+              isEarlyExit = true;
+              csvStream.destroy();
+              stream.destroy();
+              resolve({ totalProcessed, totalErrors });
+              return;
+            }
+
             csvStream.resume();
           }
         } catch (err: any) {

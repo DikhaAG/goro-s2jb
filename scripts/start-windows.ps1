@@ -10,8 +10,8 @@ Write-Host "==================================================================" 
 Write-Host "       ⚡ GORO S2JB - COMMAND CENTER LAUNCHER (WINDOWS)          " -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
-# 1. Pengecekan Service Prasyarat
-Write-Host "`n[1/3] Menjalankan Microservice Python OCR (Port 8001)..." -ForegroundColor Yellow
+# 1. Menjalankan Microservice Python OCR (Port 8001)
+Write-Host "`n[1/4] Menjalankan Microservice Python OCR (Port 8001)..." -ForegroundColor Yellow
 $OcrDir = Join-Path $ProjectDir "python-services\ocr"
 $PythonExe = Join-Path $OcrDir "venv\Scripts\python.exe"
 
@@ -23,12 +23,17 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.W
 Write-Host "✓ Jendela Python OCR Microservice berhasil dibuka." -ForegroundColor Green
 
 # 2. Menjalankan BullMQ OCR Queue Worker
-Write-Host "`n[2/3] Menjalankan Background Worker BullMQ OCR..." -ForegroundColor Yellow
+Write-Host "`n[2/4] Menjalankan Background Worker BullMQ OCR..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - BullMQ OCR Worker'; Set-Location '$ProjectDir'; npm run worker:ocr"
 Write-Host "✓ Jendela BullMQ OCR Worker berhasil dibuka." -ForegroundColor Green
 
-# 3. Menjalankan Next.js Web Server
-Write-Host "`n[3/3] Menjalankan Next.js Web App (Port 3000)..." -ForegroundColor Yellow
+# 3. Menjalankan BullMQ Bulk Import Queue Worker
+Write-Host "`n[3/4] Menjalankan Background Worker BullMQ Bulk Import..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - BullMQ Import Worker'; Set-Location '$ProjectDir'; npm run worker:import"
+Write-Host "✓ Jendela BullMQ Import Worker berhasil dibuka." -ForegroundColor Green
+
+# 4. Menjalankan Next.js Web Server
+Write-Host "`n[4/4] Menjalankan Next.js Web App (Port 3000)..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - Next.js Web Application (Port 3000)'; Set-Location '$ProjectDir'; npm run dev"
 Write-Host "✓ Jendela Next.js Web App berhasil dibuka." -ForegroundColor Green
 

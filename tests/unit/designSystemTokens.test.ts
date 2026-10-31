@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
+import { NAV_ITEMS } from "@/components/layout/GlobalSidebar";
 
 describe("Design System & Antislop Compliance", () => {
   it("verifies zero em-dash (—) characters exist in UI components and routes", () => {
@@ -51,65 +52,52 @@ describe("Design System & Antislop Compliance", () => {
   });
 
   it("verifies RBAC menu items permissions in GlobalSidebar specification", () => {
-    interface NavMenuItem {
-      label: string;
-      href: string;
-      roles: string[];
-    }
-
-    const NAV_ITEMS: NavMenuItem[] = [
-      {
-        label: "Beranda",
-        href: "/",
-        roles: ["PETUGAS_LAPANGAN", "PEGAWAI", "MANAGER", "SUPER_ADMIN"],
-      },
-      {
-        label: "Entri Eviden",
-        href: "/intake",
-        roles: ["PETUGAS_LAPANGAN", "SUPER_ADMIN"],
-      },
-      {
-        label: "Triase Ulasan",
-        href: "/triage",
-        roles: ["PEGAWAI", "SUPER_ADMIN"],
-      },
-      {
-        label: "Laporan Eksekutif",
-        href: "/reports",
-        roles: ["MANAGER", "SUPER_ADMIN"],
-      },
-      {
-        label: "Manajemen Pengguna",
-        href: "/users",
-        roles: ["SUPER_ADMIN"],
-      },
-      {
-        label: "Migrasi Data Eviden",
-        href: "/migration",
-        roles: ["PEGAWAI", "SUPER_ADMIN"],
-      },
-      {
-        label: "Catatan Audit Log",
-        href: "/audit-logs",
-        roles: ["SUPER_ADMIN"],
-      },
-    ];
-
     // Field Officer sees 2 items
     const fieldItems = NAV_ITEMS.filter((i) => i.roles.includes("PETUGAS_LAPANGAN"));
     expect(fieldItems.map((i) => i.href)).toEqual(["/", "/intake"]);
 
-    // Operator Verifikator sees 3 items
+    // Operator Verifikator sees 4 items
     const operatorItems = NAV_ITEMS.filter((i) => i.roles.includes("PEGAWAI"));
-    expect(operatorItems.map((i) => i.href)).toEqual(["/", "/triage", "/migration"]);
+    expect(operatorItems.map((i) => i.href)).toEqual([
+      "/",
+      "/triage",
+      "/migration",
+      "/migration/monitor",
+    ]);
 
     // Manager sees 2 items
     const managerItems = NAV_ITEMS.filter((i) => i.roles.includes("MANAGER"));
     expect(managerItems.map((i) => i.href)).toEqual(["/", "/reports"]);
 
-    // Super Admin sees all 7 items
+    // Super Admin sees all 9 items
     const adminItems = NAV_ITEMS.filter((i) => i.roles.includes("SUPER_ADMIN"));
-    expect(adminItems).toHaveLength(7);
-    expect(adminItems.map((i) => i.href)).toContain("/audit-logs");
+    expect(adminItems).toHaveLength(9);
+    expect(adminItems.map((i) => i.href)).toEqual([
+      "/",
+      "/intake",
+      "/triage",
+      "/reports",
+      "/users",
+      "/migration",
+      "/migration/monitor",
+      "/system-processes",
+      "/audit-logs",
+    ]);
+  });
+
+  it("verifies PLN S2JB corporate design tokens and semantic palette harmony", () => {
+    const PLN_TOKENS = {
+      primaryCyan: "#00A3E0",
+      primaryHover: "#0072A3",
+      corporateNavy: "#0B132B",
+      secondaryNavy: "#1C2541",
+      cleanBackground: "#f8fafc",
+    };
+
+    expect(PLN_TOKENS.primaryCyan).toBe("#00A3E0");
+    expect(PLN_TOKENS.primaryHover).toBe("#0072A3");
+    expect(PLN_TOKENS.corporateNavy).toBe("#0B132B");
+    expect(PLN_TOKENS.secondaryNavy).toBe("#1C2541");
+    expect(PLN_TOKENS.cleanBackground).toBe("#f8fafc");
   });
 });

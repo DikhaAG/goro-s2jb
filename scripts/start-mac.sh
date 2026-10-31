@@ -26,7 +26,7 @@ echo -e "${CYAN}================================================================
 # 1. Pengecekan Service Prasyarat
 if ! nc -z localhost 5432 2>/dev/null; then
     echo -e "${YELLOW}⚠️ PostgreSQL tidak aktif di port 5432. Menyalakan...${NC}"
-    brew services start postgresql@16 || brew services start postgresql || true
+    brew services start postgresql@18 || brew services start postgresql@16 || brew services start postgresql || true
     sleep 2
 fi
 

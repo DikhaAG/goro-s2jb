@@ -358,19 +358,19 @@ export function IntakeForm() {
             ) : (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2 bg-[#f8fafc] hover:bg-[#f1f5f9] ${
+                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2 bg-[#f8fafc] hover:bg-slate-50 ${
                   formErrors.evidenceImageBase64
-                    ? "border-[#ef4444]"
-                    : "border-[#cbd5e1] hover:border-[#00a2b9]"
+                    ? "border-rose-400"
+                    : "border-slate-200 hover:border-[#00A3E0]"
                 }`}
               >
-                <div className="w-12 h-12 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center mb-1">
+                <div className="w-12 h-12 rounded-xl bg-[#00A3E0]/10 text-[#00A3E0] flex items-center justify-center mb-1 border border-[#00A3E0]/20">
                   <UploadCloud className="w-6 h-6" />
                 </div>
-                <div className="text-sm font-semibold text-[#0f172a]">
+                <div className="text-sm font-semibold text-slate-900">
                   Klik untuk Memilih Foto atau Mengambil Kamera
                 </div>
-                <p className="text-xs text-[#64748b] max-w-sm">
+                <p className="text-xs text-slate-500 max-w-sm">
                   Mendukung berkas JPG, PNG, atau WebP (Maksimal 5 MB).
                 </p>
               </div>
@@ -441,7 +441,7 @@ export function IntakeForm() {
             type="submit"
             variant="default"
             disabled={submitMutation.isPending}
-            className="w-full sm:w-auto min-w-[200px] min-h-[44px] h-11 bg-[#00a2b9] hover:bg-[#008b9e] text-white font-semibold"
+            className="w-full sm:w-auto min-w-[200px] min-h-[44px] h-11 bg-[#00A3E0] hover:bg-[#0072A3] text-white font-medium rounded-xl shadow-sm active:scale-[0.98] transition-all"
           >
             {submitMutation.isPending ? (
               <span className="flex items-center space-x-2">

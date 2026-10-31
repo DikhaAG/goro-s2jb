@@ -1,6 +1,6 @@
-import { Role, ValidationStatus } from "@prisma/client";
+import { Role, ValidationStatus, OcrProcessingStatus } from "@prisma/client";
 
-export { Role, ValidationStatus };
+export { Role, ValidationStatus, OcrProcessingStatus };
 
 export interface SessionUser {
   id: string;

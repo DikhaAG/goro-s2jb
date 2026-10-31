@@ -73,4 +73,14 @@ describe("WCAG 2.1 AA Color Contrast Verification", () => {
     const ratio = contrastRatio("#B91C1C", "#FEF2F2");
     expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
+
+  it("ensures PLN Cyan #00A3E0 on dark corporate navy #0B132B satisfies WCAG AA (>= 4.5:1)", () => {
+    const ratio = contrastRatio("#00A3E0", "#0B132B");
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("ensures white text #FFFFFF on primary hover #0072A3 satisfies WCAG AA (>= 4.5:1)", () => {
+    const ratio = contrastRatio("#FFFFFF", "#0072A3");
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
 });

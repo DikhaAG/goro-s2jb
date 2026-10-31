@@ -133,27 +133,27 @@ export function ReportsDashboard() {
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
       {/* Title Header with Export Action Buttons */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#e2e8f0]">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0f172a] flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-[#006877]" />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-[#00A3E0]" />
               <span>Pusat Laporan Eksekutif & Intelijen Kinerja</span>
             </h1>
           </div>
-          <p className="text-xs text-[#64748b] mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Agregasi real-time seluruh unit pelaksana PLN UID S2JB dengan proteksi Target Immutability.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Button
             size="sm"
             variant="outline"
             onClick={handleExportExcel}
-            className="h-10 min-h-[40px] text-xs gap-2 bg-white border-[#cbd5e1] hover:border-[#16a34a] text-[#0f172a] hover:text-[#15803d] font-semibold rounded-xl shadow-xs"
+            className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-medium rounded-xl shadow-sm transition-all active:scale-[0.98]"
           >
-            <FileSpreadsheet className="w-4 h-4 text-[#16a34a]" />
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
             <span>Ekspor Excel (.xlsx)</span>
           </Button>
 
@@ -161,9 +161,9 @@ export function ReportsDashboard() {
             size="sm"
             variant="outline"
             onClick={handleExportPdf}
-            className="h-10 min-h-[40px] text-xs gap-2 bg-white border-[#cbd5e1] hover:border-[#00a2b9] text-[#0f172a] hover:text-[#006877] font-semibold rounded-xl shadow-xs"
+            className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-[#00A3E0] text-slate-700 hover:text-[#00A3E0] font-medium rounded-xl shadow-sm transition-all active:scale-[0.98]"
           >
-            <Printer className="w-4 h-4 text-[#00a2b9]" />
+            <Printer className="w-4 h-4 text-[#00A3E0]" />
             <span>Cetak PDF</span>
           </Button>
         </div>
@@ -179,11 +179,10 @@ export function ReportsDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab("MONTHLY")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${
-              activeTab === "MONTHLY"
+            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "MONTHLY"
                 ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
                 : "text-[#64748b] hover:text-[#0f172a]"
-            }`}
+              }`}
           >
             <ListOrdered className="w-3.5 h-3.5" />
             <span>Laporan Bulanan</span>
@@ -192,11 +191,10 @@ export function ReportsDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab("DAILY")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${
-              activeTab === "DAILY"
+            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "DAILY"
                 ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
                 : "text-[#64748b] hover:text-[#0f172a]"
-            }`}
+              }`}
           >
             <Calendar className="w-3.5 h-3.5" />
             <span>Laporan Harian</span>
@@ -205,11 +203,10 @@ export function ReportsDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab("H1")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${
-              activeTab === "H1"
+            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "H1"
                 ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
                 : "text-[#64748b] hover:text-[#0f172a]"
-            }`}
+              }`}
           >
             <span>Laporan H-1</span>
           </button>
@@ -217,11 +214,10 @@ export function ReportsDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab("CHARTS")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${
-              activeTab === "CHARTS"
+            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "CHARTS"
                 ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
                 : "text-[#64748b] hover:text-[#0f172a]"
-            }`}
+              }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
             <span>Grafik & Pacing</span>

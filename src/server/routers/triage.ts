@@ -1,6 +1,7 @@
 import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
-import { ValidationStatus, Prisma } from "@prisma/client";
+import { ValidationStatus, OcrProcessingStatus, Prisma } from "@prisma/client";
+import { ocrQueue } from "../queues/ocrQueue";
 
 export const triageRouter = router({
   getQueue: operatorProcedure
@@ -9,6 +10,7 @@ export const triageRouter = router({
         up3Id: z.string().optional(),
         ulpId: z.string().optional(),
         status: z.enum(["ALL", "NEEDS_REVIEW", "APPROVED", "REJECTED", "PENDING"]).optional().default("NEEDS_REVIEW"),
+        ocrStatus: z.enum(["ALL", "QUEUED", "DOWNLOADING", "PROCESSING", "COMPLETED", "FAILED"]).optional().default("ALL"),
         isDuplicateOnly: z.boolean().optional().default(false),
         dateFrom: z.string().optional(),
         dateTo: z.string().optional(),
@@ -21,6 +23,10 @@ export const triageRouter = router({
 
       if (input.status && input.status !== "ALL") {
         where.validationStatus = input.status as ValidationStatus;
+      }
+
+      if (input.ocrStatus && input.ocrStatus !== "ALL") {
+        where.ocrStatus = input.ocrStatus as OcrProcessingStatus;
       }
 
       if (input.isDuplicateOnly) {
@@ -90,7 +96,14 @@ export const triageRouter = router({
       const now = new Date();
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-      const [yellowQueueCount, verifiedTodayCount, totalReviewsCount, autonomousCount] = await Promise.all([
+      const [
+        yellowQueueCount,
+        verifiedTodayCount,
+        totalReviewsCount,
+        autonomousCount,
+        inProgressOcrCount,
+        failedOcrCount,
+      ] = await Promise.all([
         // 1. Antrean Zona Kuning (Pending Review)
         ctx.prisma.ratingReview.count({
           where: { validationStatus: ValidationStatus.NEEDS_REVIEW },
@@ -110,6 +123,18 @@ export const triageRouter = router({
             verifiedById: null,
           },
         }),
+        // 5. In-progress background OCR & image proxy jobs
+        ctx.prisma.ratingReview.count({
+          where: {
+            ocrStatus: { in: ["QUEUED", "DOWNLOADING", "PROCESSING"] },
+          },
+        }),
+        // 6. Failed OCR jobs
+        ctx.prisma.ratingReview.count({
+          where: {
+            ocrStatus: "FAILED",
+          },
+        }),
       ]);
 
       const aiAutomationRate =
@@ -125,8 +150,38 @@ export const triageRouter = router({
           verifiedTodayCount,
           aiAutomationRate,
           totalReviewsCount,
+          inProgressOcrCount,
+          failedOcrCount,
         },
       };
+    }),
+
+  retryOcr: operatorProcedure
+    .input(z.object({ reviewId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const review = await ctx.prisma.ratingReview.findUnique({
+        where: { id: input.reviewId },
+      });
+      if (!review) {
+        throw new Error("Data ulasan tidak ditemukan");
+      }
+      await ctx.prisma.ratingReview.update({
+        where: { id: input.reviewId },
+        data: {
+          ocrStatus: "QUEUED",
+          reviewRemarks: "Dipicu ulang oleh operator untuk pemindaian OCR",
+        },
+      });
+      await ocrQueue.add(
+        "process-ocr",
+        {
+          reviewId: review.id,
+          evidenceImagePath: review.evidenceImagePath,
+          expectedReviewerName: review.playstoreReviewerName,
+        },
+        { priority: 1 }
+      );
+      return { success: true };
     }),
 
   submitDecision: operatorProcedure

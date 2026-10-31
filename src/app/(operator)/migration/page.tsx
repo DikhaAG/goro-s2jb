@@ -1,12 +1,15 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { BulkDropzone } from "@/components/admin/BulkDropzone";
 import { trpc } from "@/lib/trpc";
 import {
   Database,
   History,
   FileSpreadsheet,
+  Activity,
+  ArrowRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -18,31 +21,42 @@ export default function MigrationPage() {
   return (
     <div className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Page Header */}
-      <div className="pb-4 border-b border-[#e2e8f0]">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#006877] text-white flex items-center justify-center shrink-0">
-            <Database className="w-4 h-4 text-[#00a2b9]" />
+      <div className="pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#00A3E0]/10 text-[#00A3E0] flex items-center justify-center shrink-0 border border-[#00A3E0]/20">
+              <Database className="w-4 h-4 text-[#00A3E0]" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Migrasi Massal Rekam Data Historis
+            </h1>
           </div>
-          <h1 className="text-headline-sm sm:text-headline-md text-[#0f172a] font-bold tracking-tight">
-            Migrasi Massal Rekam Data Historis
-          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Muat rekam data masif Google Form (143.000+ baris) dan riwayat laporan acuan ke dalam basis data PostgreSQL menggunakan streaming parser berkinerja tinggi.
+          </p>
         </div>
-        <p className="text-body-meta text-[#64748b] mt-1">
-          Muat rekam data masif Google Form (143.000+ baris) dan riwayat laporan acuan ke dalam basis data PostgreSQL menggunakan streaming parser berkinerja tinggi.
-        </p>
+
+        <Link
+          href="/migration/monitor"
+          className="inline-flex items-center gap-2 h-9 px-3.5 py-2 rounded-xl text-xs font-medium text-[#00A3E0] bg-[#00A3E0]/10 hover:bg-[#00A3E0]/15 border border-[#00A3E0]/20 transition-all shadow-sm shrink-0 self-start sm:self-auto active:scale-[0.98]"
+        >
+          <Activity className="w-4 h-4 text-[#00A3E0]" />
+          <span>Buka Pusat Pemantauan</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#00A3E0]" />
+        </Link>
       </div>
 
       {/* Dropzone Component */}
       <BulkDropzone />
 
       {/* Recent Batch History */}
-      <div className="rounded-2xl border border-[#e2e8f0] bg-white p-5 sm:p-6 space-y-4 card-floating-sm">
-        <div className="flex items-center justify-between border-b border-[#f1f5f9] pb-3">
-          <h3 className="font-semibold text-base text-[#0f172a] flex items-center space-x-2">
-            <History className="w-4 h-4 text-[#00a2b9]" />
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="font-semibold text-sm text-slate-900 flex items-center space-x-2">
+            <History className="w-4 h-4 text-[#00A3E0]" />
             <span>Riwayat Batch Migrasi Terakhir</span>
           </h3>
-          <span className="text-xs text-[#64748b]">
+          <span className="text-xs text-slate-400">
             Auto-refresh setiap 5 detik
           </span>
         </div>

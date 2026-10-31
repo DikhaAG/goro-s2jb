@@ -107,9 +107,12 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
     });
 
     // 1. Fetch queue items
+    const todayStr = new Date().toISOString().split("T")[0];
     const queue = await operatorCaller.triage.getQueue({
       status: "NEEDS_REVIEW",
       ulpId: ulpRivai.id,
+      dateFrom: todayStr,
+      dateTo: todayStr,
     });
 
     const targetItem = queue.items.find((item) => item.id === createdReviewId);

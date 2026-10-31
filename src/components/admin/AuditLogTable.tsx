@@ -88,25 +88,25 @@ export function AuditLogTable() {
   return (
     <div className="space-y-4">
       {/* 1. Header Toolbar & Filters */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e2e8f0] card-floating-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex flex-1 items-center gap-2">
           <div className="relative flex-1 max-w-sm">
-            <Search className="w-4 h-4 text-[#94a3b8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <Input
               type="text"
               placeholder="Cari user, IP, atau aksi..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-10 text-xs sm:text-sm"
+              className="pl-8.5 h-9 text-xs rounded-xl border-slate-200 focus-visible:ring-[#00A3E0]/30"
             />
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            <Filter className="w-4 h-4 text-[#64748b]" />
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
             <select
               value={selectedAction}
               onChange={(e) => setSelectedAction(e.target.value)}
-              className="h-10 px-3 rounded-lg border border-[#cbd5e1] bg-[#f8fafc] text-xs sm:text-sm text-[#0f172a] focus-utility-ring"
+              className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A3E0]/30 cursor-pointer"
             >
               <option value="">Semua Tindakan</option>
               <option value="AUTH_LOGIN_SUCCESS">Login Berhasil</option>
@@ -116,6 +116,9 @@ export function AuditLogTable() {
               <option value="USER_CREATE">Buat Pengguna</option>
               <option value="USER_STATUS_TOGGLE">Ubah Status Akun</option>
               <option value="USER_PASSWORD_RESET">Reset Password</option>
+              <option value="KILL_BACKGROUND_PROCESS">Hentikan Proses</option>
+              <option value="RESTART_WORKER_SERVICE">Restart Worker</option>
+              <option value="CLEAN_ORPHAN_PROCESSES">Bersihkan Zombie</option>
             </select>
           </div>
         </div>
@@ -124,9 +127,9 @@ export function AuditLogTable() {
           type="button"
           onClick={() => auditQuery.refetch()}
           disabled={auditQuery.isFetching}
-          className="h-10 px-3.5 rounded-lg border border-[#cbd5e1] bg-white text-[#1e293b] hover:bg-[#f8fafc] text-xs font-semibold flex items-center justify-center gap-2 focus-utility-ring transition cursor-pointer"
+          className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-medium flex items-center justify-center gap-2 transition cursor-pointer shadow-sm active:scale-[0.98]"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${auditQuery.isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${auditQuery.isFetching ? "animate-spin text-[#00A3E0]" : ""}`} />
           <span>Segarkan</span>
         </button>
       </div>
@@ -136,8 +139,8 @@ export function AuditLogTable() {
         {/* Loading State */}
         {auditQuery.isLoading && (
           <div className="p-12 text-center space-y-3">
-            <div className="w-8 h-8 rounded-full border-2 border-[#00a2b9] border-t-transparent animate-spin mx-auto" />
-            <p className="text-body-meta text-[#64748b]">Memuat catatan audit keamanan...</p>
+            <div className="w-8 h-8 rounded-full border-2 border-[#00A3E0] border-t-transparent animate-spin mx-auto" />
+            <p className="text-xs text-slate-500">Memuat catatan audit keamanan...</p>
           </div>
         )}
 

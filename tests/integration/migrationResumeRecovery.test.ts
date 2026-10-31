@@ -172,7 +172,7 @@ describe("Resumable Migration Engine & Recovery Procedure Integration (Task 14)"
     const cancelledBatch = await prisma.migrationBatch.findUnique({
       where: { id: testBatchId },
     });
-    expect(cancelledBatch?.status).toBe("FAILED");
-    expect(cancelledBatch?.errorMessage).toBe("Dibatalkan oleh pengguna");
+    expect(cancelledBatch?.status).toBe("CANCELLED");
+    expect(cancelledBatch?.errorMessage).toContain("Dibatalkan oleh");
   });
 });

@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import { Filter, Keyboard } from "lucide-react";
+import { Filter, Keyboard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type TriageTab = "NEEDS_REVIEW" | "ALL" | "DUPLICATES";
 
 export interface TriageFilters {
   tab: TriageTab;
+  ocrStatus?: "ALL" | "QUEUED" | "DOWNLOADING" | "PROCESSING" | "COMPLETED" | "FAILED";
   up3Id?: string;
   ulpId?: string;
   dateFrom?: string;
@@ -18,6 +19,7 @@ interface TriageFilterBarProps {
   filters: TriageFilters;
   onFilterChange: (filters: TriageFilters) => void;
   yellowCount: number;
+  inProgressCount?: number;
   up3List: Array<{ id: string; name: string }>;
   ulpList: Array<{ id: string; name: string; up3Id: string }>;
 }
@@ -26,6 +28,7 @@ export function TriageFilterBar({
   filters,
   onFilterChange,
   yellowCount,
+  inProgressCount = 0,
   up3List,
   ulpList,
 }: TriageFilterBarProps) {
@@ -80,13 +83,32 @@ export function TriageFilterBar({
             type="button"
             onClick={() => handleTabChange("ALL")}
             className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer focus-utility-ring ${
-              filters.tab === "ALL"
+              filters.tab === "ALL" && !filters.ocrStatus
                 ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
                 : "text-[#64748b] hover:text-[#0f172a]"
             }`}
           >
             Semua Ulasan (Riwayat)
           </button>
+
+          {inProgressCount > 0 && (
+            <button
+              type="button"
+              onClick={() => onFilterChange({ ...filters, tab: "ALL", ocrStatus: "PROCESSING" })}
+              className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 cursor-pointer focus-utility-ring ${
+                filters.ocrStatus === "PROCESSING"
+                  ? "bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd] font-bold"
+                  : "bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200"
+              }`}
+              title="Filter ulasan yang saat ini sedang diproses oleh Background OCR Worker"
+            >
+              <Loader2 className="w-3.5 h-3.5 text-sky-600 animate-spin" />
+              <span>Proses OCR Asinkron</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-sky-600 text-white font-bold font-mono">
+                {inProgressCount}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Keyboard Shortcut Cheatsheet Badge */}
@@ -102,12 +124,30 @@ export function TriageFilterBar({
         </div>
       </div>
 
-      {/* Filter Row: UP3, ULP, Date Range */}
+      {/* Filter Row: UP3, ULP, OCR Status, Date Range */}
       <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-[#f1f5f9]">
         <div className="flex items-center gap-1.5 text-xs text-[#64748b]">
           <Filter className="w-3.5 h-3.5 text-[#64748b]" />
           <span className="font-semibold">Filter:</span>
         </div>
+
+        {/* Status OCR Dropdown */}
+        <select
+          value={filters.ocrStatus || "ALL"}
+          onChange={(e) =>
+            onFilterChange({
+              ...filters,
+              ocrStatus: e.target.value as any,
+            })
+          }
+          className="bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] text-xs rounded-xl px-3 py-2 min-h-[38px] focus-utility-ring font-medium"
+        >
+          <option value="ALL">Semua Status OCR</option>
+          <option value="PROCESSING">Sedang Diproses (Asinkron)</option>
+          <option value="COMPLETED">Sukses OCR Selesai</option>
+          <option value="FAILED">Gagal OCR / Unduh</option>
+          <option value="QUEUED">Dalam Antrean (Queued)</option>
+        </select>
 
         {/* UP3 Dropdown */}
         <select
