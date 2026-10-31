@@ -6,6 +6,7 @@ import {
   updateSampleInclusion,
   coldStartHarvestFromHistoricalSpreadsheet,
 } from "../services/ocrDatasetHarvester";
+import { runOcrTrainingPipeline } from "../services/ocrTrainerService";
 
 export const ocrTrainingRouter = router({
   /**
@@ -161,6 +162,78 @@ export const ocrTrainingRouter = router({
         success: true,
         ...stats,
       };
+    }),
+
+  /**
+   * 5. Trigger OCR Model Training (Manual on-demand)
+   */
+  triggerTraining: operatorProcedure
+    .input(
+      z.object({
+        epochs: z.number().int().min(1).max(100).default(5),
+        batchSize: z.number().int().min(2).max(64).default(8),
+        learningRate: z.number().min(0.00001).max(0.1).default(0.001),
+        targetVersion: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await runOcrTrainingPipeline(
+        {
+          epochs: input.epochs,
+          batchSize: input.batchSize,
+          learningRate: input.learningRate,
+          targetVersion: input.targetVersion,
+          triggerType: "MANUAL",
+          actorId: ctx.user.id,
+        },
+        ctx.prisma
+      );
+
+      await ctx.prisma.auditLog.create({
+        data: {
+          userId: ctx.user.id,
+          action: "TRIGGER_MANUAL_OCR_TRAINING",
+          entityType: "OcrTrainingJob",
+          entityId: result.jobId,
+          metadata: {
+            actorRole: ctx.user.role,
+            epochs: input.epochs,
+            targetVersion: input.targetVersion,
+            result: result as unknown as Prisma.InputJsonValue,
+          },
+        },
+      });
+
+      return result;
+    }),
+
+  /**
+   * 6. Get Recent Training Jobs History
+   */
+  getJobs: operatorProcedure
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(50).default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.ocrTrainingJob.findMany({
+        take: input.limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          createdBy: { select: { id: true, name: true, role: true } },
+          modelRegistry: {
+            select: {
+              id: true,
+              version: true,
+              status: true,
+              cerScore: true,
+              werScore: true,
+              accuracyScore: true,
+            },
+          },
+        },
+      });
     }),
 });
 

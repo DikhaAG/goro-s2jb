@@ -2,7 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ocrTrainingRouter } from "@/server/routers/ocrTraining";
 import { Role, OcrSampleSource, OcrSampleInclusion } from "@prisma/client";
 
-describe("Subtask 19.1: OCR Training Router Unit Test Suite", () => {
+vi.mock("@/server/services/ocrTrainerService", () => ({
+  runOcrTrainingPipeline: vi.fn().mockResolvedValue({
+    success: true,
+    jobId: "job-123",
+    modelRegistryId: "model-123",
+    metrics: { cer: 3.2, wer: 6.5, accuracy: 94.0 },
+    durationSeconds: 15.0,
+  }),
+}));
+
+describe("Subtask 19.1 & 19.2: OCR Training Router Unit Test Suite", () => {
   let mockPrisma: any;
 
   beforeEach(() => {
@@ -16,6 +26,15 @@ describe("Subtask 19.1: OCR Training Router Unit Test Suite", () => {
         count: vi.fn(),
         groupBy: vi.fn(),
         update: vi.fn(),
+      },
+      ocrTrainingJob: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "job-1",
+            status: "COMPLETED",
+            modelTargetVersion: "v1.1.0",
+          },
+        ]),
       },
       ratingReview: {
         findMany: vi.fn(),
@@ -149,7 +168,38 @@ describe("Subtask 19.1: OCR Training Router Unit Test Suite", () => {
     });
   });
 
-  describe("5. RBAC Protection", () => {
+  describe("5. triggerTraining Procedure", () => {
+    it("should execute training pipeline and log audit trail", async () => {
+      const caller = createCaller(Role.SUPER_ADMIN);
+      const res = await caller.triggerTraining({
+        epochs: 5,
+        batchSize: 8,
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.jobId).toBe("job-123");
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "TRIGGER_MANUAL_OCR_TRAINING",
+            entityId: "job-123",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("6. getJobs Procedure", () => {
+    it("should return list of training jobs", async () => {
+      const caller = createCaller();
+      const jobs = await caller.getJobs({ limit: 5 });
+
+      expect(jobs).toHaveLength(1);
+      expect(jobs[0].modelTargetVersion).toBe("v1.1.0");
+    });
+  });
+
+  describe("7. RBAC Protection", () => {
     it("should reject PETUGAS_LAPANGAN from accessing dataset procedures", async () => {
       const caller = ocrTrainingRouter.createCaller({
         prisma: mockPrisma,
