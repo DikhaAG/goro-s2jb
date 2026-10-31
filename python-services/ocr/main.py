@@ -11,15 +11,14 @@ from engine import extract_text_from_image
 from matcher import calculate_similarity
 from hasher import calculate_phash, hamming_distance, is_visual_duplicate
 
-# Try importing CRNN deep learning predictor from ocr_trainer
-crnn_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../ocr_trainer"))
-if crnn_dir not in sys.path:
-    sys.path.append(crnn_dir)
-
+# Try importing CRNN deep learning predictor
 try:
     from predictor import predict_crnn
 except ImportError:
-    predict_crnn = None
+    try:
+        from ocr_trainer.predictor import predict_crnn
+    except ImportError:
+        predict_crnn = None
 
 # FastAPI imports
 from fastapi import FastAPI, HTTPException
