@@ -171,9 +171,11 @@ export function createImportWorker() {
               migrationBatchId: importBatchId,
               validationStatus: row.validationStatus || "PENDING",
               ocrStatus:
-                row.validationStatus === "APPROVED" || row.validationStatus === "REJECTED"
-                  ? OcrProcessingStatus.COMPLETED
-                  : OcrProcessingStatus.QUEUED,
+                row.evidenceImagePath &&
+                row.evidenceImagePath.trim() !== "" &&
+                row.evidenceImagePath !== "legacy/gdrive_import"
+                  ? OcrProcessingStatus.QUEUED
+                  : OcrProcessingStatus.COMPLETED,
               reviewRemarks: row.reviewRemarks || null,
               submittedById: validUserId,
             };
@@ -191,13 +193,13 @@ export function createImportWorker() {
             },
           });
 
-          // Non-blocking Tier 2: Asynchronously dispatch pending reviews to OCR background queue
+          // Non-blocking Tier 2: Asynchronously dispatch all reviews with evidence images to OCR background queue
           const ocrJobs = insertedReviews
             .filter(
               (r) =>
-                r.validationStatus === "PENDING" &&
                 r.evidenceImagePath &&
-                r.evidenceImagePath.trim() !== ""
+                r.evidenceImagePath.trim() !== "" &&
+                r.evidenceImagePath !== "legacy/gdrive_import"
             )
             .map((r) => ({
               name: "process-ocr",
