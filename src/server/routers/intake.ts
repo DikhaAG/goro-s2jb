@@ -3,6 +3,7 @@ import { intakeReviewSchema } from "@/lib/validators/intake";
 import { saveEvidenceFile } from "@/lib/storage";
 import { ocrQueue } from "../queues/ocrQueue";
 import { TRPCError } from "@trpc/server";
+import { ReviewSource } from "@prisma/client";
 import { checkUploadRateLimit } from "@/lib/rateLimit";
 import { logAuditEvent } from "../services/auditService";
 
@@ -62,6 +63,7 @@ export const intakeRouter = router({
             fieldNotes: input.fieldNotes || null,
             validationStatus: "PENDING",
             isDuplicate: false,
+            source: ReviewSource.INTAKE,
             submittedById: ctx.user?.id || null,
           },
         });

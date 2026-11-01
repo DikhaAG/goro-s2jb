@@ -1,7 +1,7 @@
 import { Worker, Job } from "bullmq";
 import redis from "@/lib/redis";
 import prisma from "@/lib/prisma";
-import { OcrProcessingStatus } from "@prisma/client";
+import { OcrProcessingStatus, ReviewSource } from "@prisma/client";
 import { IMPORT_QUEUE_NAME, ImportJobData } from "../queues/importQueue";
 import { ocrQueue } from "../queues/ocrQueue";
 import { parseCsvStream } from "@/lib/parsers/csvStreamParser";
@@ -167,8 +167,13 @@ export function createImportWorker() {
               reviewerCategory: row.reviewerCategory || "Pelanggan",
               fieldNotes: row.fieldNotes || null,
               isDuplicate: row.isDuplicate || false,
+              source: ReviewSource.MIGRATION,
+              migrationBatchId: importBatchId,
               validationStatus: row.validationStatus || "PENDING",
-              ocrStatus: OcrProcessingStatus.QUEUED,
+              ocrStatus:
+                row.validationStatus === "APPROVED"
+                  ? OcrProcessingStatus.COMPLETED
+                  : OcrProcessingStatus.QUEUED,
               reviewRemarks: row.reviewRemarks || null,
               submittedById: validUserId,
             };
@@ -182,12 +187,18 @@ export function createImportWorker() {
               id: true,
               evidenceImagePath: true,
               playstoreReviewerName: true,
+              validationStatus: true,
             },
           });
 
-          // Non-blocking Tier 2: Asynchronously dispatch to OCR background queue
+          // Non-blocking Tier 2: Asynchronously dispatch unapproved/pending reviews to OCR background queue
           const ocrJobs = insertedReviews
-            .filter((r) => r.evidenceImagePath && r.evidenceImagePath.trim() !== "")
+            .filter(
+              (r) =>
+                r.validationStatus !== "APPROVED" &&
+                r.evidenceImagePath &&
+                r.evidenceImagePath.trim() !== ""
+            )
             .map((r) => ({
               name: "process-ocr",
               data: {

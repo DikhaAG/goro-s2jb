@@ -147,8 +147,15 @@ model TargetMaster {
   @@index([ulpId])
 }
 
+enum ReviewSource {
+  INTAKE
+  MIGRATION
+}
+
 model RatingReview {
   id                    String           @id @default(cuid())
+  source                ReviewSource     @default(INTAKE)
+  migrationBatchId      String?
   timestamp             DateTime         @default(now()) // Column 1
   up3Id                 String                            // Column 2
   ulpId                 String                            // Column 3
@@ -179,11 +186,14 @@ model RatingReview {
   duplicateChildren     RatingReview[]   @relation("ReviewDuplicates")
   submittedBy           User?            @relation("SubmittedReviews", fields: [submittedById], references: [id])
   verifiedBy            User?            @relation("VerifiedReviews", fields: [verifiedById], references: [id])
+  migrationBatch        MigrationBatch?  @relation(fields: [migrationBatchId], references: [id], onDelete: SetNull)
   trainingSamples       OcrTrainingSample[]
 
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
+  @@index([source])
+  @@index([migrationBatchId])
   @@index([timestamp])
   @@index([entryDate])
   @@index([ulpId])
@@ -218,6 +228,7 @@ model MigrationBatch {
   completedAt      DateTime?
   uploadedById     String?
   uploadedBy       User?               @relation(fields: [uploadedById], references: [id])
+  reviews          RatingReview[]
   errors           MigrationErrorLog[]
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt

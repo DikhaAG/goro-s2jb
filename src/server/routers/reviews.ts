@@ -42,6 +42,10 @@ export const reviewsRouter = router({
           .enum(["ALL", "GREEN", "YELLOW", "RED"])
           .optional()
           .default("ALL"),
+        source: z
+          .enum(["ALL", "INTAKE", "MIGRATION"])
+          .optional()
+          .default("ALL"),
         up3Id: z.string().optional(),
         ulpId: z.string().optional(),
         isDuplicate: z.boolean().optional(),
@@ -76,6 +80,11 @@ export const reviewsRouter = router({
       // 3. OCR Status Filter
       if (input.ocrStatus && input.ocrStatus !== "ALL") {
         where.ocrStatus = input.ocrStatus as OcrProcessingStatus;
+      }
+
+      // 3b. Source Filter (INTAKE vs MIGRATION)
+      if (input.source && input.source !== "ALL") {
+        where.source = input.source as any;
       }
 
       // 4. Validation Confidence Zone Filter

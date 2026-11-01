@@ -93,6 +93,7 @@ describe("Intake Mutation Procedure (trpc.intake.submitReview)", () => {
     });
 
     expect(review).toBeDefined();
+    expect(review?.source).toBe("INTAKE");
     expect(review?.validationStatus).toBe("PENDING");
     expect(review?.playstoreReviewerName).toBe("Hendra Wijaya");
     expect(review?.up3.id).toBe(up3Id);

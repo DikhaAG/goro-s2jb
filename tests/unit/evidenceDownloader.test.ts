@@ -3,6 +3,7 @@ import {
   extractGoogleDriveFileId,
   isExternalUrl,
   downloadEvidenceImage,
+  streamEvidenceImageBuffer,
 } from "@/server/services/evidenceDownloader";
 import * as storage from "@/lib/storage";
 
@@ -105,6 +106,34 @@ describe("Evidence Downloader Service", () => {
 
       const result = await downloadEvidenceImage("https://drive.google.com/open?id=restricted_id");
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe("streamEvidenceImageBuffer (Migration Zero-Storage)", () => {
+    it("should stream image into memory buffer without calling saveEvidenceFile", async () => {
+      const fakeJpegBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+
+      vi.spyOn(global, "fetch").mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ "content-type": "image/jpeg" }),
+        arrayBuffer: async () => fakeJpegBuffer.buffer.slice(fakeJpegBuffer.byteOffset, fakeJpegBuffer.byteOffset + fakeJpegBuffer.byteLength),
+      } as any);
+
+      const saveSpy = vi.spyOn(storage, "saveEvidenceFile");
+
+      const result = await streamEvidenceImageBuffer("https://drive.google.com/open?id=1xkoBV7PnSZ8bqFe89qrpQk6GswW5iVqp");
+      expect(result.success).toBe(true);
+      expect(result.buffer).toBeDefined();
+      expect(result.buffer?.length).toBe(fakeJpegBuffer.length);
+      expect(result.mimeType).toBe("image/jpeg");
+      // Must NOT save to disk!
+      expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    it("should return failure for empty URL", async () => {
+      const result = await streamEvidenceImageBuffer("");
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
     });
   });
 });

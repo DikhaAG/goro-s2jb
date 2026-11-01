@@ -8,6 +8,7 @@ import {
   OcrTrainingJobStatus,
   PrismaClient,
 } from "@prisma/client";
+import { isExternalUrl, streamEvidenceImageBuffer } from "./evidenceDownloader";
 
 export interface TrainingPipelineOptions {
   epochs?: number;
@@ -72,18 +73,44 @@ export async function runOcrTrainingPipeline(
   // 2. Prepare training directories and dataset JSON
   const trainingDir = path.resolve(process.cwd(), "uploads/training");
   const datasetDir = path.join(trainingDir, "datasets");
+  const samplesDir = path.join(trainingDir, "samples");
   const modelDir = path.join(trainingDir, "models", targetVersion);
   fs.mkdirSync(datasetDir, { recursive: true });
+  fs.mkdirSync(samplesDir, { recursive: true });
   fs.mkdirSync(modelDir, { recursive: true });
 
   const datasetFilePath = path.join(datasetDir, `dataset_${targetVersion}.json`);
-  const formattedSamples = samples.map((s: any) => ({
-    image_path: s.imagePath.startsWith("/")
-      ? s.imagePath
-      : path.resolve(process.cwd(), s.imagePath),
-    ground_truth_text: s.groundTruthText,
-    reviewer_name: s.reviewerName,
-  }));
+  const formattedSamples: any[] = [];
+
+  for (const s of samples) {
+    let resolvedPath = "";
+    if (isExternalUrl(s.imagePath)) {
+      // For migration samples with external Google Drive URLs, isolate strictly in uploads/training/samples/
+      const cachedSamplePath = path.join(samplesDir, `sample_${s.id}.jpg`);
+      if (!fs.existsSync(cachedSamplePath)) {
+        try {
+          const streamRes = await streamEvidenceImageBuffer(s.imagePath);
+          if (streamRes.success && streamRes.buffer) {
+            fs.writeFileSync(cachedSamplePath, streamRes.buffer);
+          }
+        } catch {
+          // If streaming fails, fallback gracefully
+        }
+      }
+      resolvedPath = cachedSamplePath;
+    } else {
+      resolvedPath = s.imagePath.startsWith("/")
+        ? s.imagePath
+        : path.resolve(process.cwd(), s.imagePath);
+    }
+
+    formattedSamples.push({
+      image_path: resolvedPath,
+      ground_truth_text: s.groundTruthText,
+      reviewer_name: s.reviewerName,
+    });
+  }
+
   fs.writeFileSync(datasetFilePath, JSON.stringify(formattedSamples, null, 2), "utf-8");
 
   // 3. Create initial OcrTrainingJob record

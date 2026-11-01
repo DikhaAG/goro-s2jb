@@ -4,7 +4,10 @@ import prisma from "@/lib/prisma";
 import { OCR_QUEUE_NAME, OcrJobData } from "../queues/ocrQueue";
 import { executeOcrBridge } from "../services/ocrBridge";
 import { checkImageDuplicate } from "../services/antiFraudService";
-import { downloadEvidenceImage, isExternalUrl } from "../services/evidenceDownloader";
+import {
+  streamEvidenceImageBuffer,
+  isExternalUrl,
+} from "../services/evidenceDownloader";
 import path from "path";
 import { BASE_UPLOAD_DIR } from "@/lib/storage";
 
@@ -18,7 +21,14 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
       // Check if review record still exists in DB
       const existingReview = await prisma.ratingReview.findUnique({
         where: { id: reviewId },
-        select: { id: true, validationStatus: true, reviewRemarks: true, entryDate: true },
+        select: {
+          id: true,
+          source: true,
+          validationStatus: true,
+          reviewRemarks: true,
+          entryDate: true,
+          evidenceImagePath: true,
+        },
       });
 
       if (!existingReview) {
@@ -26,39 +36,35 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
         return { success: false, error: "Review record not found in database" };
       }
 
-      let absolutePath = "";
-      if (isExternalUrl(evidenceImagePath)) {
-        // Track state: Streaming/downloading evidence from external URL (e.g. Google Drive)
+      let ocrInput: string | Buffer = "";
+      const isMigration = existingReview.source === "MIGRATION" || isExternalUrl(evidenceImagePath);
+
+      if (isMigration) {
+        // MIGRATION DATA: Stream directly from Google Drive URL into memory without local disk persistence
         await prisma.ratingReview.update({
           where: { id: reviewId },
           data: { ocrStatus: "DOWNLOADING" },
         }).catch(() => {});
 
-        const dlResult = await downloadEvidenceImage(
-          evidenceImagePath,
-          existingReview.entryDate || new Date()
-        );
-        if (!dlResult.success || !dlResult.absolutePath) {
-          console.error(`[OCR Worker] Failed OCR image fetch for reviewId: ${reviewId}`, dlResult.error);
+        const streamResult = await streamEvidenceImageBuffer(evidenceImagePath);
+        if (!streamResult.success || !streamResult.buffer) {
+          console.error(`[OCR Worker] Failed streaming image for reviewId: ${reviewId}`, streamResult.error);
           await prisma.ratingReview.update({
             where: { id: reviewId },
             data: {
               ocrStatus: "FAILED",
               validationStatus: "NEEDS_REVIEW",
-              reviewRemarks: `OCR Gagal: Tautan gambar tidak dapat diakses (${dlResult.error || "Gagal unduh"})`,
+              reviewRemarks: `OCR Gagal: Tautan gambar Google Drive tidak dapat dialirkan (${streamResult.error || "Gagal streaming"})`,
             },
           }).catch(() => {});
-          return { success: false, error: dlResult.error };
+          return { success: false, error: streamResult.error };
         }
-        absolutePath = dlResult.absolutePath;
-        if (dlResult.relativePath) {
-          await prisma.ratingReview.update({
-            where: { id: reviewId },
-            data: { evidenceImagePath: dlResult.relativePath },
-          }).catch(() => {});
-        }
+
+        ocrInput = streamResult.buffer;
+        // Strict Zero-Storage: evidenceImagePath remains the original Google Drive URL (never overwritten to local path)
       } else {
-        absolutePath = path.isAbsolute(evidenceImagePath)
+        // INTAKE DATA: Local physical file stored in uploads/evidence/
+        ocrInput = path.isAbsolute(evidenceImagePath)
           ? evidenceImagePath
           : path.join(BASE_UPLOAD_DIR, evidenceImagePath);
       }
@@ -69,8 +75,8 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
         data: { ocrStatus: "PROCESSING" },
       }).catch(() => {});
 
-      // 1. Execute OCR and Fuzzy Matching through bridge
-      const ocrResult = await executeOcrBridge(absolutePath, expectedReviewerName);
+      // 1. Execute OCR and Fuzzy Matching through bridge (supports Buffer in-memory or file path)
+      const ocrResult = await executeOcrBridge(ocrInput, expectedReviewerName);
 
       if (!ocrResult.success) {
         console.error(`[OCR Worker] Failed OCR for reviewId: ${reviewId}`, ocrResult.error);

@@ -12,6 +12,7 @@ export const triageRouter = router({
         ulpId: z.string().optional(),
         status: z.enum(["ALL", "NEEDS_REVIEW", "APPROVED", "REJECTED", "PENDING"]).optional().default("NEEDS_REVIEW"),
         ocrStatus: z.enum(["ALL", "QUEUED", "DOWNLOADING", "PROCESSING", "COMPLETED", "FAILED"]).optional().default("ALL"),
+        source: z.enum(["ALL", "INTAKE", "MIGRATION"]).optional().default("ALL"),
         isDuplicateOnly: z.boolean().optional().default(false),
         dateFrom: z.string().optional(),
         dateTo: z.string().optional(),
@@ -28,6 +29,10 @@ export const triageRouter = router({
 
       if (input.ocrStatus && input.ocrStatus !== "ALL") {
         where.ocrStatus = input.ocrStatus as OcrProcessingStatus;
+      }
+
+      if (input.source && input.source !== "ALL") {
+        where.source = input.source as any;
       }
 
       if (input.isDuplicateOnly) {

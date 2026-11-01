@@ -46,6 +46,100 @@ export interface DownloadResult {
 }
 
 /**
+ * Fetches an image buffer directly from an external URL (Google Drive or HTTP)
+ * in memory without persisting it to local disk (zero disk footprint for migration data).
+ */
+export async function streamEvidenceImageBuffer(
+  urlOrPath: string,
+  timeoutMs: number = 15000
+): Promise<{ success: boolean; buffer?: Buffer; mimeType?: string; error?: string }> {
+  if (!urlOrPath || typeof urlOrPath !== "string") {
+    return { success: false, error: "Tautan gambar kosong" };
+  }
+
+  const trimmed = urlOrPath.trim();
+  if (!isExternalUrl(trimmed)) {
+    return { success: false, error: "Bukan tautan URL eksternal" };
+  }
+
+  const googleDriveFileId = extractGoogleDriveFileId(trimmed);
+
+  const candidateUrls: string[] = googleDriveFileId
+    ? [
+        `https://drive.google.com/uc?id=${googleDriveFileId}&export=download`,
+        `https://drive.usercontent.google.com/download?id=${googleDriveFileId}&export=download&authuser=0`,
+        `https://lh3.googleusercontent.com/d/${googleDriveFileId}`,
+      ]
+    : [trimmed];
+
+  for (const candidate of candidateUrls) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(candidate, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        },
+        redirect: "follow",
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) continue;
+
+      const contentType = res.headers.get("content-type")?.toLowerCase() || "";
+      if (contentType.includes("text/html")) continue;
+
+      const arrayBuf = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuf);
+
+      if (buffer.length === 0) continue;
+
+      let mimeType = "image/jpeg";
+      if (
+        buffer.length >= 3 &&
+        buffer[0] === 0xff &&
+        buffer[1] === 0xd8 &&
+        buffer[2] === 0xff
+      ) {
+        mimeType = "image/jpeg";
+      } else if (
+        buffer.length >= 4 &&
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47
+      ) {
+        mimeType = "image/png";
+      } else if (
+        buffer.length >= 12 &&
+        buffer.toString("ascii", 0, 4) === "RIFF" &&
+        buffer.toString("ascii", 8, 12) === "WEBP"
+      ) {
+        mimeType = "image/webp";
+      }
+
+      return {
+        success: true,
+        buffer,
+        mimeType,
+      };
+    } catch {
+      clearTimeout(timeout);
+    }
+  }
+
+  return {
+    success: false,
+    error: `Gagal streaming gambar dari tautan Google Drive: ${trimmed}`,
+  };
+}
+
+/**
  * Downloads an evidence image from an external URL (Google Drive or generic HTTP URL)
  * and persists it locally into the date-based upload directory using saveEvidenceFile.
  */

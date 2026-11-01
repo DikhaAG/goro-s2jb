@@ -6,6 +6,7 @@ import redis from "@/lib/redis";
 import { parseCsvStream, RawReviewRow } from "@/lib/parsers/csvStreamParser";
 import {
   downloadEvidenceImage,
+  streamEvidenceImageBuffer,
   extractGoogleDriveFileId,
   isExternalUrl,
 } from "@/server/services/evidenceDownloader";
@@ -133,6 +134,8 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
               timestamp: row.timestamp,
               evidenceImagePath: row.evidenceImagePath, // Retains GDrive URL for Tier 2 lazy/background processing
               reviewerCategory: row.reviewerCategory,
+              source: "MIGRATION",
+              migrationBatchId: testBatchId,
               validationStatus: "PENDING",
             },
           })
@@ -198,12 +201,13 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
   });
 
   describe("Tier 2: Vision Core OCR & Play Store Reviewer Name Fuzzy Validation", () => {
-    it("should extract Indonesian mobile UI text and verify match for reviewer Mika with GREEN APPROVED status", async () => {
+    it("should stream Google Drive image in-memory and verify match for reviewer Mika with GREEN APPROVED status without disk persistence", async () => {
       const mikaUrl = "https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC";
-      const dl = await downloadEvidenceImage(mikaUrl);
-      expect(dl.success).toBe(true);
+      const streamRes = await streamEvidenceImageBuffer(mikaUrl);
+      expect(streamRes.success).toBe(true);
+      expect(streamRes.buffer).toBeDefined();
 
-      const ocrResult = await executeOcrBridge(dl.absolutePath!, "Mika");
+      const ocrResult = await executeOcrBridge(streamRes.buffer!, "Mika");
 
       expect(ocrResult.success).toBe(true);
       expect(ocrResult.extracted_text.length).toBeGreaterThan(50);
@@ -214,14 +218,15 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       expect(ocrResult.similarity_score).toBe(100);
       expect(ocrResult.zone).toBe("GREEN");
       expect(ocrResult.recommended_status).toBe("APPROVED");
-    });
+    }, 35000);
 
-    it("should extract Indonesian mobile UI text and verify match for reviewer Eta with GREEN APPROVED status", async () => {
+    it("should stream Google Drive image in-memory and verify match for reviewer Eta with GREEN APPROVED status", async () => {
       const etaUrl = "https://drive.google.com/open?id=1--6-2bJppAlOrXKfNgkP9IzUmagITwk8";
-      const dl = await downloadEvidenceImage(etaUrl);
-      expect(dl.success).toBe(true);
+      const streamRes = await streamEvidenceImageBuffer(etaUrl);
+      expect(streamRes.success).toBe(true);
+      expect(streamRes.buffer).toBeDefined();
 
-      const ocrResult = await executeOcrBridge(dl.absolutePath!, "Eta");
+      const ocrResult = await executeOcrBridge(streamRes.buffer!, "Eta");
 
       expect(ocrResult.success).toBe(true);
       expect(ocrResult.extracted_text.length).toBeGreaterThan(50);
@@ -230,7 +235,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       expect(ocrResult.similarity_score).toBe(100);
       expect(ocrResult.zone).toBe("GREEN");
       expect(ocrResult.recommended_status).toBe("APPROVED");
-    });
+    }, 35000);
 
     it("should accurately reject mismatched screenshot with RED REJECTED status", async () => {
       // Testing with a name that is completely absent from Mika's screenshot

@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { OcrResultPayload, ValidationStatus } from "@/types";
 
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8001";
@@ -8,25 +9,34 @@ const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8001";
 /**
  * Executes Python OCR process via HTTP endpoint if reachable,
  * with seamless fallback to isolated Python child process.
+ * Supports both local physical file paths and in-memory image Buffers (streaming without disk persistence).
  */
 export async function executeOcrBridge(
-  imageAbsolutePath: string,
+  imageInput: string | Buffer,
   targetReviewerName: string
 ): Promise<OcrResultPayload> {
   const startTime = Date.now();
+  const isBuffer = Buffer.isBuffer(imageInput);
 
   // 1. Attempt HTTP request to local FastAPI microservice
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 2000);
+
+    const bodyPayload = isBuffer
+      ? {
+          image_base64: (imageInput as Buffer).toString("base64"),
+          target_name: targetReviewerName,
+        }
+      : {
+          image_path: imageInput as string,
+          target_name: targetReviewerName,
+        };
 
     const res = await fetch(`${OCR_SERVICE_URL}/api/v1/process`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image_path: imageAbsolutePath,
-        target_name: targetReviewerName,
-      }),
+      body: JSON.stringify(bodyPayload),
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -43,6 +53,31 @@ export async function executeOcrBridge(
   }
 
   // 2. Subprocess fallback execution
+  // If input is an in-memory buffer, write to a transient temporary file in os.tmpdir() that gets deleted immediately
+  let tempFilePath: string | null = null;
+  let targetPathForSubprocess = "";
+
+  if (isBuffer) {
+    tempFilePath = path.join(
+      os.tmpdir(),
+      `goro_ocr_stream_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
+    );
+    await fs.promises.writeFile(tempFilePath, imageInput as Buffer);
+    targetPathForSubprocess = tempFilePath;
+  } else {
+    targetPathForSubprocess = imageInput as string;
+  }
+
+  const cleanupTemp = async () => {
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        await fs.promises.unlink(tempFilePath);
+      } catch {
+        // Ignore cleanup error
+      }
+    }
+  };
+
   return new Promise((resolve) => {
     const venvPaths = [
       path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
@@ -56,9 +91,9 @@ export async function executeOcrBridge(
 
     const proc = spawn(
       pythonExecutable,
-      [scriptPath, "--image", imageAbsolutePath, "--expected-name", targetReviewerName],
+      [scriptPath, "--image", targetPathForSubprocess, "--expected-name", targetReviewerName],
       {
-        timeout: 15000,
+        timeout: 30000,
         env: {
           ...process.env,
           PYTHONUNBUFFERED: "1",
@@ -77,7 +112,8 @@ export async function executeOcrBridge(
       stderrData += chunk.toString();
     });
 
-    proc.on("error", (err) => {
+    proc.on("error", async (err) => {
+      await cleanupTemp();
       resolve({
         success: false,
         extracted_text: "",
@@ -90,7 +126,8 @@ export async function executeOcrBridge(
       });
     });
 
-    proc.on("close", (code) => {
+    proc.on("close", async (code) => {
+      await cleanupTemp();
       if (code !== 0) {
         resolve({
           success: false,

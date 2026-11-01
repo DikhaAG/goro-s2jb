@@ -35,6 +35,14 @@ export function DatasetCuratorTable({ onDatasetChanged }: DatasetCuratorTablePro
   const [exclusionReason, setExclusionReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const resolveImageSrc = (imgUrlOrPath: string, reviewId?: string) => {
+    if (!imgUrlOrPath) return "";
+    if (imgUrlOrPath.startsWith("http://") || imgUrlOrPath.startsWith("https://")) {
+      return reviewId ? `/api/evidence/proxy/${reviewId}` : imgUrlOrPath;
+    }
+    return imgUrlOrPath.startsWith("/") ? imgUrlOrPath : `/${imgUrlOrPath}`;
+  };
+
   const { data, isLoading, refetch } = trpc.ocrTraining.getSamples.useQuery({
     search: search.trim() || undefined,
     inclusion: inclusion === "ALL" ? undefined : (inclusion as OcrSampleInclusion),
@@ -225,13 +233,13 @@ export function DatasetCuratorTable({ onDatasetChanged }: DatasetCuratorTablePro
                   {/* Image Thumbnail */}
                   <td className="py-2.5 px-4">
                     <div
-                      onClick={() => setPreviewImage(sample.imagePath)}
+                      onClick={() => setPreviewImage(resolveImageSrc(sample.imagePath, sample.reviewId))}
                       className="w-12 h-12 rounded-xl bg-slate-100 border border-[#cbd5e1] overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#00a2b9] relative flex items-center justify-center group shrink-0 transition-all"
                       title="Klik untuk melihat pratinjau penuh"
                     >
                       {sample.imagePath ? (
                         <img
-                          src={sample.imagePath.startsWith("/") ? sample.imagePath : `/${sample.imagePath}`}
+                          src={resolveImageSrc(sample.imagePath, sample.reviewId)}
                           alt="Thumbnail Eviden"
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -374,7 +382,7 @@ export function DatasetCuratorTable({ onDatasetChanged }: DatasetCuratorTablePro
             </div>
             <div className="max-h-[70vh] overflow-auto flex items-center justify-center bg-black/40 rounded-xl p-2 border border-[#334155]">
               <img
-                src={previewImage.startsWith("/") ? previewImage : `/${previewImage}`}
+                src={previewImage.startsWith("http") || previewImage.startsWith("/") ? previewImage : `/${previewImage}`}
                 alt="Pratinjau Penuh"
                 className="max-h-[65vh] object-contain rounded-lg shadow-md"
               />

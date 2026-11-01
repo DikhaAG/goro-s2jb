@@ -4,6 +4,8 @@ import os
 import json
 import time
 import argparse
+import io
+import base64
 from typing import Optional, Dict, Any
 from PIL import Image
 
@@ -31,7 +33,8 @@ app = FastAPI(
 )
 
 class ProcessRequest(BaseModel):
-    image_path: str
+    image_path: Optional[str] = None
+    image_base64: Optional[str] = None
     target_name: Optional[str] = ""
     model_path: Optional[str] = ""
 
@@ -55,26 +58,33 @@ class CompareHashResponse(BaseModel):
     is_duplicate: bool
 
 def process_evidence(
-    image_path: str,
+    image_path: Optional[str] = None,
+    image_base64: Optional[str] = None,
     target_name: Optional[str] = "",
     model_path: Optional[str] = ""
 ) -> Dict[str, Any]:
     start_time = time.time()
 
-    if not os.path.exists(image_path):
-        return {
-            "success": False,
-            "extracted_text": "",
-            "phash": "",
-            "similarity_score": 0.0,
-            "zone": "RED",
-            "recommended_status": "REJECTED",
-            "execution_time_ms": int((time.time() - start_time) * 1000),
-            "error": f"Image file not found: {image_path}",
-        }
-
+    img = None
     try:
-        with Image.open(image_path) as img:
+        if image_base64:
+            img_bytes = base64.b64decode(image_base64)
+            img = Image.open(io.BytesIO(img_bytes))
+        elif image_path and os.path.exists(image_path):
+            img = Image.open(image_path)
+        else:
+            return {
+                "success": False,
+                "extracted_text": "",
+                "phash": "",
+                "similarity_score": 0.0,
+                "zone": "RED",
+                "recommended_status": "REJECTED",
+                "execution_time_ms": int((time.time() - start_time) * 1000),
+                "error": f"Image not provided or file not found (path: {image_path})",
+            }
+
+        with img:
             # 1. Calculate 64-bit perceptual hash (pHash)
             phash = calculate_phash(img)
 
@@ -125,7 +135,12 @@ def health():
 
 @app.post("/api/v1/process", response_model=ProcessResponse)
 def api_process(req: ProcessRequest):
-    result = process_evidence(req.image_path, req.target_name, req.model_path)
+    result = process_evidence(
+        image_path=req.image_path,
+        image_base64=req.image_base64,
+        target_name=req.target_name,
+        model_path=req.model_path,
+    )
     return result
 
 @app.post("/api/v1/compare-hash", response_model=CompareHashResponse)
@@ -136,16 +151,22 @@ def api_compare_hash(req: CompareHashRequest):
 
 def cli_main():
     parser = argparse.ArgumentParser(description="GORO S2JB OCR & pHash Extractor")
-    parser.add_argument("--image", required=True, help="Path to evidence image")
+    parser.add_argument("--image", default="", help="Path to evidence image")
+    parser.add_argument("--base64", default="", help="Base64 encoded evidence image (in-memory streaming)")
     parser.add_argument("--expected-name", default="", help="Expected Play Store reviewer name")
     parser.add_argument("--model-path", default="", help="Path to custom CRNN model checkpoint")
     args = parser.parse_args()
 
-    result = process_evidence(args.image, args.expected_name, args.model_path)
+    result = process_evidence(
+        image_path=args.image if args.image else None,
+        image_base64=args.base64 if args.base64 else None,
+        target_name=args.expected_name,
+        model_path=args.model_path,
+    )
     print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and ("--image" in sys.argv or "--help" in sys.argv):
+    if len(sys.argv) > 1 and ("--image" in sys.argv or "--base64" in sys.argv or "--help" in sys.argv):
         cli_main()
     else:
         import uvicorn
