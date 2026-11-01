@@ -166,7 +166,7 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
                 className="w-full px-3.5 py-2.5 bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] text-xs sm:text-sm focus-utility-ring min-h-[44px] cursor-pointer"
               >
                 <option value={Role.PETUGAS_LAPANGAN}>Petugas Lapangan (/intake)</option>
-                <option value={Role.PEGAWAI}>Pegawai Triase (/triage)</option>
+                <option value={Role.PEGAWAI}>Pegawai Verifikator (/reviews)</option>
                 <option value={Role.MANAGER}>Manager Eksekutif (/reports)</option>
                 <option value={Role.SUPER_ADMIN}>Super Admin (/admin)</option>
               </select>

@@ -112,18 +112,18 @@ export function HomePageClient() {
           </Link>
 
           <Link
-            href="/triage"
+            href="/reviews"
             className="group block p-5 rounded-2xl bg-white border border-[#e2e8f0] hover:border-[#f59e0b] hover:shadow-xs transition duration-150 focus-utility-ring"
           >
             <div className="w-10 h-10 rounded-xl bg-[#fff7ed] text-[#b45309] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
               <CheckSquare className="w-5 h-5" />
             </div>
             <h2 className="text-sm font-bold text-[#0f172a] group-hover:text-[#b45309] transition-colors flex items-center justify-between">
-              <span>Triase Ulasan Kuning</span>
+              <span>Triase & Data Ulasan</span>
               <ArrowRight className="w-4 h-4 text-[#94a3b8] group-hover:text-[#f59e0b] group-hover:translate-x-0.5 transition-all" />
             </h2>
             <p className="text-xs text-[#64748b] mt-1 line-clamp-2">
-              Dasbor verifikasi operator (human in the loop) dengan hotkey keyboard taktis.
+              Dasbor verifikasi operator human-in-the-loop, inspeksi bukti visual, dan hotkey taktis.
             </p>
           </Link>
 

@@ -50,13 +50,7 @@ export const NAV_ITEMS: NavMenuItem[] = [
     roles: ["PETUGAS_LAPANGAN", "SUPER_ADMIN"],
   },
   {
-    label: "Triase Ulasan",
-    href: "/triage",
-    icon: CheckSquare,
-    roles: ["PEGAWAI", "SUPER_ADMIN"],
-  },
-  {
-    label: "Kelola Data Ulasan",
+    label: "Triase & Data Ulasan",
     href: "/reviews",
     icon: FolderKanban,
     roles: ["PEGAWAI", "SUPER_ADMIN"],
@@ -126,7 +120,9 @@ export function isNavItemActive(
   // Normalize path if legacy aliases exist
   let normalizedPath = pathname;
   if (pathname.startsWith("/operator/triage")) {
-    normalizedPath = "/triage" + pathname.slice("/operator/triage".length);
+    normalizedPath = "/reviews" + pathname.slice("/operator/triage".length);
+  } else if (pathname === "/triage" || pathname.startsWith("/triage/")) {
+    normalizedPath = "/reviews" + pathname.slice("/triage".length);
   } else if (pathname.startsWith("/manager/reports")) {
     normalizedPath = "/reports" + pathname.slice("/manager/reports".length);
   } else if (pathname.startsWith("/admin/users")) {

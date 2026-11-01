@@ -100,7 +100,7 @@ describe("Task 12.1: Layer 1 Edge Proxy Penetration Test Suite", () => {
     it("should redirect authenticated users on /login directly to their canonical role dashboard", async () => {
       const expectations = [
         { role: Role.PETUGAS_LAPANGAN, token: fieldToken, expected: "/intake" },
-        { role: Role.PEGAWAI, token: operatorToken, expected: "/triage" },
+        { role: Role.PEGAWAI, token: operatorToken, expected: "/reviews" },
         { role: Role.MANAGER, token: managerToken, expected: "/reports" },
         { role: Role.SUPER_ADMIN, token: adminToken, expected: "/users" },
       ];

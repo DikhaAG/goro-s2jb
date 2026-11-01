@@ -81,7 +81,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
     it("should REDIRECT already authenticated users hitting /login to their role dashboard", async () => {
       const testCases = [
         { token: fieldToken, expected: "/intake" },
-        { token: operatorToken, expected: "/triage" },
+        { token: operatorToken, expected: "/reviews" },
         { token: managerToken, expected: "/reports" },
         { token: adminToken, expected: "/users" },
       ];
@@ -143,7 +143,7 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
         headers: { cookie: `${SESSION_COOKIE_NAME}=${operatorToken}` },
       });
       const resTriage = await proxy(reqTriage);
-      expect(resTriage.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/triage");
+      expect(resTriage.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/reviews");
 
       // 3. /intake should be forbidden
       const reqIntake = new NextRequest("http://localhost:3000/intake", {

@@ -83,7 +83,7 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
 
       const resOperator = await middleware(createMockRequest("/login", operatorToken));
       expect(resOperator.status).toBe(307);
-      expect(resOperator.headers.get("location")).toContain("/triage");
+      expect(resOperator.headers.get("location")).toContain("/reviews");
 
       const resManager = await middleware(createMockRequest("/login", managerToken));
       expect(resManager.status).toBe(307);

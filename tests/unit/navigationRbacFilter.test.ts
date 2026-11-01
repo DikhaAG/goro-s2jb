@@ -17,7 +17,6 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(allHrefs).toEqual([
         "/",
         "/intake",
-        "/triage",
         "/reviews",
         "/ocr-training",
         "/reports",
@@ -70,14 +69,13 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/audit-logs");
     });
 
-    it("should return exactly 6 items for Pegawai Triase: ['/', '/triage', '/reviews', '/ocr-training', '/migration', '/migration/monitor']", () => {
+    it("should return exactly 5 items for Pegawai Triase: ['/', '/reviews', '/ocr-training', '/migration', '/migration/monitor']", () => {
       const operatorItems = filterNavItemsByRole(Role.PEGAWAI);
       const hrefs = getHrefs(operatorItems);
 
-      expect(operatorItems).toHaveLength(6);
+      expect(operatorItems).toHaveLength(5);
       expect(hrefs).toEqual([
         "/",
-        "/triage",
         "/reviews",
         "/ocr-training",
         "/migration",
@@ -113,15 +111,14 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(hrefs).not.toContain("/audit-logs");
     });
 
-    it("should return all 11 items for Super Admin without omissions", () => {
+    it("should return all 10 items for Super Admin without omissions", () => {
       const adminItems = filterNavItemsByRole(Role.SUPER_ADMIN);
       const hrefs = getHrefs(adminItems);
 
-      expect(adminItems).toHaveLength(11);
+      expect(adminItems).toHaveLength(10);
       expect(hrefs).toEqual([
         "/",
         "/intake",
-        "/triage",
         "/reviews",
         "/ocr-training",
         "/reports",
@@ -147,8 +144,8 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
       expect(isNavItemActive("/intake", "/intake")).toBe(true);
       expect(isNavItemActive("/intake", "/intake/step-2")).toBe(true);
 
-      expect(isNavItemActive("/triage", "/triage")).toBe(true);
-      expect(isNavItemActive("/triage", "/triage/review/123")).toBe(true);
+      expect(isNavItemActive("/reviews", "/reviews")).toBe(true);
+      expect(isNavItemActive("/reviews", "/reviews/detail/123")).toBe(true);
 
       expect(isNavItemActive("/reports", "/reports")).toBe(true);
       expect(isNavItemActive("/reports", "/reports/daily")).toBe(true);
@@ -180,7 +177,7 @@ describe("Task 12.5: Layer 5 UI Navigation RBAC Filter & Zero Route Leakage Test
     });
 
     it("should support backward-compatible rewrite paths for legacy aliases", () => {
-      expect(isNavItemActive("/triage", "/operator/triage")).toBe(true);
+      expect(isNavItemActive("/reviews", "/operator/triage")).toBe(true);
       expect(isNavItemActive("/reports", "/manager/reports")).toBe(true);
       expect(isNavItemActive("/users", "/admin/users")).toBe(true);
       expect(isNavItemActive("/migration", "/admin/migration")).toBe(true);

@@ -18,6 +18,9 @@ import {
   Clock,
   AlertCircle,
   Copy,
+  Check,
+  Maximize2,
+  Keyboard,
 } from "lucide-react";
 
 export interface ReviewItem {
@@ -58,6 +61,11 @@ interface ReviewsTableProps {
   onRetryOcr: (reviewId: string) => void;
   onOpenDelete: (review: ReviewItem) => void;
   isRetryingOcrId?: string | null;
+  activeId?: string | null;
+  onSelectActive?: (id: string) => void;
+  onApprove?: (id: string) => void;
+  onReject?: (item: ReviewItem) => void;
+  onOpenLightbox?: (item: ReviewItem) => void;
 }
 
 export function ReviewsTable({
@@ -80,6 +88,11 @@ export function ReviewsTable({
   onRetryOcr,
   onOpenDelete,
   isRetryingOcrId,
+  activeId,
+  onSelectActive,
+  onApprove,
+  onReject,
+  onOpenLightbox,
 }: ReviewsTableProps) {
   const renderSortIcon = (column: string) => {
     if (sortBy !== column) {
@@ -217,11 +230,58 @@ export function ReviewsTable({
     }
   };
 
+  const getImageUrl = (item: ReviewItem) => {
+    if (!item.evidenceImagePath) return "";
+    return item.evidenceImagePath.startsWith("http")
+      ? `/api/evidence/proxy/${item.id}`
+      : item.evidenceImagePath.startsWith("/")
+      ? `/api/uploads${item.evidenceImagePath}`
+      : `/api/uploads/${item.evidenceImagePath}`;
+  };
+
   const startRecord = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const endRecord = Math.min(page * pageSize, totalCount);
 
   return (
     <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-xs overflow-hidden flex flex-col">
+      {/* Tactical Hotkey Ribbon */}
+      <div className="px-4 py-2.5 bg-[#f8fafc] border-b border-[#e2e8f0] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#64748b]">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold text-[#0f172a] flex items-center gap-1">
+            <Keyboard className="w-3.5 h-3.5 text-[#006877]" />
+            <span>Hotkey Verifikasi:</span>
+          </span>
+          <span className="inline-flex items-center gap-1 font-mono text-[#334155]">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">A</kbd> Setujui
+          </span>
+          <span className="text-[#cbd5e1]">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[#334155]">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">R</kbd> Tolak
+          </span>
+          <span className="text-[#cbd5e1]">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[#334155]">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">J</kbd>/<kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">↓</kbd> Berikut
+          </span>
+          <span className="text-[#cbd5e1]">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[#334155]">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">K</kbd>/<kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">↑</kbd> Sebelum
+          </span>
+          <span className="text-[#cbd5e1]">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[#334155]">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">Spasi</kbd> Bukti Lightbox
+          </span>
+          <span className="text-[#cbd5e1]">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[#334155]">
+            <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-semibold text-[10px]">Esc</kbd> Tutup
+          </span>
+        </div>
+        {activeId && (
+          <span className="text-[10px] text-[#006877] font-semibold bg-[#e7eeff] px-2 py-0.5 rounded-full border border-[#cfdaf2]">
+            Baris Aktif: <span className="font-mono">{items.find((i) => i.id === activeId)?.playstoreReviewerName || "-"}</span>
+          </span>
+        )}
+      </div>
+
       {/* Table Container */}
       <div className="overflow-x-auto min-h-[360px]">
         <table className="w-full text-left border-collapse">
@@ -237,6 +297,9 @@ export function ReviewsTable({
                   className="w-4 h-4 rounded border-[#cbd5e1] text-[#006877] focus:ring-[#00a2b9] cursor-pointer"
                 />
               </th>
+
+              {/* Bukti Eviden Thumbnail */}
+              <th className="py-3 px-2 text-center w-14">Eviden</th>
 
               {/* Reviewer Name */}
               <th className="py-3 px-3">
@@ -293,7 +356,7 @@ export function ReviewsTable({
               </th>
 
               {/* Actions Header */}
-              <th className="py-3 px-3.5 text-right w-28">Aksi</th>
+              <th className="py-3 px-3.5 text-right w-44">Aksi Verifikasi & Kelola</th>
             </tr>
           </thead>
 
@@ -304,6 +367,9 @@ export function ReviewsTable({
                 <tr key={`skeleton-${idx}`} className="animate-pulse">
                   <td className="py-3 px-3.5 text-center">
                     <div className="w-4 h-4 bg-[#e2e8f0] rounded mx-auto" />
+                  </td>
+                  <td className="py-3 px-2 text-center">
+                    <div className="w-10 h-10 bg-[#e2e8f0] rounded-lg mx-auto" />
                   </td>
                   <td className="py-3 px-3">
                     <div className="h-4 w-32 bg-[#e2e8f0] rounded mb-1" />
@@ -325,14 +391,14 @@ export function ReviewsTable({
                     <div className="h-4 w-20 bg-[#e2e8f0] rounded-md" />
                   </td>
                   <td className="py-3 px-3.5 text-right">
-                    <div className="h-8 w-16 bg-[#e2e8f0] rounded-lg ml-auto" />
+                    <div className="h-8 w-28 bg-[#e2e8f0] rounded-lg ml-auto" />
                   </td>
                 </tr>
               ))
             ) : items.length === 0 ? (
-              // Empty State (Matching TriageTable clean empty layout)
+              // Empty State
               <tr>
-                <td colSpan={8} className="py-16 px-4 text-center">
+                <td colSpan={9} className="py-16 px-4 text-center">
                   <div className="max-w-xs mx-auto flex flex-col items-center space-y-3">
                     <div className="p-4 bg-[#ecfdf5] border border-[#a7f3d0] rounded-full text-[#16a34a] shadow-xs">
                       <CheckCircle2 className="w-8 h-8" />
@@ -352,20 +418,32 @@ export function ReviewsTable({
               // Data Rows
               items.map((item) => {
                 const isSelected = selectedIds.includes(item.id);
+                const isActive = activeId === item.id;
                 const isRetrying = isRetryingOcrId === item.id;
+                const imageUrl = getImageUrl(item);
+                const isOcrPending =
+                  item.ocrStatus === "QUEUED" ||
+                  item.ocrStatus === "DOWNLOADING" ||
+                  item.ocrStatus === "PROCESSING";
 
                 return (
                   <tr
                     key={item.id}
+                    onClick={() => onSelectActive?.(item.id)}
                     className={cn(
-                      "transition-colors",
-                      isSelected
-                        ? "bg-[#f0f9ff] hover:bg-[#e0f2fe]"
+                      "transition-colors relative cursor-pointer",
+                      isActive
+                        ? "bg-[#f0f9ff] ring-2 ring-inset ring-[#00a2b9]/40"
+                        : isSelected
+                        ? "bg-[#f0f9ff]/60 hover:bg-[#e0f2fe]"
                         : "hover:bg-[#f8fafc]"
                     )}
                   >
                     {/* Checkbox */}
-                    <td className="py-3 px-3.5 text-center">
+                    <td
+                      className="py-3 px-3.5 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -375,13 +453,44 @@ export function ReviewsTable({
                       />
                     </td>
 
+                    {/* Bukti Eviden Thumbnail */}
+                    <td className="py-3 px-2 text-center">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenLightbox?.(item);
+                        }}
+                        className="relative w-10 h-10 bg-[#f8fafc] rounded-xl overflow-hidden border border-[#cbd5e1] group/thumb cursor-zoom-in mx-auto shadow-xs hover:border-[#00a2b9] transition-all"
+                        title="Klik untuk membuka Lightbox pratinjau penuh [Spasi]"
+                      >
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={`Eviden ${item.playstoreReviewerName}`}
+                            className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-200"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] text-[#94a3b8] font-mono">
+                            N/A
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-[#0f172a]/30 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
+                          <Maximize2 className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      </div>
+                    </td>
+
                     {/* Reviewer Name */}
                     <td className="py-3 px-3">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1.5">
                           <span
-                            className="font-semibold text-[#0f172a] hover:text-[#006877] cursor-pointer transition-colors"
-                            onClick={() => onOpenDetail(item)}
+                            className="font-semibold text-[#0f172a] hover:text-[#006877] transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenDetail(item);
+                            }}
                           >
                             {item.playstoreReviewerName}
                           </span>
@@ -404,10 +513,10 @@ export function ReviewsTable({
                     <td className="py-3 px-3">
                       <div className="flex flex-col text-[11px]">
                         <span className="font-semibold text-[#0f172a]">
-                          {item.up3.name}
+                          {item.up3?.name || "-"}
                         </span>
                         <span className="text-[#64748b]">
-                          {item.ulp.name}
+                          {item.ulp?.name || "-"}
                         </span>
                       </div>
                     </td>
@@ -433,14 +542,61 @@ export function ReviewsTable({
                     </td>
 
                     {/* Actions */}
-                    <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                    <td
+                      className="py-3 px-3.5 text-right whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="inline-flex items-center gap-1.5">
+                        {/* Quick Approve Button */}
+                        <button
+                          type="button"
+                          disabled={isOcrPending}
+                          onClick={() => onApprove?.(item.id)}
+                          className={cn(
+                            "min-h-[36px] h-9 px-2.5 rounded-xl border border-[#a7f3d0] bg-[#ecfdf5] hover:bg-[#dcfce7] text-[#15803d] inline-flex items-center justify-center gap-1 transition-all shadow-xs focus-utility-ring cursor-pointer disabled:opacity-40",
+                            isActive && "ring-2 ring-[#16a34a]/40 font-bold"
+                          )}
+                          title={
+                            isOcrPending
+                              ? "Menunggu OCR selesai memproses data"
+                              : "Setujui ulasan ini [A]"
+                          }
+                        >
+                          <Check className="w-3.5 h-3.5 text-[#16a34a]" />
+                          <span className="text-xs font-semibold">Setujui</span>
+                          {isActive && !isOcrPending && (
+                            <span className="text-[10px] font-mono text-[#15803d] bg-white/70 px-1 rounded">[A]</span>
+                          )}
+                        </button>
+
+                        {/* Quick Reject Button */}
+                        <button
+                          type="button"
+                          disabled={isOcrPending}
+                          onClick={() => onReject?.(item)}
+                          className={cn(
+                            "min-h-[36px] h-9 px-2.5 rounded-xl border border-[#fecaca] bg-[#fef2f2] hover:bg-[#fee2e2] text-[#dc2626] inline-flex items-center justify-center gap-1 transition-all shadow-xs focus-utility-ring cursor-pointer disabled:opacity-40",
+                            isActive && "ring-2 ring-[#ef4444]/40 font-bold"
+                          )}
+                          title={
+                            isOcrPending
+                              ? "Menunggu OCR selesai memproses data"
+                              : "Tolak ulasan ini [R]"
+                          }
+                        >
+                          <XCircle className="w-3.5 h-3.5 text-[#dc2626]" />
+                          <span className="text-xs font-semibold">Tolak</span>
+                          {isActive && !isOcrPending && (
+                            <span className="text-[10px] font-mono text-[#dc2626] bg-white/70 px-1 rounded">[R]</span>
+                          )}
+                        </button>
+
                         {/* Detail / Edit Drawer Button */}
                         <button
                           type="button"
                           onClick={() => onOpenDetail(item)}
                           className="min-h-[36px] min-w-[36px] h-9 w-9 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-[#334155] inline-flex items-center justify-center transition-all shadow-xs focus-utility-ring cursor-pointer"
-                          title="Inspeksi & Edit Ulasan"
+                          title="Inspeksi & Edit Ulasan Lengkap"
                         >
                           <Edit2 className="w-3.5 h-3.5 text-[#006877]" />
                         </button>
@@ -461,7 +617,7 @@ export function ReviewsTable({
                           />
                         </button>
 
-                        {/* Delete Button */}
+                        {/* Delete / Curative Rejection Button */}
                         <button
                           type="button"
                           onClick={() => onOpenDelete(item)}

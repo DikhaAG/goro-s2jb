@@ -23,7 +23,7 @@ export function getDefaultRedirectForRole(role: Role): string {
     case Role.PETUGAS_LAPANGAN:
       return "/intake";
     case Role.PEGAWAI:
-      return "/triage";
+      return "/reviews";
     case Role.MANAGER:
       return "/reports";
     case Role.SUPER_ADMIN:

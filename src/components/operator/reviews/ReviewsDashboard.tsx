@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ import {
   Trash2,
   X,
   Zap,
+  RotateCcw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ReviewsKpiRibbon } from "./ReviewsKpiRibbon";
@@ -25,6 +26,17 @@ import { BulkReassignUnitModal } from "./BulkReassignUnitModal";
 import { DeleteReviewModal } from "./DeleteReviewModal";
 import { BulkDeleteReviewModal } from "./BulkDeleteReviewModal";
 import { PurgeAllReviewsModal } from "./PurgeAllReviewsModal";
+import { EvidenceLightbox } from "@/components/operator/EvidenceLightbox";
+import { RejectReasonDialog } from "@/components/operator/RejectReasonDialog";
+import { useTriageHotkeys } from "@/hooks/useTriageHotkeys";
+
+interface UndoState {
+  reviewId: string;
+  reviewerName: string;
+  decision: "APPROVED" | "REJECTED";
+  item: ReviewItem;
+  expiresAt: number;
+}
 
 export function ReviewsDashboard() {
   // Session to check user role
@@ -48,6 +60,15 @@ export function ReviewsDashboard() {
   const [sortBy, setSortBy] = useState<string>("entryDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Triage Active Row & Modals State
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [lightboxItem, setLightboxItem] = useState<ReviewItem | null>(null);
+  const [rejectDialogItem, setRejectDialogItem] = useState<ReviewItem | null>(null);
+
+  // Optimistic 5-Second Undo Toast State
+  const [undoState, setUndoState] = useState<UndoState | null>(null);
+  const [undoSecondsLeft, setUndoSecondsLeft] = useState<number>(5);
 
   // Drawer & Modals State
   const [selectedReviewForDrawer, setSelectedReviewForDrawer] = useState<string | null>(null);
@@ -99,9 +120,52 @@ export function ReviewsDashboard() {
     refetch: refetchList,
   } = trpc.reviews.getList.useQuery(listQueryInput, {
     refetchOnWindowFocus: false,
+    refetchInterval: (query) => {
+      const activeOcrCount = query.state.data?.kpi?.activeOcr ?? 0;
+      return activeOcrCount > 0 ? 2500 : false;
+    },
   });
 
+  const currentItems = useMemo(
+    () => (listData?.items as unknown as ReviewItem[]) || [],
+    [listData?.items]
+  );
+
+  // Synchronize activeId with current items
+  useEffect(() => {
+    if (currentItems.length > 0) {
+      if (!activeId || !currentItems.some((i) => i.id === activeId)) {
+        setActiveId(currentItems[0].id);
+      }
+    } else {
+      setActiveId(null);
+    }
+  }, [currentItems, activeId]);
+
+  const activeItem = useMemo(() => {
+    return currentItems.find((i) => i.id === activeId) || null;
+  }, [currentItems, activeId]);
+
   // Mutations
+  const submitDecisionMutation = trpc.triage.submitDecision.useMutation({
+    onSuccess: () => {
+      refetchList();
+    },
+    onError: (err) => {
+      showToast("error", err.message || "Gagal memperbarui status verifikasi.");
+    },
+  });
+
+  const undoDecisionMutation = trpc.triage.undoDecision.useMutation({
+    onSuccess: () => {
+      showToast("success", "Keputusan verifikasi berhasil dibatalkan.");
+      refetchList();
+    },
+    onError: (err) => {
+      showToast("error", err.message || "Gagal membatalkan keputusan verifikasi.");
+    },
+  });
+
   const retryOcrMutation = trpc.reviews.retryOcr.useMutation({
     onSuccess: () => {
       showToast("success", "Pekerjaan OCR berhasil di-enqueue ulang ke worker.");
@@ -185,6 +249,178 @@ export function ReviewsDashboard() {
     },
   });
 
+  // Undo Timer Countdown
+  useEffect(() => {
+    if (!undoState) return;
+
+    const interval = setInterval(() => {
+      const remainingMs = undoState.expiresAt - Date.now();
+      const seconds = Math.ceil(remainingMs / 1000);
+      if (seconds <= 0) {
+        setUndoState(null);
+      } else {
+        setUndoSecondsLeft(seconds);
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [undoState]);
+
+  // Triage Quick Action Handlers
+  const handleApprove = (id: string) => {
+    const targetItem = currentItems.find((i) => i.id === id);
+    if (!targetItem) return;
+
+    // Advance activeId to next row for smooth workflow
+    const currentIndex = currentItems.findIndex((i) => i.id === id);
+    if (currentIndex < currentItems.length - 1) {
+      setActiveId(currentItems[currentIndex + 1].id);
+    }
+
+    setUndoState({
+      reviewId: id,
+      reviewerName: targetItem.playstoreReviewerName,
+      decision: "APPROVED",
+      item: targetItem,
+      expiresAt: Date.now() + 5000,
+    });
+    setUndoSecondsLeft(5);
+
+    submitDecisionMutation.mutate({
+      reviewId: id,
+      decision: "APPROVED",
+    });
+  };
+
+  const handleOpenRejectDialog = (item: ReviewItem) => {
+    setRejectDialogItem(item);
+  };
+
+  const handleConfirmReject = (reason: string) => {
+    if (!rejectDialogItem) return;
+    const targetItem = rejectDialogItem;
+    const id = targetItem.id;
+
+    setRejectDialogItem(null);
+
+    // Advance activeId to next row for smooth workflow
+    const currentIndex = currentItems.findIndex((i) => i.id === id);
+    if (currentIndex < currentItems.length - 1) {
+      setActiveId(currentItems[currentIndex + 1].id);
+    }
+
+    setUndoState({
+      reviewId: id,
+      reviewerName: targetItem.playstoreReviewerName,
+      decision: "REJECTED",
+      item: targetItem,
+      expiresAt: Date.now() + 5000,
+    });
+    setUndoSecondsLeft(5);
+
+    submitDecisionMutation.mutate({
+      reviewId: id,
+      decision: "REJECTED",
+      remarks: reason,
+    });
+  };
+
+  const handleUndo = () => {
+    if (!undoState) return;
+    const { reviewId } = undoState;
+    setUndoState(null);
+
+    undoDecisionMutation.mutate({
+      reviewId,
+      previousStatus: "NEEDS_REVIEW",
+    });
+  };
+
+  // Keyboard Navigation Hotkeys
+  useTriageHotkeys(
+    {
+      onApprove: () => {
+        if (
+          activeId &&
+          !lightboxItem &&
+          !rejectDialogItem &&
+          !isDrawerOpen &&
+          !isDeleteModalOpen &&
+          !isBulkDeleteModalOpen &&
+          !isPurgeAllModalOpen &&
+          !isBulkReassignModalOpen
+        ) {
+          handleApprove(activeId);
+        }
+      },
+      onReject: () => {
+        if (
+          activeItem &&
+          !lightboxItem &&
+          !rejectDialogItem &&
+          !isDrawerOpen &&
+          !isDeleteModalOpen &&
+          !isBulkDeleteModalOpen &&
+          !isPurgeAllModalOpen &&
+          !isBulkReassignModalOpen
+        ) {
+          handleOpenRejectDialog(activeItem);
+        }
+      },
+      onNext: () => {
+        if (
+          !lightboxItem &&
+          !rejectDialogItem &&
+          !isDrawerOpen &&
+          currentItems.length > 0
+        ) {
+          const currentIndex = currentItems.findIndex((i) => i.id === activeId);
+          if (currentIndex < currentItems.length - 1) {
+            setActiveId(currentItems[currentIndex + 1].id);
+          }
+        }
+      },
+      onPrevious: () => {
+        if (
+          !lightboxItem &&
+          !rejectDialogItem &&
+          !isDrawerOpen &&
+          currentItems.length > 0
+        ) {
+          const currentIndex = currentItems.findIndex((i) => i.id === activeId);
+          if (currentIndex > 0) {
+            setActiveId(currentItems[currentIndex - 1].id);
+          }
+        }
+      },
+      onToggleLightbox: () => {
+        if (
+          rejectDialogItem ||
+          isDrawerOpen ||
+          isDeleteModalOpen ||
+          isBulkDeleteModalOpen ||
+          isPurgeAllModalOpen ||
+          isBulkReassignModalOpen
+        ) {
+          return;
+        }
+        if (lightboxItem) {
+          setLightboxItem(null);
+        } else if (activeItem) {
+          setLightboxItem(activeItem);
+        }
+      },
+      onCloseModal: () => {
+        setLightboxItem(null);
+        setRejectDialogItem(null);
+      },
+    },
+    {
+      enabled: true,
+      isModalOpen: !!lightboxItem || !!rejectDialogItem,
+    }
+  );
+
   // Filter Handlers
   const handleFilterChange = (updates: Partial<FilterState>) => {
     setFilters((prev) => ({ ...prev, ...updates }));
@@ -231,7 +467,6 @@ export function ReviewsDashboard() {
   };
 
   // Selection Handlers
-  const currentItems = (listData?.items as unknown as ReviewItem[]) || [];
   const isAllCurrentSelected =
     currentItems.length > 0 &&
     currentItems.every((item) => selectedIds.includes(item.id));
@@ -389,7 +624,7 @@ export function ReviewsDashboard() {
         </div>
       )}
 
-      {/* Top Header Banner (Matching HomePageClient & TriageDashboard) */}
+      {/* Top Header Banner */}
       <div className="rounded-2xl p-6 sm:p-8 bg-white border border-[#e2e8f0] shadow-xs relative overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
@@ -402,17 +637,17 @@ export function ReviewsDashboard() {
                 Sistem Validasi Eviden Rating PLN Mobile 2026
               </span>
               <span className="bg-[#00A3E0]/10 text-[#00A3E0] border border-[#00A3E0]/20 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Human-in-the-Loop
+                Human-in-the-Loop & Triase
               </span>
             </div>
 
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0f172a] flex items-center gap-2.5">
               <FolderKanban className="w-6 h-6 text-[#00A3E0]" />
-              <span>Pusat Manajemen & Pengelolaan Data Ulasan</span>
+              <span>Pusat Triase & Kelola Data Ulasan</span>
             </h1>
 
             <p className="text-xs text-[#64748b] leading-relaxed">
-              Penelusuran presisi data historis, inspeksi citra eviden resolusi tinggi, koreksi metadata unit kerja, dan kontrol kuratif operator UID S2JB.
+              Verifikasi cepat dengan hotkey taktis [A]/[R], inspeksi citra resolusi tinggi Lightbox [Spasi], koreksi metadata unit kerja, dan kontrol kuratif operator UID S2JB.
             </p>
           </div>
 
@@ -473,6 +708,35 @@ export function ReviewsDashboard() {
         </div>
       </div>
 
+      {/* Live OCR In-Progress Banner */}
+      {(listData?.kpi?.activeOcr ?? 0) > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#f0f9ff] border border-[#00a2b9]/30 rounded-2xl shadow-xs text-[#0f172a] animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#00a2b9]/10 text-[#006877] flex items-center justify-center shrink-0 border border-[#00a2b9]/20">
+              <RefreshCw className="w-5 h-5 text-[#006877] animate-spin" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-[#0f172a] flex items-center gap-2">
+                <span>Background OCR Worker & Image Proxy Sedang Berjalan</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#00a2b9] text-white">
+                  {listData?.kpi?.activeOcr} baris dalam pemrosesan
+                </span>
+              </div>
+              <p className="text-[11px] text-[#64748b] mt-0.5">
+                Citra eviden beresolusi tinggi sedang diunduh dari Google Drive dan diekstraksi teksnya secara asinkron. Halaman otomatis memperbarui progress.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleFilterChange({ ocrStatus: "PROCESSING" })}
+            className="text-xs font-semibold text-[#006877] hover:underline self-start sm:self-auto cursor-pointer"
+          >
+            Saring Baris yang Sedang Diproses &rarr;
+          </button>
+        </div>
+      )}
+
       {/* KPI Ribbon */}
       <ReviewsKpiRibbon
         kpi={listData?.kpi}
@@ -493,7 +757,7 @@ export function ReviewsDashboard() {
         isSearching={isListFetching}
       />
 
-      {/* Reviews Table */}
+      {/* Reviews & Triage Unified Table */}
       <ReviewsTable
         items={currentItems}
         isLoading={isListLoading}
@@ -517,6 +781,31 @@ export function ReviewsDashboard() {
         onRetryOcr={handleRetrySingleOcr}
         onOpenDelete={handleOpenDelete}
         isRetryingOcrId={retryingSingleId}
+        activeId={activeId}
+        onSelectActive={(id) => setActiveId(id)}
+        onApprove={handleApprove}
+        onReject={handleOpenRejectDialog}
+        onOpenLightbox={(item) => setLightboxItem(item)}
+      />
+
+      {/* Lightbox Modal */}
+      <EvidenceLightbox
+        item={lightboxItem}
+        isOpen={!!lightboxItem}
+        onClose={() => setLightboxItem(null)}
+        onApprove={handleApprove}
+        onReject={(id) => {
+          const item = currentItems.find((i) => i.id === id);
+          if (item) handleOpenRejectDialog(item);
+        }}
+      />
+
+      {/* Reject Reason Dialog */}
+      <RejectReasonDialog
+        isOpen={!!rejectDialogItem}
+        reviewerName={rejectDialogItem?.playstoreReviewerName || ""}
+        onClose={() => setRejectDialogItem(null)}
+        onConfirm={handleConfirmReject}
       />
 
       {/* Slide-Over Inspection & Edit Drawer */}
@@ -604,6 +893,32 @@ export function ReviewsDashboard() {
         }}
         isDeleting={deleteMutation.isPending}
       />
+
+      {/* Optimistic 5-Second Undo Toast */}
+      {undoState && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl p-4 text-xs animate-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center gap-2">
+            {undoState.decision === "APPROVED" ? (
+              <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-[#ef4444]" />
+            )}
+            <span className="text-[#f8fafc]">
+              Ulasan <span className="font-semibold text-[#f59e0b] font-mono">{undoState.reviewerName}</span>{" "}
+              {undoState.decision === "APPROVED" ? "disetujui" : "ditolak"}.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleUndo}
+            className="h-8 px-3 text-xs bg-[#1e293b] hover:bg-[#334155] text-[#38bdf8] border border-[#0284c7]/40 gap-1 font-semibold rounded-lg flex items-center transition cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1" />
+            <span>Batalkan ({undoSecondsLeft}s)</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

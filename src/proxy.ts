@@ -22,7 +22,7 @@ export interface EdgeSessionUser {
  * Maps legacy or user-friendly route aliases to internal Next.js App Router route groups.
  */
 const REWRITE_MAP: Readonly<Record<string, string>> = Object.freeze({
-  "/operator/triage": "/triage",
+  "/operator/triage": "/reviews",
   "/manager/reports": "/reports",
   "/admin/users": "/users",
   "/admin/migration": "/migration",
