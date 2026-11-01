@@ -171,7 +171,7 @@ export function createImportWorker() {
               migrationBatchId: importBatchId,
               validationStatus: row.validationStatus || "PENDING",
               ocrStatus:
-                row.validationStatus === "APPROVED"
+                row.validationStatus === "APPROVED" || row.validationStatus === "REJECTED"
                   ? OcrProcessingStatus.COMPLETED
                   : OcrProcessingStatus.QUEUED,
               reviewRemarks: row.reviewRemarks || null,
@@ -191,11 +191,11 @@ export function createImportWorker() {
             },
           });
 
-          // Non-blocking Tier 2: Asynchronously dispatch unapproved/pending reviews to OCR background queue
+          // Non-blocking Tier 2: Asynchronously dispatch pending reviews to OCR background queue
           const ocrJobs = insertedReviews
             .filter(
               (r) =>
-                r.validationStatus !== "APPROVED" &&
+                r.validationStatus === "PENDING" &&
                 r.evidenceImagePath &&
                 r.evidenceImagePath.trim() !== ""
             )

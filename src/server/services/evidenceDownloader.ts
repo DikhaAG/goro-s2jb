@@ -38,6 +38,23 @@ export function isExternalUrl(pathOrUrl: string): boolean {
   return pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://");
 }
 
+/**
+ * Resolves candidate download URLs for Google Drive or direct external resources.
+ */
+export function getCandidateImageUrls(url: string): string[] {
+  if (!url || typeof url !== "string") return [];
+  const trimmed = url.trim();
+  const fileId = extractGoogleDriveFileId(trimmed);
+  if (fileId) {
+    return [
+      `https://drive.google.com/uc?id=${fileId}&export=download`,
+      `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0`,
+      `https://lh3.googleusercontent.com/d/${fileId}`,
+    ];
+  }
+  return [trimmed];
+}
+
 export interface DownloadResult {
   success: boolean;
   relativePath?: string;
@@ -62,15 +79,7 @@ export async function streamEvidenceImageBuffer(
     return { success: false, error: "Bukan tautan URL eksternal" };
   }
 
-  const googleDriveFileId = extractGoogleDriveFileId(trimmed);
-
-  const candidateUrls: string[] = googleDriveFileId
-    ? [
-        `https://drive.google.com/uc?id=${googleDriveFileId}&export=download`,
-        `https://drive.usercontent.google.com/download?id=${googleDriveFileId}&export=download&authuser=0`,
-        `https://lh3.googleusercontent.com/d/${googleDriveFileId}`,
-      ]
-    : [trimmed];
+  const candidateUrls = getCandidateImageUrls(trimmed);
 
   for (const candidate of candidateUrls) {
     const controller = new AbortController();
@@ -99,14 +108,14 @@ export async function streamEvidenceImageBuffer(
 
       if (buffer.length === 0) continue;
 
-      let mimeType = "image/jpeg";
+      let detectedMimeType: string | null = null;
       if (
         buffer.length >= 3 &&
         buffer[0] === 0xff &&
         buffer[1] === 0xd8 &&
         buffer[2] === 0xff
       ) {
-        mimeType = "image/jpeg";
+        detectedMimeType = "image/jpeg";
       } else if (
         buffer.length >= 4 &&
         buffer[0] === 0x89 &&
@@ -114,19 +123,24 @@ export async function streamEvidenceImageBuffer(
         buffer[2] === 0x4e &&
         buffer[3] === 0x47
       ) {
-        mimeType = "image/png";
+        detectedMimeType = "image/png";
       } else if (
         buffer.length >= 12 &&
         buffer.toString("ascii", 0, 4) === "RIFF" &&
         buffer.toString("ascii", 8, 12) === "WEBP"
       ) {
-        mimeType = "image/webp";
+        detectedMimeType = "image/webp";
+      }
+
+      if (!detectedMimeType) {
+        // Reject non-image response bodies (e.g. error texts, non-image binaries)
+        continue;
       }
 
       return {
         success: true,
         buffer,
-        mimeType,
+        mimeType: detectedMimeType,
       };
     } catch {
       clearTimeout(timeout);
@@ -174,13 +188,7 @@ export async function downloadEvidenceImage(
   }
 
   // Candidate URLs for Google Drive or direct download
-  const candidateUrls: string[] = googleDriveFileId
-    ? [
-        `https://drive.google.com/uc?id=${googleDriveFileId}&export=download`,
-        `https://drive.usercontent.google.com/download?id=${googleDriveFileId}&export=download&authuser=0`,
-        `https://lh3.googleusercontent.com/d/${googleDriveFileId}`,
-      ]
-    : [trimmed];
+  const candidateUrls = getCandidateImageUrls(trimmed);
 
   for (const downloadUrl of candidateUrls) {
     const controller = new AbortController();

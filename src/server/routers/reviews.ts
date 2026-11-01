@@ -7,6 +7,7 @@ import {
   Role,
   OcrSampleSource,
   OcrSampleInclusion,
+  ReviewSource,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { ocrQueue } from "../queues/ocrQueue";
@@ -84,7 +85,7 @@ export const reviewsRouter = router({
 
       // 3b. Source Filter (INTAKE vs MIGRATION)
       if (input.source && input.source !== "ALL") {
-        where.source = input.source as any;
+        where.source = input.source as ReviewSource;
       }
 
       // 4. Validation Confidence Zone Filter

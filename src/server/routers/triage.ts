@@ -1,6 +1,6 @@
 import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
-import { ValidationStatus, OcrProcessingStatus, Prisma, OcrSampleSource, OcrSampleInclusion } from "@prisma/client";
+import { ValidationStatus, OcrProcessingStatus, Prisma, OcrSampleSource, OcrSampleInclusion, ReviewSource } from "@prisma/client";
 import { ocrQueue } from "../queues/ocrQueue";
 import { harvestFromApprovedReview } from "../services/ocrDatasetHarvester";
 
@@ -32,7 +32,7 @@ export const triageRouter = router({
       }
 
       if (input.source && input.source !== "ALL") {
-        where.source = input.source as any;
+        where.source = input.source as ReviewSource;
       }
 
       if (input.isDuplicateOnly) {

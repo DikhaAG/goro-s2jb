@@ -99,9 +99,13 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
       let finalStatus = ocrResult.recommended_status;
       let reviewRemarks = `Verifikasi Otomatis AI (Skor: ${ocrResult.similarity_score}%, Zona: ${ocrResult.zone})`;
 
-      // If review was previously APPROVED (e.g. legacy verified supervisor data), retain APPROVED unless fraud detected
-      if (existingReview.validationStatus === "APPROVED" && !antiFraudResult.isDuplicate) {
-        finalStatus = "APPROVED";
+      // If review was previously determined by supervisor (APPROVED or REJECTED), retain verdict unless fraud detected
+      if (
+        (existingReview.validationStatus === "APPROVED" ||
+          existingReview.validationStatus === "REJECTED") &&
+        !antiFraudResult.isDuplicate
+      ) {
+        finalStatus = existingReview.validationStatus;
         reviewRemarks = existingReview.reviewRemarks || reviewRemarks;
       }
 

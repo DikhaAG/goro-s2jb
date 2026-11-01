@@ -157,9 +157,13 @@ def cli_main():
     parser.add_argument("--model-path", default="", help="Path to custom CRNN model checkpoint")
     args = parser.parse_args()
 
+    b64_data = args.base64
+    if b64_data == "-":
+        b64_data = sys.stdin.read().strip()
+
     result = process_evidence(
         image_path=args.image if args.image else None,
-        image_base64=args.base64 if args.base64 else None,
+        image_base64=b64_data if b64_data else None,
         target_name=args.expected_name,
         model_path=args.model_path,
     )

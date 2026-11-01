@@ -1,7 +1,6 @@
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
-import os from "os";
 import { OcrResultPayload, ValidationStatus } from "@/types";
 
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8001";
@@ -53,31 +52,7 @@ export async function executeOcrBridge(
   }
 
   // 2. Subprocess fallback execution
-  // If input is an in-memory buffer, write to a transient temporary file in os.tmpdir() that gets deleted immediately
-  let tempFilePath: string | null = null;
-  let targetPathForSubprocess = "";
-
-  if (isBuffer) {
-    tempFilePath = path.join(
-      os.tmpdir(),
-      `goro_ocr_stream_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-    );
-    await fs.promises.writeFile(tempFilePath, imageInput as Buffer);
-    targetPathForSubprocess = tempFilePath;
-  } else {
-    targetPathForSubprocess = imageInput as string;
-  }
-
-  const cleanupTemp = async () => {
-    if (tempFilePath && fs.existsSync(tempFilePath)) {
-      try {
-        await fs.promises.unlink(tempFilePath);
-      } catch {
-        // Ignore cleanup error
-      }
-    }
-  };
-
+  // In-memory buffer streams directly via stdin (--base64 -) for true zero-disk execution
   return new Promise((resolve) => {
     const venvPaths = [
       path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
@@ -89,9 +64,13 @@ export async function executeOcrBridge(
     const pythonExecutable = foundVenv || (process.platform === "win32" ? "python" : "python3");
     const scriptPath = path.resolve(process.cwd(), "python-services/ocr/main.py");
 
+    const cliArgs = isBuffer
+      ? [scriptPath, "--base64", "-", "--expected-name", targetReviewerName]
+      : [scriptPath, "--image", imageInput as string, "--expected-name", targetReviewerName];
+
     const proc = spawn(
       pythonExecutable,
-      [scriptPath, "--image", targetPathForSubprocess, "--expected-name", targetReviewerName],
+      cliArgs,
       {
         timeout: 30000,
         env: {
@@ -104,6 +83,11 @@ export async function executeOcrBridge(
     let stdoutData = "";
     let stderrData = "";
 
+    if (isBuffer && proc.stdin) {
+      proc.stdin.write((imageInput as Buffer).toString("base64"));
+      proc.stdin.end();
+    }
+
     proc.stdout.on("data", (chunk) => {
       stdoutData += chunk.toString();
     });
@@ -112,8 +96,7 @@ export async function executeOcrBridge(
       stderrData += chunk.toString();
     });
 
-    proc.on("error", async (err) => {
-      await cleanupTemp();
+    proc.on("error", (err) => {
       resolve({
         success: false,
         extracted_text: "",
@@ -126,8 +109,7 @@ export async function executeOcrBridge(
       });
     });
 
-    proc.on("close", async (code) => {
-      await cleanupTemp();
+    proc.on("close", (code) => {
       if (code !== 0) {
         resolve({
           success: false,

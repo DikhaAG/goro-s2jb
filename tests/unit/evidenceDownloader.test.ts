@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   extractGoogleDriveFileId,
   isExternalUrl,
+  getCandidateImageUrls,
   downloadEvidenceImage,
   streamEvidenceImageBuffer,
 } from "@/server/services/evidenceDownloader";
@@ -134,6 +135,38 @@ describe("Evidence Downloader Service", () => {
       const result = await streamEvidenceImageBuffer("");
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
+    });
+
+    it("should reject response when buffer magic bytes do not match valid image headers", async () => {
+      const corruptBuffer = Buffer.from("this is a random text payload not an image");
+
+      vi.spyOn(global, "fetch").mockResolvedValue({
+        ok: true,
+        headers: new Headers({ "content-type": "application/octet-stream" }),
+        arrayBuffer: async () => corruptBuffer.buffer.slice(corruptBuffer.byteOffset, corruptBuffer.byteOffset + corruptBuffer.byteLength),
+      } as any);
+
+      const result = await streamEvidenceImageBuffer("https://drive.google.com/open?id=corrupt_payload");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("getCandidateImageUrls", () => {
+    it("should return candidate URLs for Google Drive URL", () => {
+      const urls = getCandidateImageUrls("https://drive.google.com/open?id=test12345");
+      expect(urls).toHaveLength(3);
+      expect(urls[0]).toContain("test12345");
+      expect(urls[1]).toContain("test12345");
+      expect(urls[2]).toContain("test12345");
+    });
+
+    it("should return single direct URL for non-Google Drive external link", () => {
+      const urls = getCandidateImageUrls("https://example.com/photo.png");
+      expect(urls).toEqual(["https://example.com/photo.png"]);
+    });
+
+    it("should return empty array for empty input", () => {
+      expect(getCandidateImageUrls("")).toEqual([]);
     });
   });
 });
