@@ -24,29 +24,29 @@ export function TrainingJobsTable() {
     switch (status) {
       case OcrTrainingJobStatus.COMPLETED:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#16a34a]" />
             Selesai
           </span>
         );
       case OcrTrainingJobStatus.RUNNING:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-            <Loader2 className="w-3 h-3 text-sky-600 animate-spin" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd]">
+            <Loader2 className="w-3.5 h-3.5 text-[#0284c7] animate-spin" />
             Berjalan
           </span>
         );
       case OcrTrainingJobStatus.FAILED:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <XCircle className="w-3 h-3 text-rose-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]">
+            <XCircle className="w-3.5 h-3.5 text-[#ef4444]" />
             Gagal / Dibatalkan
           </span>
         );
       case OcrTrainingJobStatus.PENDING:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <Clock className="w-3 h-3 text-amber-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
+            <Clock className="w-3.5 h-3.5 text-[#f59e0b]" />
             Dalam Antrean
           </span>
         );
@@ -54,22 +54,26 @@ export function TrainingJobsTable() {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-sky-600" />
-            Riwayat Pekerjaan Pelatihan (Training Jobs)
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Log eksekusi komputasi background worker BullMQ beserta durasi dan trigger type.
-          </p>
+    <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-xs overflow-hidden">
+      <div className="p-5 border-b border-[#e2e8f0] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#006877]/10 text-[#006877] flex items-center justify-center">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-[#0f172a]">
+              Riwayat Pekerjaan Pelatihan (Training Jobs)
+            </h3>
+            <p className="text-xs text-[#64748b] mt-0.5">
+              Log eksekusi komputasi background worker BullMQ beserta durasi dan trigger type.
+            </p>
+          </div>
         </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50/75 border-b border-slate-100 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
+          <thead className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#64748b] font-bold uppercase tracking-wider text-[11px]">
             <tr>
               <th className="py-3 px-4">Job ID & Target Versi</th>
               <th className="py-3 px-4">Tipe Pemicu</th>
@@ -80,34 +84,34 @@ export function TrainingJobsTable() {
               <th className="py-3 px-4 text-right">Log Eksekusi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-slate-700">
+          <tbody className="divide-y divide-[#f1f5f9] text-[#334155]">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-400">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-sky-600 mb-2" />
+                <td colSpan={7} className="py-12 text-center text-[#64748b]">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#00a2b9] mb-2" />
                   Memuat riwayat pekerjaan...
                 </td>
               </tr>
             ) : !jobs || jobs.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-400">
+                <td colSpan={7} className="py-12 text-center text-[#64748b]">
                   Belum ada riwayat pekerjaan pelatihan.
                 </td>
               </tr>
             ) : (
               jobs.map((job: any) => (
-                <tr key={job.id} className="hover:bg-slate-50/70 transition-colors">
+                <tr key={job.id} className="hover:bg-[#f8fafc] transition-colors">
                   <td className="py-3 px-4">
-                    <div className="font-bold text-slate-900 text-xs">
+                    <div className="font-mono font-bold text-[#0f172a] text-xs">
                       {job.modelTargetVersion}
                     </div>
-                    <div className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]">
+                    <div className="text-[10px] font-mono text-[#64748b] truncate max-w-[140px] mt-0.5">
                       {job.id}
                     </div>
                   </td>
 
                   <td className="py-3 px-4">
-                    <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                    <span className="text-[11px] font-bold text-[#475569] bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md uppercase tracking-wider">
                       {job.triggerType}
                     </span>
                   </td>
@@ -115,17 +119,17 @@ export function TrainingJobsTable() {
                   <td className="py-3 px-4">{renderStatusBadge(job.status)}</td>
 
                   <td className="py-3 px-4">
-                    <span className="font-semibold text-slate-800">{job.datasetSize} sampel</span>
-                    <span className="text-[10px] text-slate-400 block">
+                    <span className="font-mono font-bold text-[#0f172a]">{job.datasetSize} sampel</span>
+                    <span className="text-[10px] text-[#64748b] block mt-0.5">
                       {job.totalEpochs} Total Epochs
                     </span>
                   </td>
 
-                  <td className="py-3 px-4 font-mono text-slate-700">
+                  <td className="py-3 px-4 font-mono font-medium text-[#334155]">
                     {job.durationSeconds ? `${job.durationSeconds} detik` : "-"}
                   </td>
 
-                  <td className="py-3 px-4 text-slate-600">
+                  <td className="py-3 px-4 text-[#334155]">
                     <div>
                       {new Date(job.createdAt).toLocaleDateString("id-ID", {
                         day: "numeric",
@@ -135,7 +139,7 @@ export function TrainingJobsTable() {
                         minute: "2-digit",
                       })}
                     </div>
-                    <div className="text-[10px] text-slate-400">
+                    <div className="text-[10px] text-[#64748b] mt-0.5">
                       Oleh: {job.createdBy?.name || "Otomatis (Sistem)"}
                     </div>
                   </td>
@@ -144,10 +148,10 @@ export function TrainingJobsTable() {
                     <button
                       type="button"
                       onClick={() => setSelectedJobLogs(job)}
-                      className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors inline-flex items-center gap-1 text-[11px]"
+                      className="min-h-[36px] px-3 py-1.5 rounded-xl border border-[#cbd5e1] text-[#334155] hover:bg-white hover:text-[#0f172a] transition-all inline-flex items-center gap-1.5 text-xs font-bold cursor-pointer focus-utility-ring"
                     >
-                      <Terminal className="w-3.5 h-3.5" />
-                      Lihat Log
+                      <Terminal className="w-3.5 h-3.5 text-[#006877]" />
+                      <span>Lihat Log</span>
                     </button>
                   </td>
                 </tr>
@@ -161,36 +165,36 @@ export function TrainingJobsTable() {
       {selectedJobLogs && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            className="fixed inset-0 bg-[#0f172a]/60 backdrop-blur-xs"
             onClick={() => setSelectedJobLogs(null)}
           />
-          <div className="relative bg-slate-900 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-800 z-10 text-white">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+          <div className="relative bg-[#0f172a] rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-[#334155] z-10 text-white animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-4 border-b border-[#334155] mb-4">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-sky-400" />
+                  <Terminal className="w-4 h-4 text-[#00A3E0]" />
                   Log Pekerjaan: {selectedJobLogs.modelTargetVersion}
                 </h4>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-[#94a3b8] mt-0.5">
                   Status: {selectedJobLogs.status} | Trigger: {selectedJobLogs.triggerType}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedJobLogs(null)}
-                className="text-slate-400 hover:text-white"
+                className="p-1 rounded-lg text-[#94a3b8] hover:text-white transition-colors cursor-pointer focus-utility-ring"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {selectedJobLogs.errorMessage && (
-              <div className="mb-3 p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-xs text-rose-300">
-                <strong>Error: </strong> {selectedJobLogs.errorMessage}
+              <div className="mb-4 p-3.5 rounded-xl bg-[#fef2f2]/10 border border-[#fecaca]/30 text-xs text-[#fca5a5]">
+                <strong className="text-white">Error: </strong> {selectedJobLogs.errorMessage}
               </div>
             )}
 
-            <div className="bg-black/60 p-4 rounded-xl font-mono text-xs text-slate-300 max-h-72 overflow-y-auto space-y-1">
+            <div className="bg-black/60 p-4 rounded-xl font-mono text-xs text-[#cbd5e1] max-h-72 overflow-y-auto space-y-1.5 border border-[#334155]">
               {Array.isArray(selectedJobLogs.logs) && selectedJobLogs.logs.length > 0 ? (
                 selectedJobLogs.logs.map((log: string, idx: number) => (
                   <div key={idx} className="whitespace-pre-wrap leading-relaxed">
@@ -198,15 +202,15 @@ export function TrainingJobsTable() {
                   </div>
                 ))
               ) : (
-                <div className="text-slate-500 italic">Tidak ada catatan log pada pekerjaan ini.</div>
+                <div className="text-[#64748b] italic">Tidak ada catatan log pada pekerjaan ini.</div>
               )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800 flex justify-end">
+            <div className="mt-5 pt-3 border-t border-[#334155] flex justify-end">
               <button
                 type="button"
                 onClick={() => setSelectedJobLogs(null)}
-                className="px-4 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl"
+                className="min-h-[44px] px-5 py-2 text-xs font-bold text-[#cbd5e1] hover:text-white bg-[#1e293b] hover:bg-[#334155] rounded-xl transition-all cursor-pointer focus-utility-ring"
               >
                 Tutup
               </button>

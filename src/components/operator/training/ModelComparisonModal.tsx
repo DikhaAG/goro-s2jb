@@ -37,22 +37,22 @@ export function ModelComparisonModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+        className="fixed inset-0 bg-[#0f172a]/50 backdrop-blur-xs"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 z-10 animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div className="relative bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-[#e2e8f0] z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="px-6 py-4 border-b border-[#e2e8f0] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-[#006877]/10 text-[#006877] flex items-center justify-center">
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-[#0f172a]">
                 Komparasi Metrik Model OCR
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[#64748b]">
                 Perbandingan objektif terhadap Golden Benchmark Set
               </p>
             </div>
@@ -60,31 +60,31 @@ export function ModelComparisonModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-1 rounded-lg text-[#94a3b8] hover:text-[#0f172a] hover:bg-slate-100 transition-colors cursor-pointer focus-utility-ring"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {isLoading ? (
-          <div className="py-12 flex flex-col items-center justify-center text-slate-500 text-xs">
-            <Loader2 className="w-8 h-8 animate-spin text-sky-600 mb-2" />
+          <div className="py-12 flex flex-col items-center justify-center text-[#64748b] text-xs">
+            <Loader2 className="w-8 h-8 animate-spin text-[#00a2b9] mb-2" />
             Memuat perbandingan model...
           </div>
         ) : !comp ? (
-          <div className="py-8 text-center text-xs text-slate-500">
+          <div className="py-8 text-center text-xs text-[#64748b]">
             Data model tidak dapat ditemukan untuk dikomparasi.
           </div>
         ) : (
-          <div className="mt-4 space-y-5">
+          <div className="p-6 space-y-5">
             {/* Verdict Banner */}
             <div
-              className={`p-3.5 rounded-xl border flex items-center gap-3 text-xs ${
+              className={`p-4 rounded-xl border flex items-center gap-3.5 text-xs ${
                 comp.verdict === "MODEL_B_BETTER"
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#15803d]"
                   : comp.verdict === "MODEL_A_BETTER"
-                  ? "bg-amber-50 border-amber-200 text-amber-800"
-                  : "bg-slate-50 border-slate-200 text-slate-800"
+                  ? "bg-[#fff7ed] border-[#fed7aa] text-[#b45309]"
+                  : "bg-[#f8fafc] border-[#e2e8f0] text-[#334155]"
               }`}
             >
               <CheckCircle2 className="w-5 h-5 shrink-0" />
@@ -96,7 +96,7 @@ export function ModelComparisonModal({
                     ? `Model Acuan (${comp.modelA.version}) Lebih Unggul`
                     : "Kedua Model Memiliki Performa Serupa"}
                 </strong>
-                <p className="text-[11px] opacity-90 mt-0.5">
+                <p className="text-[11px] opacity-90 mt-0.5 leading-relaxed">
                   {comp.verdict === "MODEL_B_BETTER"
                     ? `Model kandidat menunjukkan kenaikan akurasi sebesar +${comp.delta.accuracy.toFixed(1)}% dan penurunan CER ${comp.delta.cer.toFixed(2)}%. Sangat disarankan untuk dipromosikan ke produksi.`
                     : comp.verdict === "MODEL_A_BETTER"
@@ -109,97 +109,97 @@ export function ModelComparisonModal({
             {/* Side by side comparison cards */}
             <div className="grid grid-cols-2 gap-4 text-xs">
               {/* Model A */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <div className="p-4 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
+                <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider block mb-1">
                   Model Acuan (A)
                 </span>
-                <h4 className="font-bold text-slate-900 text-sm mb-3">
+                <h4 className="font-bold text-[#0f172a] text-sm mb-3 font-mono">
                   {comp.modelA.name} ({comp.modelA.version})
                 </h4>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Status:</span>
-                    <span className="font-semibold text-slate-800">{comp.modelA.status}</span>
+                <div className="space-y-2 text-[#334155]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">Status:</span>
+                    <span className="font-semibold text-[#0f172a]">{comp.modelA.status}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Akurasi:</span>
-                    <span className="font-bold text-emerald-600">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">Akurasi:</span>
+                    <span className="font-mono font-bold text-[#15803d]">
                       {comp.modelA.accuracyScore ? `${comp.modelA.accuracyScore.toFixed(1)}%` : "N/A"}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">CER:</span>
-                    <span className="font-mono text-slate-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">CER:</span>
+                    <span className="font-mono text-[#0369a1] font-bold">
                       {comp.modelA.cerScore ? `${comp.modelA.cerScore.toFixed(2)}%` : "N/A"}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">WER:</span>
-                    <span className="font-mono text-slate-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">WER:</span>
+                    <span className="font-mono text-[#b45309] font-bold">
                       {comp.modelA.werScore ? `${comp.modelA.werScore.toFixed(2)}%` : "N/A"}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Sampel Latih:</span>
-                    <span className="font-medium text-slate-800">{comp.modelA.trainingSamplesCount}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">Sampel Latih:</span>
+                    <span className="font-mono font-bold text-[#0f172a]">{comp.modelA.trainingSamplesCount}</span>
                   </div>
                 </div>
               </div>
 
               {/* Model B */}
-              <div className="p-4 rounded-xl bg-sky-50/60 border border-sky-200">
-                <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider block mb-1">
+              <div className="p-4 rounded-xl bg-[#00a2b9]/5 border border-[#00a2b9]/30">
+                <span className="text-[10px] font-bold text-[#006877] uppercase tracking-wider block mb-1">
                   Model Kandidat (B)
                 </span>
-                <h4 className="font-bold text-slate-900 text-sm mb-3">
+                <h4 className="font-bold text-[#0f172a] text-sm mb-3 font-mono">
                   {comp.modelB.name} ({comp.modelB.version})
                 </h4>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Status:</span>
-                    <span className="font-semibold text-slate-800">{comp.modelB.status}</span>
+                <div className="space-y-2 text-[#334155]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">Status:</span>
+                    <span className="font-semibold text-[#0f172a]">{comp.modelB.status}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Akurasi:</span>
-                    <span className="font-bold text-emerald-600 flex items-center gap-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">Akurasi:</span>
+                    <span className="font-mono font-bold text-[#15803d] flex items-center gap-1">
                       {comp.modelB.accuracyScore ? `${comp.modelB.accuracyScore.toFixed(1)}%` : "N/A"}
                       {comp.delta.accuracy > 0 ? (
-                        <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-100 px-1 rounded">
+                        <span className="text-[10px] text-[#15803d] font-bold bg-[#ecfdf5] border border-[#a7f3d0] px-1.5 py-0.5 rounded">
                           +{comp.delta.accuracy}%
                         </span>
                       ) : comp.delta.accuracy < 0 ? (
-                        <span className="text-[10px] text-rose-600 font-semibold bg-rose-100 px-1 rounded">
+                        <span className="text-[10px] text-[#b91c1c] font-bold bg-[#fef2f2] border border-[#fecaca] px-1.5 py-0.5 rounded">
                           {comp.delta.accuracy}%
                         </span>
                       ) : null}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">CER:</span>
-                    <span className="font-mono text-slate-800 flex items-center gap-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">CER:</span>
+                    <span className="font-mono text-[#0369a1] font-bold flex items-center gap-1">
                       {comp.modelB.cerScore ? `${comp.modelB.cerScore.toFixed(2)}%` : "N/A"}
                       {comp.delta.cer < 0 ? (
-                        <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-100 px-1 rounded">
+                        <span className="text-[10px] text-[#15803d] font-bold bg-[#ecfdf5] border border-[#a7f3d0] px-1.5 py-0.5 rounded">
                           {comp.delta.cer}%
                         </span>
                       ) : comp.delta.cer > 0 ? (
-                        <span className="text-[10px] text-rose-600 font-semibold bg-rose-100 px-1 rounded">
+                        <span className="text-[10px] text-[#b91c1c] font-bold bg-[#fef2f2] border border-[#fecaca] px-1.5 py-0.5 rounded">
                           +{comp.delta.cer}%
                         </span>
                       ) : null}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">WER:</span>
-                    <span className="font-mono text-slate-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">WER:</span>
+                    <span className="font-mono text-[#b45309] font-bold">
                       {comp.modelB.werScore ? `${comp.modelB.werScore.toFixed(2)}%` : "N/A"}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Sampel Latih:</span>
-                    <span className="font-medium text-slate-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">Sampel Latih:</span>
+                    <span className="font-mono font-bold text-[#0f172a]">
                       {comp.modelB.trainingSamplesCount} ({comp.delta.samples >= 0 ? `+${comp.delta.samples}` : comp.delta.samples})
                     </span>
                   </div>
@@ -207,11 +207,11 @@ export function ModelComparisonModal({
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-4 border-t border-[#e2e8f0] flex justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                className="min-h-[44px] px-5 py-2 text-xs font-bold text-[#334155] bg-white border border-[#cbd5e1] hover:bg-[#f1f5f9] rounded-xl transition-all cursor-pointer focus-utility-ring"
               >
                 Tutup Komparasi
               </button>
