@@ -5,21 +5,8 @@ All AI agents working in this repository must strictly adhere to [ai_context_gui
 ## Mandatory Context Locations
 1. **`docs/`**: Project requirements, PRD ([docs/PRD.md](file:///Users/a69/Desktop/goro-s2jb/docs/PRD.md)), reference spreadsheets ([docs/GORO S2JB 2026 (Jawaban).xlsx](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx)), business logic, and technical architecture.
 2. **`.agents/skills/`**: Agent behavior, engineering standards, and specific operational workflows (OCR, spreadsheet parsing, UI design, TDD, bug diagnosis).
-3. **`graphify-out/`**: Codebase knowledge graph, architectural dependency mapping, community hubs, and structural topology report ([graphify-out/GRAPH_REPORT.md](file:///Users/a69/Desktop/goro-s2jb/graphify-out/GRAPH_REPORT.md)).
 
-Before designing solutions or generating code, always read the relevant files in these directories first.
-
-## Mandatory Codebase Exploration with Graphify
-All AI agents working in this repository **must always use Graphify** to navigate, map dependencies, and evaluate architectural impacts before planning, modifying, or refactoring code:
-1. **Explore Before Modifying:**
-   - Always query and inspect [`graphify-out/GRAPH_REPORT.md`](file:///Users/a69/Desktop/goro-s2jb/graphify-out/GRAPH_REPORT.md) and [`graphify-out/graph.json`](file:///Users/a69/Desktop/goro-s2jb/graphify-out/graph.json) to trace call graphs, file dependencies, god-nodes, and inter-module couplings across Next.js UI, tRPC routers, BullMQ background workers, and Python OCR services.
-   - Use [`graphify-out/graph.html`](file:///Users/a69/Desktop/goro-s2jb/graphify-out/graph.html) for visual topological inspection.
-2. **Execute and Refresh Graphify:**
-   - Whenever starting new architectural investigations or following significant structural refactoring, execute Graphify to keep the knowledge graph synchronized:
-     ```bash
-     npx skills use "https://github.com/graphify-labs/graphify" --skill "graphify"
-     ```
-   - Resolve and navigate relative paths from the `graphify-out/` supporting directory.
+Before designing solutions or generating code, always read the relevant files in these two directories first.
 
 <!-- antislop:start -->
 ## antislop

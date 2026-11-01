@@ -56,6 +56,3 @@ env/
 !/backups/db/.gitkeep
 /logs/*
 !/logs/.gitkeep
-
-# graphify
-graphify-out/
