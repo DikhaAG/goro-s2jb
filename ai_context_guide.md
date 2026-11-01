@@ -5,12 +5,13 @@
 
 ---
 
-## 1. Peta Lokasi Konteks Resmi (The Two Exclusive Sources)
+## 1. Peta Lokasi Konteks Resmi (The Primary Sources)
 
 ```
 goro-s2jb/
 ├── docs/                 <-- [SUMBER 1] Spesifikasi Bisnis, PRD & Teknis Proyek
 ├── .agents/skills/       <-- [SUMBER 2] Standar Perilaku, Alur Kerja & Skill Agen
+├── graphify-out/         <-- [SUMBER 3] Knowledge Graph Topologi & Dependensi Kode (Graphify)
 └── ai_context_guide.md   <-- Berkas Panduan ini
 ```
 
@@ -46,6 +47,20 @@ goro-s2jb/
 * **Kapan AI Wajib Mengakses `.agents/skills/`:**
   * Saat akan mengeksekusi tugas spesifik yang telah memiliki panduan skill (misal: membangun parser spreadsheet, menyusun prompt OCR, mendesain komponen UI, atau menulis *test suite*).
   * Saat membutuhkan standar penulisan kode atau metodologi penyelesaian masalah yang terstandarisasi.
+
+---
+
+### Direktori 3: `graphify-out/`
+**Fungsi:** Knowledge Graph Topologi Kode, Pemetaan Arsitektur, dan Relasi Dependensi Antarmodul (Graphify).
+
+* **Isi & Komponen Utama:**
+  * [`graphify-out/GRAPH_REPORT.md`](file:///Users/a69/Desktop/goro-s2jb/graphify-out/GRAPH_REPORT.md): Ringkasan komunitas modul (*community hubs*), daftar *god-nodes*, dan analisis keterhubungan kode.
+  * [`graphify-out/graph.json`](file:///Users/a69/Desktop/goro-s2jb/graphify-out/graph.json) & [`graphify-out/manifest.json`](file:///Users/a69/Desktop/goro-s2jb/graphify-out/manifest.json): Struktur node dan edge relasi dependensi seluruh file di repositori.
+  * [`graphify-out/graph.html`](file:///Users/a69/Desktop/goro-s2jb/graphify-out/graph.html): Visualisasi interaktif graf arsitektur sistem.
+* **Kapan AI Wajib Mengakses `graphify-out/`:**
+  * Sebelum memodifikasi atau me-refactor komponen, router tRPC, worker antrean, atau service Python guna memahami dampak ketergantungan antarmodul.
+  * Saat mengidentifikasi *call-graph*, file dengan sentralitas tinggi (*god-nodes*), dan isolasi komponen.
+  * Jika terjadi pembaruan struktur besar, jalankan perintah sinkronisasi: `npx skills use "https://github.com/graphify-labs/graphify" --skill "graphify"`.
 
 ---
 
