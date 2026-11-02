@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peta Alur Proses Migrasi Data Massal - PLN UID S2JB</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Pulse Flow Animation on SVG Paths */
+    @keyframes flowPulse {
+      0% { stroke-dashoffset: 40; }
+      100% { stroke-dashoffset: 0; }
+    }
+    .edge-animated {
+      stroke-dasharray: 6 6;
+      animation: flowPulse 1.4s linear infinite;
+    }
+
+    /* Node Card Hover and Active Transitions */
+    .node-group {
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+    }
+    .node-group:hover {
+      filter: drop-shadow(0 10px 15px -3px rgba(0, 104, 119, 0.2));
+    }
+    .node-group.active rect.node-card {
+      stroke: #006877;
+      stroke-width: 2.5px;
+      filter: drop-shadow(0 0 12px rgba(0, 162, 185, 0.4));
+    }
+    .node-group.dimmed {
+      opacity: 0.18;
+      filter: grayscale(80%);
+    }
+
+    /* Interactive Graph Canvas Dragging */
+    .canvas-panning {
+      cursor: grab;
+    }
+    .canvas-panning:active {
+      cursor: grabbing;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans flex flex-col h-screen overflow-hidden select-none">
+
+  <!-- TOP ENTERPRISE HEADER -->
+  <header class="bg-white border-b border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs shrink-0 z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-200 text-[#006877] flex items-center justify-center font-black text-base shadow-xs">
+        ⚡
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-[#006877]/10 text-[#006877] border border-[#006877]/20">
+            PLN UID S2JB
+          </span>
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Streaming Engine 140k+ Baris
+          </span>
+        </div>
+        <h1 class="text-base font-extrabold text-slate-900 tracking-tight mt-0.5">
+          Pelacak Alur Proses Interaktif: Halaman Migrasi Rekam Data
+        </h1>
+      </div>
+    </div>
+
+    <!-- Quick Scenario Presets -->
+    <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+      <span class="text-xs font-bold text-slate-500 mr-1 hidden lg:inline">Skenario Alur:</span>
+      <button onclick="setScenario('all')" id="btn-scen-all" class="scenario-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-700 text-white shadow-xs transition cursor-pointer">
+        Semua Alur (Lengkap)
+      </button>
+      <button onclick="setScenario('happy')" id="btn-scen-happy" class="scenario-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer">
+        Jalur Sukses (Happy Path)
+      </button>
+      <button onclick="setScenario('recovery')" id="btn-scen-recovery" class="scenario-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer">
+        Interupsi & Pemulihan
+      </button>
+      <button onclick="setScenario('ocr')" id="btn-scen-ocr" class="scenario-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer">
+        Rantai Antrean OCR
+      </button>
+    </div>
+
+    <!-- Global Controls -->
+    <div class="flex items-center gap-2">
+      <div class="relative">
+        <input 
+          type="text" 
+          id="nodeSearchInput" 
+          placeholder="Cari node / proses..." 
+          oninput="handleSearch(this.value)"
+          class="w-48 sm:w-56 text-xs px-3 py-2 pl-8 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        />
+        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+      </div>
+
+      <button onclick="resetZoomPan()" class="p-2 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition cursor-pointer" title="Reset Pandangan Kanvas">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+      </button>
+
+      <button onclick="window.print()" class="px-3 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer" title="Cetak Dokumentasi">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        <span>Cetak</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CANVAS & WORKSPACE AREA -->
+  <div class="flex-1 flex relative overflow-hidden bg-slate-100">
+    
+    <!-- CANVAS CONTAINER -->
+    <div id="canvasViewport" class="flex-1 h-full w-full relative overflow-hidden canvas-panning">
+      
+      <!-- SVG GRAPH SURFACE -->
+      <svg id="graphSvg" class="w-full h-full block" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Background Grid Pattern -->
+          <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="1"></path>
+            <circle cx="0" cy="0" r="1.5" fill="#cbd5e1"></circle>
+          </pattern>
+
+          <!-- Marker Arrowheads -->
+          <marker id="arrow-default" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#64748b"></path>
+          </marker>
+          <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#006877"></path>
+          </marker>
+          <marker id="arrow-error" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#dc2626"></path>
+          </marker>
+          <marker id="arrow-warning" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#d97706"></path>
+          </marker>
+          <marker id="arrow-success" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#16a34a"></path>
+          </marker>
+          <marker id="arrow-ocr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 1 L 9 5 L 0 9 z" fill="#7c3aed"></path>
+          </marker>
+        </defs>
+
+        <!-- Grid Background Layer -->
+        <rect width="100%" height="100%" fill="url(#gridPattern)"></rect>
+
+        <!-- World Transform Group (Zoom & Pan) -->
+        <g id="worldGroup" transform="translate(40, 30) scale(0.85)">
+          
+          <!-- SWIMLANES / PHASE BACKDROPS -->
+          <g id="swimlanesGroup">
+            <!-- Phase 1: Client & User Interaction -->
+            <rect x="20" y="30" width="310" height="980" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9"></rect>
+            <text x="40" y="65" font-size="13" font-weight="800" fill="#006877" letter-spacing="0.5">1. LAPISAN KLIEN & UI</text>
+            <text x="40" y="85" font-size="12" font-weight="500" fill="#64748b">Dropzone & Inisiasi Berkas</text>
+
+            <!-- Phase 2: Gateway & State Initialization -->
+            <rect x="370" y="30" width="310" height="980" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9"></rect>
+            <text x="390" y="65" font-size="13" font-weight="800" fill="#0284c7" letter-spacing="0.5">2. GATEWAY & DISPATCHER</text>
+            <text x="390" y="85" font-size="12" font-weight="500" fill="#64748b">Unggah Fisik & Inisiasi tRPC</text>
+
+            <!-- Phase 3: Queue & Streaming Worker -->
+            <rect x="720" y="30" width="330" height="980" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9"></rect>
+            <text x="740" y="65" font-size="13" font-weight="800" fill="#d97706" letter-spacing="0.5">3. STREAMING WORKER ENGINE</text>
+            <text x="740" y="85" font-size="12" font-weight="500" fill="#64748b">BullMQ, RAM Cache & Chunking</text>
+
+            <!-- Phase 4: Database & Downstream Chaining -->
+            <rect x="1090" y="30" width="330" height="980" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.9"></rect>
+            <text x="1110" y="65" font-size="13" font-weight="800" fill="#16a34a" letter-spacing="0.5">4. PERSISTENSI & RANTAI OCR</text>
+            <text x="1110" y="85" font-size="12" font-weight="500" fill="#64748b">PostgreSQL Ingestion & ocrQueue</text>
+          </g>
+
+          <!-- EDGES (CONNECTIONS) LAYER -->
+          <g id="edgesGroup"></g>
+
+          <!-- ANIMATED PULSES LAYER -->
+          <g id="pulsesGroup"></g>
+
+          <!-- NODES LAYER -->
+          <g id="nodesGroup"></g>
+        </g>
+      </svg>
+
+      <!-- FLOATING CANVAS HUD CONTROLS -->
+      <div class="absolute bottom-5 left-5 bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl p-2 shadow-lg flex items-center gap-2 z-20">
+        <button onclick="zoomCanvas(1.15)" class="w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-700 font-bold transition cursor-pointer" title="Perbesar (Zoom In)">
+          +
+        </button>
+        <span id="zoomPercentDisplay" class="text-xs font-mono font-bold text-slate-600 px-1 min-w-[45px] text-center">85%</span>
+        <button onclick="zoomCanvas(0.85)" class="w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-700 font-bold transition cursor-pointer" title="Perkecil (Zoom Out)">
+          -
+        </button>
+        <div class="w-px h-5 bg-slate-200"></div>
+        <button onclick="resetZoomPan()" class="px-3 py-1.5 rounded-xl hover:bg-slate-100 text-xs font-bold text-slate-700 transition cursor-pointer" title="Reset View">
+          Reset
+        </button>
+      </div>
+
+      <!-- LEGEND CHIP HUD -->
+      <div class="absolute top-5 left-5 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-3.5 shadow-md hidden sm:flex flex-col gap-2 z-20 max-w-xs text-xs">
+        <span class="font-extrabold text-slate-900 tracking-tight">Keterangan Status Jalur Data:</span>
+        <div class="grid grid-cols-2 gap-2 text-slate-600 font-medium">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-1 rounded-full bg-[#006877]"></span>
+            <span>Jalur Utama (Stream)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-1 rounded-full bg-emerald-500"></span>
+            <span>Penyimpanan Sukses</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-1 rounded-full bg-purple-600"></span>
+            <span>Rantai Antrean OCR</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-1 rounded-full bg-amber-500"></span>
+            <span>Jeda & Pemulihan</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDE INSPECTOR PANEL (SLIDE-OVER DRAWER) -->
+    <aside id="inspectorPanel" class="w-96 bg-white border-l border-slate-200 shadow-xl flex flex-col h-full z-30 transition-transform duration-300 transform translate-x-full absolute right-0 top-0">
+      
+      <!-- Panel Header -->
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <span id="inspBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">
+            Node Details
+          </span>
+          <span id="inspId" class="text-xs font-mono text-slate-400">#id</span>
+        </div>
+        <button onclick="closeInspector()" class="w-7 h-7 rounded-lg hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Panel Body Content -->
+      <div class="flex-1 overflow-y-auto p-5 space-y-5 text-xs text-slate-700">
+        <div>
+          <h2 id="inspTitle" class="text-base font-extrabold text-slate-900 tracking-tight">
+            Judul Proses
+          </h2>
+          <p id="inspFile" class="font-mono text-xs text-[#006877] mt-1 break-all bg-cyan-50 p-1.5 rounded-lg border border-cyan-100">
+            path/to/file.tsx
+          </p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-900 mb-1">Peran & Tanggung Jawab:</label>
+          <p id="inspDesc" class="leading-relaxed text-slate-600">
+            Deskripsi proses akan tampil di sini.
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <label class="block font-bold text-slate-900">Spesifikasi Data & Payload:</label>
+          
+          <div class="bg-slate-900 text-slate-100 p-3 rounded-xl font-mono text-xs overflow-x-auto">
+            <span class="text-slate-400 block mb-1">// Input Payload</span>
+            <pre id="inspInput">{}</pre>
+          </div>
+
+          <div class="bg-slate-900 text-slate-100 p-3 rounded-xl font-mono text-xs overflow-x-auto">
+            <span class="text-slate-400 block mb-1">// Output / State Update</span>
+            <pre id="inspOutput">{}</pre>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-900 mb-1">Strategi Resiliensi & Keandalan:</label>
+          <div id="inspReliability" class="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl leading-relaxed">
+            Mekanisme penanganan kegagalan.
+          </div>
+        </div>
+
+        <!-- Connection Trace -->
+        <div class="border-t border-slate-100 pt-4 space-y-2">
+          <span class="font-bold text-slate-900 block">Koneksi Alur:</span>
+          <div class="space-y-1.5">
+            <div class="text-slate-500">
+              <span class="font-semibold text-slate-700">Masuk dari:</span> <span id="inspInflow" class="text-slate-800">None</span>
+            </div>
+            <div class="text-slate-500">
+              <span class="font-semibold text-slate-700">Meneruskan ke:</span> <span id="inspOutflow" class="text-slate-800">None</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Footer -->
+      <div class="p-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+        <span>Sistem Komando GORO S2JB</span>
+        <button onclick="isolateActiveNodePath()" class="text-[#006877] font-bold hover:underline cursor-pointer">
+          Sorot Jalur Terhubung
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- SCRIPT DEFINITIONS & INTERACTIVITY ENGINE -->
+  <script>
+    // 1. DATA DEFINITIONS: NODES & CONNECTIONS
+    const nodes = [
+      // PHASE 1: CLIENT & UI
+      {
+        id: "ui_page",
+        lane: 1,
+        title: "Halaman Migrasi (/migration)",
+        subtitle: "Entry Point Operator",
+        file: "src/app/(operator)/migration/page.tsx",
+        x: 40,
+        y: 110,
+        width: 270,
+        height: 105,
+        color: "#006877",
+        bg: "#f0fdfa",
+        border: "#99f6e4",
+        icon: "🖥️",
+        tags: ["UI", "Next.js", "Operator"],
+        scenarios: ["all", "happy", "recovery", "ocr"],
+        desc: "Rute utama operator untuk memicu pengunggahan berkas migrasi massal (Google Form hingga >140k baris), menginspeksi metrik batch, dan memonitor worker BullMQ.",
+        input: `{ route: "/migration", auth: "PEGAWAI | SUPER_ADMIN" }`,
+        output: `{ renderView: "BulkDropzone + BatchesTable + QuickActions" }`,
+        reliability: "Dilindungi layout guard berbasis sesi Better Auth. Operator non-otorisasi dialihkan ke /unauthorized.",
+        inflow: ["Navigasi Sidebar Operator"],
+        outflow: ["ui_dropzone", "ui_history_table", "ui_monitor_link"]
+      },
+      {
+        id: "ui_dropzone",
+        lane: 1,
+        title: "BulkDropzone & Target Schema",
+        subtitle: "Validasi Berkas & Pemilihan Skema",
+        file: "src/components/admin/BulkDropzone.tsx",
+        x: 40,
+        y: 260,
+        width: 270,
+        height: 115,
+        color: "#006877",
+        bg: "#f0fdfa",
+        border: "#99f6e4",
+        icon: "📁",
+        tags: ["UI", "Upload", "Client Validation"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Komponen pemilih berkas .csv / .xlsx / .xls. Memungkinkan operator memilih target skema: FORM_RESPONSES_RAW (18 kolom Google Form PLN) atau HISTORICAL_REPORTS.",
+        input: `{ file: File (.csv|.xlsx), targetType: "FORM_RESPONSES_RAW" }`,
+        output: `{ formData: MultipartFormData, targetType: string }`,
+        reliability: "Validasi format MIME tipe di sisi klien sebelum pengiriman HTTP multipart untuk mencegah unggahan berkas tidak didukung.",
+        inflow: ["ui_page"],
+        outflow: ["api_upload"]
+      },
+      {
+        id: "ui_guard",
+        lane: 1,
+        title: "MigrationGuard Context",
+        subtitle: "Live Telemetry & Throughput",
+        file: "src/context/MigrationGuardContext.tsx",
+        x: 40,
+        y: 430,
+        width: 270,
+        height: 120,
+        color: "#0284c7",
+        bg: "#f0f9ff",
+        border: "#bae6fd",
+        icon: "📊",
+        tags: ["State", "Polling", "Telemetry"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Penyedia context global yang memantau batch aktif via trpc.migration.getActiveOrInterruptedBatch (polling 1.5 detik saat aktif), mengalkulasi laju baris/detik (throughput) dan persentase progress.",
+        input: `{ pollingInterval: 1500, activeBatchId: string }`,
+        output: `{ throughput: "350 rows/s", progress: 68.4%, isInterrupted: boolean }`,
+        reliability: "Mencegah tab browser tertutup tanpa sengaja saat migrasi berlangsung melalui event window.onbeforeunload.",
+        inflow: ["db_batch"],
+        outflow: ["ui_dropzone", "ui_recovery_card"]
+      },
+      {
+        id: "ui_recovery_card",
+        lane: 1,
+        title: "Recovery Card Interupsi",
+        subtitle: "Pemulihan Batch Terhenti",
+        file: "src/components/admin/InterruptedBatchRecoveryCard.tsx",
+        x: 40,
+        y: 610,
+        width: 270,
+        height: 120,
+        color: "#d97706",
+        bg: "#fffbeb",
+        border: "#fde68a",
+        icon: "⚠️",
+        tags: ["UI", "Fault-Tolerance", "Resume"],
+        scenarios: ["all", "recovery"],
+        desc: "Muncul otomatis jika batch terputus akibat restart worker atau jeda manual. Menyediakan aksi Lanjutkan Migrasi (Resume) dari baris checkpoint terakhir atau Batalkan Permanen.",
+        input: `{ interruptedBatch: { id, lastProcessedRow, status: "PAUSED" } }`,
+        output: `{ action: "resume" | "cancel" }`,
+        reliability: "Mempertahankan integritas cursor; baris yang telah tersimpan tidak akan diduplikasi ulang saat proses dilanjutkan.",
+        inflow: ["ui_guard"],
+        outflow: ["trpc_resume"]
+      },
+      {
+        id: "ui_history_table",
+        lane: 1,
+        title: "Riwayat Batch Migrasi",
+        subtitle: "Daftar Batch & Status",
+        file: "src/app/(operator)/migration/page.tsx",
+        x: 40,
+        y: 790,
+        width: 270,
+        height: 110,
+        color: "#475569",
+        bg: "#f8fafc",
+        border: "#cbd5e1",
+        icon: "📜",
+        tags: ["UI", "Table", "Polling"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Tabel daftar batch historis yang diperbarui otomatis setiap 5 detik melalui streaming polling tRPC listBatches, menampilkan total baris sukses, gagal, dan status badge.",
+        input: `{ refetchInterval: 5000 }`,
+        output: `{ batches: Array<MigrationBatchRecord> }`,
+        reliability: "Auto-reconnect jika koneksi internet klien terputus secara berkala tanpa memicu error fatal.",
+        inflow: ["db_batch"],
+        outflow: ["ui_page"]
+      },
+
+      // PHASE 2: GATEWAY & DISPATCHER
+      {
+        id: "api_upload",
+        lane: 2,
+        title: "File Upload Gateway",
+        subtitle: "Penyimpanan Fisik Server",
+        file: "src/app/api/upload/route.ts",
+        x: 390,
+        y: 260,
+        width: 270,
+        height: 115,
+        color: "#0284c7",
+        bg: "#f0f9ff",
+        border: "#bae6fd",
+        icon: "🌐",
+        tags: ["API", "Storage", "Next.js"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Endpoint POST multipart/form-data. Memvalidasi batas ukuran (hingga 200MB), memverifikasi ekstensi berkas, dan menyimpan berkas fisik ke folder uploads/migration/[timestamp]_[filename].",
+        input: `FormData { file: BinaryStream, type: "migration" }`,
+        output: `{ filePath: "uploads/migration/1730...csv", fileSize: 18450123 }`,
+        reliability: "Mengisolasi nama berkas dengan hash timestamp dan sanitasi karakter berbahaya guna menghindari directory traversal.",
+        inflow: ["ui_dropzone"],
+        outflow: ["trpc_start"]
+      },
+      {
+        id: "trpc_start",
+        lane: 2,
+        title: "tRPC: startMigration",
+        subtitle: "Inisiasi Batch & Enqueue",
+        file: "src/server/routers/migration.ts",
+        x: 390,
+        y: 430,
+        width: 270,
+        height: 120,
+        color: "#0284c7",
+        bg: "#f0f9ff",
+        border: "#bae6fd",
+        icon: "⚡",
+        tags: ["tRPC", "Prisma", "BullMQ"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Mutasi tRPC berproteksi hak akses operator. Membuat record MigrationBatch di PostgreSQL dengan status PENDING, lalu mendispatch job process-bulk-import ke antrean Redis BullMQ.",
+        input: `{ filePath, fileName, fileSize, targetType }`,
+        output: `{ success: true, batchId: "cly...uuid" }`,
+        reliability: "Dibungkus transaksi database agar tidak ada job yatim di Redis jika entri database gagal dibuat.",
+        inflow: ["api_upload"],
+        outflow: ["db_batch", "queue_import"]
+      },
+      {
+        id: "trpc_resume",
+        lane: 2,
+        title: "tRPC: resumeMigration",
+        subtitle: "Dispatch Ulang dari Checkpoint",
+        file: "src/server/routers/migration.ts",
+        x: 390,
+        y: 610,
+        width: 270,
+        height: 120,
+        color: "#d97706",
+        bg: "#fffbeb",
+        border: "#fde68a",
+        icon: "🔄",
+        tags: ["tRPC", "Recovery", "BullMQ"],
+        scenarios: ["all", "recovery"],
+        desc: "Membaca baris checkpoint lastProcessedRow dari MigrationBatch, memperbarui status kembali ke PROCESSING, dan menjadwalkan ulang job BullMQ dengan startRowNumber offset.",
+        input: `{ batchId: "cly...uuid" }`,
+        output: `{ resumed: true, startRowNumber: 45200 }`,
+        reliability: "Memverifikasi keberadaan fisik berkas pada disk sebelum job dijadwalkan ulang.",
+        inflow: ["ui_recovery_card"],
+        outflow: ["db_batch", "queue_import"]
+      },
+
+      // PHASE 3: STREAMING WORKER ENGINE
+      {
+        id: "queue_import",
+        lane: 3,
+        title: "Redis BullMQ: importQueue",
+        subtitle: "Antrean Impor Terdistribusi",
+        file: "src/server/queues/importQueue.ts",
+        x: 750,
+        y: 430,
+        width: 270,
+        height: 120,
+        color: "#d97706",
+        bg: "#fffbeb",
+        border: "#fde68a",
+        icon: "📦",
+        tags: ["Redis", "BullMQ", "Queue"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Antrean pesan Redis berkecepatan tinggi. Mengelola job migrasi berstatus active, waiting, completed, atau failed dengan persistensi andal.",
+        input: `JobData { importBatchId, filePath, userId, startRowNumber }`,
+        output: `QueueEvent: "active" | "progress" | "completed"`,
+        reliability: "Dilengkapi mekanisme auto-retry 3x dan backoff eksponensial terhadap kegagalan koneksi database.",
+        inflow: ["trpc_start", "trpc_resume"],
+        outflow: ["worker_import"]
+      },
+      {
+        id: "worker_import",
+        lane: 3,
+        title: "BullMQ Import Worker",
+        subtitle: "Mesin Pemroses Latar Belakang",
+        file: "src/server/workers/importWorker.ts",
+        x: 750,
+        y: 260,
+        width: 270,
+        height: 125,
+        color: "#d97706",
+        bg: "#fffbeb",
+        border: "#fde68a",
+        icon: "⚙️",
+        tags: ["Worker", "In-Memory Cache", "Engine"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Worker independen. Memuat seluruh tabel referensi UP3, ULP, dan Versi Aplikasi ke RAM cache untuk pemetaan instan (O(1)) tanpa round-trip SQL pada setiap baris data.",
+        input: `Job Payload & In-Memory Unit Lookups`,
+        output: `Mapped Review DTO Chunk (500 baris/chunk)`,
+        reliability: "Mendeteksi sinyal pembatalan / pause secara real-time via Redis key migration:cancel:[batchId].",
+        inflow: ["queue_import"],
+        outflow: ["stream_parser"]
+      },
+      {
+        id: "stream_parser",
+        lane: 3,
+        title: "Streaming Parser Engine",
+        subtitle: "CSV/XLSX Memory-Safe Stream",
+        file: "src/lib/parsers/csvStreamParser.ts",
+        x: 750,
+        y: 90,
+        width: 270,
+        height: 125,
+        color: "#006877",
+        bg: "#f0fdfa",
+        border: "#99f6e4",
+        icon: "⚡",
+        tags: ["Stream", "Parser", "Low Memory"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Membaca berkas >140k baris secara streaming baris-demi-baris dengan konsumsi RAM stabil (<100MB). Mengelompokkan per 500 baris ke dalam buffer sebelum dieksekusi ke basis data.",
+        input: `ReadStream(filePath) + Checkpoint Offset`,
+        output: `Yield Chunk (500 records) to onBatchInsert`,
+        reliability: "Toleran terhadap variasi pemisah baris CRLF/LF dan format teks ulasan yang mengandung karakter kutip multiline.",
+        inflow: ["worker_import"],
+        outflow: ["db_review_insert", "db_error_insert"]
+      },
+
+      // PHASE 4: PERSISTENCE & DOWNSTREAM
+      {
+        id: "db_batch",
+        lane: 4,
+        title: "Prisma: MigrationBatch",
+        subtitle: "Audit State & Metrics di DB",
+        file: "prisma/schema.prisma",
+        x: 1120,
+        y: 430,
+        width: 270,
+        height: 125,
+        color: "#16a34a",
+        bg: "#f0fdf4",
+        border: "#bbf7d0",
+        icon: "🗄️",
+        tags: ["Database", "PostgreSQL", "Prisma"],
+        scenarios: ["all", "happy", "recovery"],
+        desc: "Entitas penyimpan metadata batch: status (PROCESSING, COMPLETED, FAILED, PAUSED), totalRows, processedRows, failedRows, dan lastProcessedRow.",
+        input: `{ status: "PROCESSING", processedRows: 120500 }`,
+        output: `{ recordId: "cly...uuid", updatedAt: Timestamp }`,
+        reliability: "Indeks b-tree pada kolom status dan uploadedById memastikan kueri pemantauan sangat cepat (<5ms).",
+        inflow: ["trpc_start", "trpc_resume", "db_review_insert"],
+        outflow: ["ui_guard", "ui_history_table"]
+      },
+      {
+        id: "db_review_insert",
+        lane: 4,
+        title: "Batch Ingestion Review",
+        subtitle: "Penyisipan ke Tabel Review",
+        file: "prisma/schema.prisma",
+        x: 1120,
+        y: 90,
+        width: 270,
+        height: 125,
+        color: "#16a34a",
+        bg: "#f0fdf4",
+        border: "#bbf7d0",
+        icon: "✅",
+        tags: ["PostgreSQL", "Review Table", "Prisma"],
+        scenarios: ["all", "happy"],
+        desc: "Menyisipkan 500 baris sekaligus per transaksi dengan source=MIGRATION, memetakan foreign key UP3/ULP, dan menetapkan ocrStatus=QUEUED untuk baris bereviden.",
+        input: `Array<ReviewCreateManyInput> (500 records)`,
+        output: `{ count: 500 inserted, updatedCheckpoint: 45500 }`,
+        reliability: "Eksekusi createMany dengan toleransi duplikasi (skipDuplicates) jika ada kunci komposit yang serupa.",
+        inflow: ["stream_parser"],
+        outflow: ["queue_ocr", "db_batch", "ui_reviews"]
+      },
+      {
+        id: "db_error_insert",
+        lane: 4,
+        title: "Pencatatan MigrationError",
+        subtitle: "Karantina Baris Rusak/Korup",
+        file: "prisma/schema.prisma",
+        x: 1120,
+        y: 260,
+        width: 270,
+        height: 120,
+        color: "#dc2626",
+        bg: "#fef2f2",
+        border: "#fecaca",
+        icon: "❌",
+        tags: ["Database", "Error Log", "Quarantine"],
+        scenarios: ["all", "recovery"],
+        desc: "Mencatat nomor baris rusak, raw string CSV, dan alasan kegagalan ke tabel MigrationError secara non-blocking sehingga proses migrasi baris lainnya tetap berlanjut.",
+        input: `{ rowNumber: 1402, rawRowData, errorReason: "Invalid Date" }`,
+        output: `{ errorLogged: true }`,
+        reliability: "Mencegah satu baris korup menggagalkan 140.000 baris data valid lainnya.",
+        inflow: ["stream_parser"],
+        outflow: ["db_batch"]
+      },
+      {
+        id: "queue_ocr",
+        lane: 4,
+        title: "Redis BullMQ: ocrQueue",
+        subtitle: "Rantai Verifikasi Bukti Eviden",
+        file: "src/server/queues/ocrQueue.ts",
+        x: 1120,
+        y: 610,
+        width: 270,
+        height: 120,
+        color: "#7c3aed",
+        bg: "#faf5ff",
+        border: "#e9d5ff",
+        icon: "🔍",
+        tags: ["BullMQ", "OCR Pipeline", "Chaining"],
+        scenarios: ["all", "ocr"],
+        desc: "Rantai asinkron terotomatisasi. Baris migrasi yang memiliki tautan gambar eviden Google Drive langsung didorong ke antrean OCR pipeline untuk verifikasi teks ulasan tanpa membebani migrasi.",
+        input: `{ reviewId, imagePath, source: "MIGRATION" }`,
+        output: `{ ocrJobId, queueStatus: "QUEUED" }`,
+        reliability: "Didecoupling sepenuhnya dari streaming impor; kegagalan jaringan unduh gambar tidak menghambat ingestion basis data.",
+        inflow: ["db_review_insert"],
+        outflow: ["ui_monitor_link"]
+      },
+      {
+        id: "ui_reviews",
+        lane: 4,
+        title: "Modul Kelola Ulasan (/reviews)",
+        subtitle: "Handoff Data ke Operator",
+        file: "src/app/(operator)/reviews/page.tsx",
+        x: 1120,
+        y: 790,
+        width: 270,
+        height: 110,
+        color: "#006877",
+        bg: "#f0fdfa",
+        border: "#99f6e4",
+        icon: "📋",
+        tags: ["Downstream", "Reviews", "Triage"],
+        scenarios: ["all", "happy"],
+        desc: "Destinasi akhir data migrasi. Ulasan hasil impor massal langsung tersedia untuk diverifikasi, dikurasi, difilter menurut UP3/ULP, dan diuji status kesesuaiannya.",
+        input: `Kueri trpc.reviews.getList dengan filter source=MIGRATION`,
+        output: `Tabel Ulasan Terintegrasi + Drawer Rinci + Lightbox`,
+        reliability: "Dukungan pagination kursor dan TanStack Table berkinerja tinggi untuk memuat puluhan ribu ulasan dengan mulus.",
+        inflow: ["db_review_insert"],
+        outflow: []
+      },
+      {
+        id: "ui_monitor_link",
+        lane: 2,
+        title: "Pusat Pemantauan Worker",
+        subtitle: "Telemetri (/migration/monitor)",
+        file: "src/app/(operator)/migration/monitor/page.tsx",
+        x: 390,
+        y: 790,
+        width: 270,
+        height: 110,
+        color: "#006877",
+        bg: "#f0fdfa",
+        border: "#99f6e4",
+        icon: "📈",
+        tags: ["Monitoring", "BullMQ", "Diagnostics"],
+        scenarios: ["all", "recovery", "ocr"],
+        desc: "Layar monitor tingkat lanjut untuk mengontrol antrean BullMQ (pause/resume queue, retry failed jobs, purge queue, dan inspeksi detail pekerja).",
+        input: `{ detailedWorkerStatusQuery, queueJobsQuery }`,
+        output: `{ CPU, Memory, QueueDepths, TelemetryLogs }`,
+        reliability: "Pemberian instruksi langsung ke instance Redis BullMQ dengan feedback toast instan.",
+        inflow: ["ui_page", "queue_ocr"],
+        outflow: []
+      }
+    ];
+
+    // 2. DATA CONNECTIONS (EDGES)
+    const edges = [
+      { from: "ui_page", to: "ui_dropzone", label: "Render Form Unggah", type: "default", scenario: "all" },
+      { from: "ui_dropzone", to: "api_upload", label: "1. Upload File Fisik", type: "active", scenario: "happy" },
+      { from: "api_upload", to: "trpc_start", label: "2. Handshake Path File", type: "active", scenario: "happy" },
+      { from: "trpc_start", to: "db_batch", label: "3a. Create Batch (PENDING)", type: "success", scenario: "happy" },
+      { from: "trpc_start", to: "queue_import", label: "3b. Dispatch Job BullMQ", type: "active", scenario: "happy" },
+      { from: "queue_import", to: "worker_import", label: "4. Worker Pickup Job", type: "active", scenario: "happy" },
+      { from: "worker_import", to: "stream_parser", label: "5. Inisiasi Streaming", type: "active", scenario: "happy" },
+      { from: "stream_parser", to: "db_review_insert", label: "6a. Valid: Batch Insert", type: "success", scenario: "happy" },
+      { from: "stream_parser", to: "db_error_insert", label: "6b. Korup: Catat Error", type: "error", scenario: "recovery" },
+      { from: "db_review_insert", to: "queue_ocr", label: "7. Push Eviden ke ocrQueue", type: "ocr", scenario: "ocr" },
+      { from: "db_review_insert", to: "db_batch", label: "Update Checkpoint & Counter", type: "success", scenario: "happy" },
+      { from: "db_error_insert", to: "db_batch", label: "Increment failedRows", type: "error", scenario: "recovery" },
+      { from: "db_batch", to: "ui_guard", label: "Polling Status (1.5s)", type: "active", scenario: "happy" },
+      { from: "ui_guard", to: "ui_dropzone", label: "Update Progress & Throughput", type: "active", scenario: "happy" },
+      { from: "db_batch", to: "ui_history_table", label: "Polling Batches (5s)", type: "default", scenario: "all" },
+      { from: "ui_guard", to: "ui_recovery_card", label: "Deteksi Batch Terputus (PAUSED)", type: "warning", scenario: "recovery" },
+      { from: "ui_recovery_card", to: "trpc_resume", label: "Operator Tekan Resume", type: "warning", scenario: "recovery" },
+      { from: "trpc_resume", to: "db_batch", label: "Set Status PROCESSING", type: "warning", scenario: "recovery" },
+      { from: "trpc_resume", to: "queue_import", label: "Jadwalkan Job dg Offset Row", type: "warning", scenario: "recovery" },
+      { from: "db_review_insert", to: "ui_reviews", label: "Handoff Data Selesai", type: "success", scenario: "happy" },
+      { from: "ui_page", to: "ui_monitor_link", label: "Akses Pusat Pemantauan", type: "default", scenario: "all" },
+      { from: "queue_ocr", to: "ui_monitor_link", label: "Pantau Kedalaman Antrean", type: "ocr", scenario: "ocr" }
+    ];
+
+    // Helper Map for Fast Node Lookup
+    const nodeMap = new Map();
+    nodes.forEach(n => nodeMap.set(n.id, n));
+
+    // 3. RENDER ENGINE: NODES & EDGES IN SVG
+    const nodesGroup = document.getElementById("nodesGroup");
+    const edgesGroup = document.getElementById("edgesGroup");
+    const pulsesGroup = document.getElementById("pulsesGroup");
+
+    function renderGraph() {
+      // Clear previous renders
+      edgesGroup.innerHTML = "";
+      pulsesGroup.innerHTML = "";
+      nodesGroup.innerHTML = "";
+
+      // Render Edges
+      edges.forEach((edge, index) => {
+        const source = nodeMap.get(edge.from);
+        const target = nodeMap.get(edge.to);
+        if (!source || !target) return;
+
+        // Calculate Connection Anchor Points
+        let startX, startY, endX, endY;
+
+        // Logical Flow direction check
+        if (target.x > source.x) {
+          // Left to Right Flow
+          startX = source.x + source.width;
+          startY = source.y + source.height / 2;
+          endX = target.x;
+          endY = target.y + target.height / 2;
+        } else if (target.x < source.x) {
+          // Right to Left Flow
+          startX = source.x;
+          startY = source.y + source.height / 2;
+          endX = target.x + target.width;
+          endY = target.y + target.height / 2;
+        } else {
+          // Vertical Flow within same lane
+          if (target.y > source.y) {
+            startX = source.x + source.width / 2;
+            startY = source.y + source.height;
+            endX = target.x + target.width / 2;
+            endY = target.y;
+          } else {
+            startX = source.x + source.width / 2;
+            startY = source.y;
+            endX = target.x + target.width / 2;
+            endY = target.y + target.height;
+          }
+        }
+
+        // Generate Smooth Cubic Bezier Curve
+        const dx = Math.abs(endX - startX) * 0.55;
+        const dy = Math.abs(endY - startY) * 0.3;
+        const curvature = Math.max(dx, 40);
+
+        let pathD;
+        if (Math.abs(startX - endX) > 40) {
+          pathD = `M ${startX} ${startY} C ${startX + (endX > startX ? curvature : -curvature)} ${startY}, ${endX - (endX > startX ? curvature : -curvature)} ${endY}, ${endX} ${endY}`;
+        } else {
+          pathD = `M ${startX} ${startY} C ${startX} ${startY + (endY > startY ? 40 : -40)}, ${endX} ${endY - (endY > startY ? 40 : -40)}, ${endX} ${endY}`;
+        }
+
+        // Color coding by edge type
+        let strokeColor = "#64748b";
+        let markerId = "arrow-default";
+        if (edge.type === "active") { strokeColor = "#006877"; markerId = "arrow-active"; }
+        if (edge.type === "success") { strokeColor = "#16a34a"; markerId = "arrow-success"; }
+        if (edge.type === "error") { strokeColor = "#dc2626"; markerId = "arrow-error"; }
+        if (edge.type === "warning") { strokeColor = "#d97706"; markerId = "arrow-warning"; }
+        if (edge.type === "ocr") { strokeColor = "#7c3aed"; markerId = "arrow-ocr"; }
+
+        // Edge Group
+        const gEdge = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        gEdge.setAttribute("class", `edge-item edge-from-${edge.from} edge-to-${edge.to}`);
+        gEdge.setAttribute("data-scenario", edge.scenario);
+
+        // SVG Path
+        const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        pathEl.setAttribute("id", `edge-path-${index}`);
+        pathEl.setAttribute("d", pathD);
+        pathEl.setAttribute("fill", "none");
+        pathEl.setAttribute("stroke", strokeColor);
+        pathEl.setAttribute("stroke-width", "2");
+        pathEl.setAttribute("marker-end", `url(#${markerId})`);
+        pathEl.setAttribute("class", "transition-all duration-300");
+
+        gEdge.appendChild(pathEl);
+        edgesGroup.appendChild(gEdge);
+
+        // Animated Energy Pulse Indicator
+        const pulseCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        pulseCircle.setAttribute("r", "3.5");
+        pulseCircle.setAttribute("fill", strokeColor);
+        pulseCircle.setAttribute("class", `pulse-item pulse-from-${edge.from} pulse-to-${edge.to}`);
+        
+        const animateMotion = document.createElementNS("http://www.w3.org/2000/svg", "animateMotion");
+        animateMotion.setAttribute("dur", `${2.2 + (index % 4) * 0.4}s`);
+        animateMotion.setAttribute("repeatCount", "indefinite");
+        animateMotion.setAttribute("path", pathD);
+        
+        pulseCircle.appendChild(animateMotion);
+        pulsesGroup.appendChild(pulseCircle);
+      });
+
+      // Render Nodes
+      nodes.forEach(node => {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("id", `node-${node.id}`);
+        g.setAttribute("class", "node-group");
+        g.setAttribute("transform", `translate(${node.x}, ${node.y})`);
+        g.setAttribute("onclick", `selectNode('${node.id}')`);
+
+        // Card Backdrop Rect
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("class", "node-card transition-all");
+        rect.setAttribute("width", node.width);
+        rect.setAttribute("height", node.height);
+        rect.setAttribute("rx", "16");
+        rect.setAttribute("fill", "#ffffff");
+        rect.setAttribute("stroke", node.border);
+        rect.setAttribute("stroke-width", "1.5");
+        rect.setAttribute("filter", "drop-shadow(0 4px 6px -1px rgba(0, 0, 0, 0.05))");
+        g.appendChild(rect);
+
+        // Top Accent Stripe
+        const stripe = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        stripe.setAttribute("width", node.width);
+        stripe.setAttribute("height", "5");
+        stripe.setAttribute("rx", "2.5");
+        stripe.setAttribute("fill", node.color);
+        g.appendChild(stripe);
+
+        // Icon Box
+        const iconBox = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        iconBox.setAttribute("x", "14");
+        iconBox.setAttribute("y", "18");
+        iconBox.setAttribute("width", "36");
+        iconBox.setAttribute("height", "36");
+        iconBox.setAttribute("rx", "10");
+        iconBox.setAttribute("fill", node.bg);
+        iconBox.setAttribute("stroke", node.border);
+        iconBox.setAttribute("stroke-width", "1");
+        g.appendChild(iconBox);
+
+        const iconText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        iconText.setAttribute("x", "24");
+        iconText.setAttribute("y", "42");
+        iconText.setAttribute("font-size", "17");
+        iconText.textContent = node.icon;
+        g.appendChild(iconText);
+
+        // Title
+        const titleText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        titleText.setAttribute("x", "58");
+        titleText.setAttribute("y", "34");
+        titleText.setAttribute("font-size", "12.5");
+        titleText.setAttribute("font-weight", "800");
+        titleText.setAttribute("fill", "#0f172a");
+        titleText.textContent = node.title;
+        g.appendChild(titleText);
+
+        // Subtitle
+        const subtitleText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        subtitleText.setAttribute("x", "58");
+        subtitleText.setAttribute("y", "50");
+        subtitleText.setAttribute("font-size", "12");
+        subtitleText.setAttribute("font-weight", "500");
+        subtitleText.setAttribute("fill", "#64748b");
+        subtitleText.textContent = node.subtitle;
+        g.appendChild(subtitleText);
+
+        // Tags & File Chip Pill
+        const chipGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        chipGroup.setAttribute("transform", "translate(14, 68)");
+
+        // File Tag
+        const chipRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        chipRect.setAttribute("width", node.width - 28);
+        chipRect.setAttribute("height", "24");
+        chipRect.setAttribute("rx", "6");
+        chipRect.setAttribute("fill", "#f8fafc");
+        chipRect.setAttribute("stroke", "#e2e8f0");
+        chipGroup.appendChild(chipRect);
+
+        const chipText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        chipText.setAttribute("x", "8");
+        chipText.setAttribute("y", "16");
+        chipText.setAttribute("font-size", "12");
+        chipText.setAttribute("font-family", "monospace");
+        chipText.setAttribute("fill", "#475569");
+        
+        // Truncate file path if too long
+        const shortFile = node.file.split("/").slice(-2).join("/");
+        chipText.textContent = `📄 ${shortFile}`;
+        chipGroup.appendChild(chipText);
+
+        g.appendChild(chipGroup);
+        nodesGroup.appendChild(g);
+      });
+    }
+
+    // 4. PAN AND ZOOM INTERACTION ENGINE
+    let currentScale = 0.85;
+    let panX = 40;
+    let panY = 30;
+    let isPanning = false;
+    let startPoint = { x: 0, y: 0 };
+
+    const worldGroup = document.getElementById("worldGroup");
+    const canvasViewport = document.getElementById("canvasViewport");
+    const zoomPercentDisplay = document.getElementById("zoomPercentDisplay");
+
+    function updateTransform() {
+      worldGroup.setAttribute("transform", `translate(${panX}, ${panY}) scale(${currentScale})`);
+      zoomPercentDisplay.textContent = `${Math.round(currentScale * 100)}%`;
+    }
+
+    function zoomCanvas(factor) {
+      const newScale = Math.min(Math.max(currentScale * factor, 0.4), 2.0);
+      currentScale = newScale;
+      updateTransform();
+    }
+
+    function resetZoomPan() {
+      currentScale = 0.85;
+      panX = 40;
+      panY = 30;
+      updateTransform();
+      setScenario("all");
+      closeInspector();
+    }
+
+    canvasViewport.addEventListener("mousedown", (e) => {
+      // Don't drag if clicking inspector
+      if (e.target.closest("#inspectorPanel")) return;
+      isPanning = true;
+      startPoint = { x: e.clientX - panX, y: e.clientY - panY };
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isPanning) return;
+      panX = e.clientX - startPoint.x;
+      panY = e.clientY - startPoint.y;
+      updateTransform();
+    });
+
+    window.addEventListener("mouseup", () => {
+      isPanning = false;
+    });
+
+    canvasViewport.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      zoomCanvas(zoomFactor);
+    }, { passive: false });
+
+    // 5. NODE SELECTION & DETAIL INSPECTION
+    let activeSelectedNodeId = null;
+
+    function selectNode(nodeId) {
+      const node = nodeMap.get(nodeId);
+      if (!node) return;
+
+      activeSelectedNodeId = nodeId;
+
+      // Update Node Highlight Classes
+      document.querySelectorAll(".node-group").forEach(el => el.classList.remove("active"));
+      const selectedEl = document.getElementById(`node-${nodeId}`);
+      if (selectedEl) selectedEl.classList.add("active");
+
+      // Populate Inspector
+      document.getElementById("inspId").textContent = `#${node.id}`;
+      document.getElementById("inspTitle").textContent = node.title;
+      document.getElementById("inspFile").textContent = node.file;
+      document.getElementById("inspDesc").textContent = node.desc;
+      document.getElementById("inspInput").textContent = node.input;
+      document.getElementById("inspOutput").textContent = node.output;
+      document.getElementById("inspReliability").textContent = node.reliability;
+      document.getElementById("inspInflow").textContent = node.inflow.join(", ") || "None (Initial Trigger)";
+      document.getElementById("inspOutflow").textContent = node.outflow.join(", ") || "None (Terminal)";
+      
+      const badge = document.getElementById("inspBadge");
+      badge.textContent = `Fase ${node.lane}: ${node.tags[0]}`;
+      badge.style.backgroundColor = node.bg;
+      badge.style.color = node.color;
+      badge.style.borderColor = node.border;
+
+      // Open Slide-over Panel
+      const panel = document.getElementById("inspectorPanel");
+      panel.classList.remove("translate-x-full");
+    }
+
+    function closeInspector() {
+      const panel = document.getElementById("inspectorPanel");
+      panel.classList.add("translate-x-full");
+      document.querySelectorAll(".node-group").forEach(el => el.classList.remove("active"));
+      activeSelectedNodeId = null;
+    }
+
+    function isolateActiveNodePath() {
+      if (!activeSelectedNodeId) return;
+      const targetNode = nodeMap.get(activeSelectedNodeId);
+      
+      const connectedNodeIds = new Set([activeSelectedNodeId]);
+      edges.forEach(e => {
+        if (e.from === activeSelectedNodeId) connectedNodeIds.add(e.to);
+        if (e.to === activeSelectedNodeId) connectedNodeIds.add(e.from);
+      });
+
+      // Dim non-connected nodes
+      nodes.forEach(n => {
+        const el = document.getElementById(`node-${n.id}`);
+        if (!el) return;
+        if (connectedNodeIds.has(n.id)) {
+          el.classList.remove("dimmed");
+        } else {
+          el.classList.add("dimmed");
+        }
+      });
+    }
+
+    // 6. SCENARIO PRESETS & FILTERING
+    function setScenario(scenKey) {
+      // Highlight Active Button
+      document.querySelectorAll(".scenario-btn").forEach(btn => {
+        btn.classList.remove("bg-cyan-700", "text-white");
+        btn.classList.add("bg-white", "text-slate-700", "border", "border-slate-200");
+      });
+      const activeBtn = document.getElementById(`btn-scen-${scenKey}`);
+      if (activeBtn) {
+        activeBtn.classList.remove("bg-white", "text-slate-700", "border-slate-200");
+        activeBtn.classList.add("bg-cyan-700", "text-white");
+      }
+
+      // Filter Nodes and Edges
+      nodes.forEach(n => {
+        const el = document.getElementById(`node-${n.id}`);
+        if (!el) return;
+        if (scenKey === "all" || n.scenarios.includes(scenKey)) {
+          el.classList.remove("dimmed");
+        } else {
+          el.classList.add("dimmed");
+        }
+      });
+
+      edges.forEach((e, idx) => {
+        const edgeEl = document.querySelector(`.edge-from-${e.from}.edge-to-${e.to}`);
+        const pulseEl = document.querySelector(`.pulse-from-${e.from}.pulse-to-${e.to}`);
+        const isMatch = (scenKey === "all") || (e.scenario === scenKey) || (e.scenario === "all");
+
+        if (edgeEl) edgeEl.style.opacity = isMatch ? "1" : "0.15";
+        if (pulseEl) pulseEl.style.display = isMatch ? "block" : "none";
+      });
+    }
+
+    // 7. REAL-TIME SEARCH FILTER
+    function handleSearch(query) {
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        setScenario("all");
+        return;
+      }
+
+      nodes.forEach(n => {
+        const el = document.getElementById(`node-${n.id}`);
+        if (!el) return;
+        const matches = n.title.toLowerCase().includes(q) || 
+                        n.file.toLowerCase().includes(q) || 
+                        n.desc.toLowerCase().includes(q) ||
+                        n.tags.some(t => t.toLowerCase().includes(q));
+
+        if (matches) {
+          el.classList.remove("dimmed");
+        } else {
+          el.classList.add("dimmed");
+        }
+      });
+    }
+
+    // INITIALIZATION
+    window.addEventListener("DOMContentLoaded", () => {
+      renderGraph();
+      updateTransform();
+    });
+  </script>
+</body>
+</html>
+

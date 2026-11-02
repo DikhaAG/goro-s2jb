@@ -364,15 +364,25 @@ describe("Task 18: Reviews Router Unit Test Suite", () => {
       ).rejects.toThrow("Konfirmasi teks harus tepat 'HAPUS SEMUA'");
     });
 
-    it("should reject permanent purge all if caller is role PEGAWAI", async () => {
+    it("should permit permanent purge all if caller is role PEGAWAI", async () => {
       const caller = createCaller(Role.PEGAWAI);
-      await expect(
-        caller.deleteAll({
-          mode: "PERMANENT",
-          reason: "Pembersihan total",
-          confirmText: "HAPUS SEMUA",
+      const res = await caller.deleteAll({
+        mode: "PERMANENT",
+        reason: "Reset total data ulasan oleh pegawai",
+        confirmText: "HAPUS SEMUA",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("PERMANENT");
+      expect(res.count).toBe(5);
+      expect(mockPrisma.ratingReview.deleteMany).toHaveBeenCalledWith({});
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "PURGE_ALL_REVIEWS",
+          }),
         })
-      ).rejects.toThrow("Hanya Super Admin");
+      );
     });
 
     it("should permit permanent purge all if caller is SUPER_ADMIN", async () => {

@@ -1,7 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, Trash2, AlertOctagon, RefreshCw, XCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  Trash2,
+  AlertOctagon,
+  RefreshCw,
+  XCircle,
+  Database,
+  Lock,
+  Unlock,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PurgeAllReviewsModalProps {
@@ -20,8 +29,10 @@ interface PurgeAllReviewsModalProps {
 const PRESET_PURGE_REASONS = [
   "Reset total data ulasan pengujian sandbox",
   "Pembersihan menyeluruh migrasi data awal",
+  "Purge permanen seluruh data ulasan duplikasi & korup",
   "Penolakan kuratif massal seluruh ulasan belum tervalidasi",
   "Penyelarasan ulang sistem dari awal periode pengujian",
+  "Alasan Lainnya (Kustom)...",
 ];
 
 export function PurgeAllReviewsModal({
@@ -32,20 +43,58 @@ export function PurgeAllReviewsModal({
   onConfirmPurge,
   isPurging = false,
 }: PurgeAllReviewsModalProps) {
-  const isSuperAdmin = userRole === "SUPER_ADMIN";
-  const [mode, setMode] = useState<"SOFT_REJECT" | "PERMANENT">(
-    isSuperAdmin ? "PERMANENT" : "SOFT_REJECT"
-  );
-  const [reason, setReason] = useState(PRESET_PURGE_REASONS[0]);
+  // Hard Delete diizinkan untuk peran SUPER_ADMIN maupun PEGAWAI operator
+  const canHardDelete = userRole === "SUPER_ADMIN" || userRole === "PEGAWAI";
+  const [mode, setMode] = useState<"SOFT_REJECT" | "PERMANENT">("SOFT_REJECT");
+  const [selectedPreset, setSelectedPreset] = useState(PRESET_PURGE_REASONS[0]);
   const [customReason, setCustomReason] = useState("");
   const [confirmText, setConfirmText] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // Keyboard navigation: Escape key closes the modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isPurging) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, isPurging, onClose]);
+
+  // Reset states on opening
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+      setConfirmText("");
+      setCustomReason("");
+      setSelectedPreset(PRESET_PURGE_REASONS[0]);
+      setMode("SOFT_REJECT");
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalReason = customReason.trim().length > 0 ? customReason.trim() : reason;
+
+    let finalReason = selectedPreset;
+    if (selectedPreset === "Alasan Lainnya (Kustom)...") {
+      finalReason = customReason.trim();
+    } else if (customReason.trim().length > 0) {
+      finalReason = `${selectedPreset}: ${customReason.trim()}`;
+    }
+
+    if (mode === "PERMANENT" && !canHardDelete) {
+      setError("Peran pengguna Anda tidak memiliki hak otorisasi untuk melakukan Hard Delete.");
+      return;
+    }
 
     if (!finalReason || finalReason.length < 3) {
       setError("Alasan tindakan wajib diisi minimal 3 karakter.");
@@ -68,31 +117,39 @@ export function PurgeAllReviewsModal({
   const isConfirmed = confirmText.trim() === "HAPUS SEMUA";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="purge-modal-title"
+    >
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-[#0f172a]/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
-        onClick={onClose}
+        onClick={() => {
+          if (!isPurging) onClose();
+        }}
       />
 
-      {/* Modal Dialog */}
-      <div
-        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-red-200 overflow-hidden z-10 animate-in zoom-in-95 duration-150"
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* Header with High-Alert Styling */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-red-100 bg-[#fef2f2]">
+      {/* Modal Dialog Card (Optimized Height, Clean Borders) */}
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-[#e2e8f0] overflow-hidden z-10 animate-in zoom-in-95 duration-150 my-auto">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e2e8f0] bg-[#f8fafc]">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-xs shrink-0">
-              <AlertOctagon className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-[#fef2f2] text-[#dc2626] flex items-center justify-center border border-[#fee2e2] shrink-0">
+              <AlertOctagon className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#991b1b]">
-                Hapus / Reset Seluruh Data Ulasan
-              </h3>
-              <p className="text-xs text-[#b91c1c] font-medium">
-                Tindakan berisiko tinggi terhadap basis data sistem
+              <div className="flex items-center gap-2">
+                <h3 id="purge-modal-title" className="text-sm font-bold text-[#0f172a]">
+                  Hapus / Reset Seluruh Data Ulasan
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]">
+                  Zona Bahaya
+                </span>
+              </div>
+              <p className="text-xs text-[#64748b] mt-0.5">
+                Target: <span className="font-semibold text-[#0f172a]">{totalCount > 0 ? `${totalCount.toLocaleString("id-ID")} ulasan` : "Seluruh basis data"}</span>
               </p>
             </div>
           </div>
@@ -100,98 +157,112 @@ export function PurgeAllReviewsModal({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[36px] min-w-[36px] h-9 w-9 rounded-xl border border-red-200 bg-white hover:bg-[#fef2f2] text-[#991b1b] flex items-center justify-center transition-colors cursor-pointer focus-utility-ring shadow-xs"
+            disabled={isPurging}
+            className="min-h-[36px] min-w-[36px] h-9 w-9 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f8fafc] text-[#64748b] flex items-center justify-center transition-colors cursor-pointer focus-utility-ring shadow-xs"
+            title="Tutup dialog (Esc)"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
           {error && (
-            <div className="p-3.5 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-xs text-[#b91c1c] font-semibold">
+            <div className="p-3 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-xs text-[#b91c1c] font-semibold">
               {error}
             </div>
           )}
 
-          {/* Super Admin Mode Selector */}
-          {isSuperAdmin ? (
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-[#0f172a]">
-                Pilih Lingkup Tindakan Seluruh Data
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMode("PERMANENT")}
-                  className={cn(
-                    "p-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer focus-utility-ring",
-                    mode === "PERMANENT"
-                      ? "border-[#fecaca] bg-[#fef2f2] text-[#991b1b] ring-2 ring-[#ef4444]/30 shadow-xs"
-                      : "border-[#e2e8f0] bg-[#f8fafc] text-[#475569] hover:bg-white"
-                  )}
-                >
-                  <span className="block text-xs font-bold text-[#dc2626]">Hapus Total Permanen</span>
-                  <span className="text-[10px] font-normal text-[#64748b] mt-0.5 block">
-                    Kosongkan seluruh tabel PostgreSQL
+          {/* Mode Selector: Soft Delete vs Hard Delete */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-[#0f172a]">
+              Pilih Jenis Penghapusan Data:
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* Option 1: Soft Delete (Tolak Kuratif) */}
+              <button
+                type="button"
+                onClick={() => setMode("SOFT_REJECT")}
+                className={cn(
+                  "p-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer focus-utility-ring relative",
+                  mode === "SOFT_REJECT"
+                    ? "border-[#f97316] bg-[#fff7ed] text-[#9a3412] ring-2 ring-[#f97316]/20 shadow-xs"
+                    : "border-[#e2e8f0] bg-[#f8fafc] text-[#475569] hover:bg-white"
+                )}
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="block text-xs font-bold text-[#ea580c]">Soft Delete</span>
+                  <span className="w-3.5 h-3.5 rounded-full border border-[#cbd5e1] flex items-center justify-center bg-white">
+                    {mode === "SOFT_REJECT" && (
+                      <span className="w-2 h-2 rounded-full bg-[#ea580c]" />
+                    )}
                   </span>
-                </button>
+                </div>
+                <span className="block text-xs font-bold text-[#0f172a]">Tolak & Arsip</span>
+                <span className="text-xs font-normal text-[#64748b] mt-0.5 block leading-tight">
+                  Status diubah ke REJECTED, data tetap tersimpan untuk audit.
+                </span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setMode("SOFT_REJECT")}
-                  className={cn(
-                    "p-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer focus-utility-ring",
-                    mode === "SOFT_REJECT"
-                      ? "border-[#fed7aa] bg-[#fff7ed] text-[#9a3412] ring-2 ring-[#f97316]/30 shadow-xs"
-                      : "border-[#e2e8f0] bg-[#f8fafc] text-[#475569] hover:bg-white"
-                  )}
-                >
-                  <span className="block text-xs font-bold text-[#ea580c]">Tolak Seluruh Data</span>
-                  <span className="text-[10px] font-normal text-[#64748b] mt-0.5 block">
-                    Ubah status jadi REJECTED
+              {/* Option 2: Hard Delete (Permanen Fisik) */}
+              <button
+                type="button"
+                onClick={() => setMode("PERMANENT")}
+                className={cn(
+                  "p-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer focus-utility-ring relative",
+                  mode === "PERMANENT"
+                    ? "border-[#ef4444] bg-[#fef2f2] text-[#991b1b] ring-2 ring-[#ef4444]/20 shadow-xs"
+                    : "border-[#e2e8f0] bg-[#f8fafc] text-[#475569] hover:bg-white"
+                )}
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="block text-xs font-bold text-[#dc2626]">Hard Delete</span>
+                  <span className="w-3.5 h-3.5 rounded-full border border-[#cbd5e1] flex items-center justify-center bg-white">
+                    {mode === "PERMANENT" && (
+                      <span className="w-2 h-2 rounded-full bg-[#dc2626]" />
+                    )}
                   </span>
-                </button>
-              </div>
+                </div>
+                <span className="block text-xs font-bold text-[#0f172a]">Hapus Permanen</span>
+                <span className="text-xs font-normal text-[#64748b] mt-0.5 block leading-tight">
+                  Musnahkan baris data secara fisik dari basis data PostgreSQL.
+                </span>
+              </button>
             </div>
-          ) : (
-            <div className="p-3.5 rounded-xl bg-[#fff7ed] border border-[#fed7aa] text-xs text-[#9a3412] flex items-start gap-2.5">
-              <XCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#f97316]" />
-              <span className="leading-relaxed">
-                Sebagai role <strong>Pegawai</strong>, seluruh data ulasan yang belum berstatus REJECTED akan ditandai dengan status <strong>Ditolak (REJECTED)</strong> dan dicatat ke log audit.
-              </span>
-            </div>
-          )}
+          </div>
 
-          {/* Mode Warning Notice */}
+          {/* Contextual Warning Card */}
           {mode === "PERMANENT" ? (
-            <div className="p-4 rounded-xl bg-[#fff1f2] border border-[#fecdd3] text-xs text-[#9f1239] space-y-1.5">
-              <div className="font-bold flex items-center gap-1.5 text-[#e11d48]">
-                <AlertOctagon className="w-4 h-4" />
-                <span>Peringatan Permanen: Operasi ini tidak dapat dibatalkan!</span>
+            <div className="p-3 rounded-xl bg-[#fef2f2] border border-[#fecaca] text-xs text-[#991b1b] space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-[#dc2626]">
+                <Database className="w-3.5 h-3.5 shrink-0" />
+                <span>Peringatan Keras: Hapus Total Permanen (Hard Delete)</span>
               </div>
-              <p className="leading-relaxed text-[#881337]">
-                Tindakan ini akan menghapus <strong>seluruh baris data ulasan ({totalCount > 0 ? `${totalCount} data` : "semua data"})</strong> secara permanen dari basis data PostgreSQL PLN UID S2JB.
+              <p className="text-xs text-[#7f1d1d] leading-relaxed">
+                Tindakan ini menghapus fisik seluruh data ulasan ({totalCount > 0 ? `${totalCount.toLocaleString("id-ID")} baris` : "semua data"}) dari tabel <code className="font-mono bg-white px-1 py-0.5 rounded border border-[#fecaca]">RatingReview</code>. Data yang terhapus tidak dapat dikembalikan.
               </p>
             </div>
           ) : (
-            <div className="p-3.5 rounded-xl bg-[#fff7ed] border border-[#fed7aa] text-xs text-[#9a3412] space-y-1">
-              <div className="font-bold text-[#c2410c]">Penolakan Menyeluruh:</div>
-              <p className="leading-relaxed text-[#7c2d12]">
-                Seluruh data ulasan akan ditandai berstatus REJECTED dan dinonaktifkan dari agregasi capaian realisasi rating unit.
+            <div className="p-3 rounded-xl bg-[#fff7ed] border border-[#fed7aa] text-xs text-[#9a3412] space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-[#ea580c]">
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Tindakan Kuratif: Soft Delete (Tolak Seluruh Data)</span>
+              </div>
+              <p className="text-xs text-[#7c2d12] leading-relaxed">
+                Seluruh data ulasan akan ditandai dengan status <code className="font-mono bg-white px-1 py-0.5 rounded border border-[#fed7aa]">REJECTED</code> dan dinonaktifkan dari agregasi capaian unit. Rekam jejak audit tetap dipertahankan.
               </p>
             </div>
           )}
 
           {/* Preset Reasons Dropdown */}
           <div>
-            <label className="block text-xs font-semibold text-[#0f172a] mb-1.5">
-              Alasan Tindakan Seluruh Data *
+            <label className="block text-xs font-semibold text-[#0f172a] mb-1">
+              Alasan Tindakan *
             </label>
             <select
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full min-h-[42px] px-3.5 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] text-xs text-[#0f172a] focus:bg-white focus-utility-ring font-medium"
+              value={selectedPreset}
+              onChange={(e) => setSelectedPreset(e.target.value)}
+              className="w-full min-h-[40px] px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] text-xs text-[#0f172a] focus:bg-white focus-utility-ring font-medium"
             >
               {PRESET_PURGE_REASONS.map((r) => (
                 <option key={r} value={r}>
@@ -201,41 +272,63 @@ export function PurgeAllReviewsModal({
             </select>
           </div>
 
-          {/* Custom Reason Input */}
-          <div>
-            <label className="block text-xs font-semibold text-[#0f172a] mb-1.5">
-              Alasan Kustom Tambahan (Opsional)
-            </label>
-            <textarea
-              rows={2}
-              value={customReason}
-              onChange={(e) => setCustomReason(e.target.value)}
-              placeholder="Tulis alasan spesifik jika berbeda dari opsi di atas..."
-              className="w-full p-3 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] text-xs text-[#0f172a] focus:bg-white focus-utility-ring font-medium"
-            />
-          </div>
+          {/* Conditional Custom Reason Textarea */}
+          {(selectedPreset === "Alasan Lainnya (Kustom)..." || customReason.length > 0) && (
+            <div>
+              <label className="block text-xs font-semibold text-[#0f172a] mb-1">
+                Catatan Alasan Spesifik *
+              </label>
+              <textarea
+                rows={2}
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+                placeholder="Tuliskan alasan spesifik pembersihan untuk rekam jejak audit..."
+                className="w-full p-2.5 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] text-xs text-[#0f172a] focus:bg-white focus-utility-ring font-medium leading-relaxed"
+              />
+            </div>
+          )}
 
           {/* Mandatory Confirmation Input */}
-          <div className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-2">
-            <label className="block text-xs font-semibold text-[#0f172a]">
-              Ketik <span className="font-mono font-bold text-[#dc2626]">HAPUS SEMUA</span> untuk mengonfirmasi *
-            </label>
+          <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-[#0f172a]">
+                Ketik <span className="font-mono font-bold text-[#dc2626]">HAPUS SEMUA</span> untuk konfirmasi *
+              </label>
+              <span className="flex items-center gap-1 text-xs font-semibold text-[#64748b]">
+                {isConfirmed ? (
+                  <span className="text-[#16a34a] flex items-center gap-1 font-bold">
+                    <Unlock className="w-3.5 h-3.5" /> Terbuka
+                  </span>
+                ) : (
+                  <span className="text-[#64748b] flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5" /> Terkunci
+                  </span>
+                )}
+              </span>
+            </div>
             <input
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="HAPUS SEMUA"
-              className="w-full min-h-[42px] px-3.5 rounded-xl border border-[#cbd5e1] bg-white text-xs text-[#0f172a] font-mono focus:bg-white focus-utility-ring font-bold tracking-wider"
+              autoComplete="off"
+              spellCheck="false"
+              className={cn(
+                "w-full min-h-[40px] px-3 rounded-xl border bg-white text-xs font-mono font-bold tracking-wider focus-utility-ring transition-colors uppercase",
+                isConfirmed
+                  ? "border-[#16a34a] text-[#16a34a]"
+                  : "border-[#cbd5e1] text-[#0f172a]"
+              )}
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-3 border-t border-[#f1f5f9] flex items-center justify-end gap-2.5">
+          <div className="pt-2 border-t border-[#f1f5f9] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
               disabled={isPurging}
-              className="min-h-[44px] h-11 px-4 rounded-xl border border-[#cbd5e1] text-[#334155] hover:bg-[#f8fafc] text-xs font-semibold transition-colors cursor-pointer focus-utility-ring shadow-xs"
+              className="min-h-[40px] h-10 px-4 rounded-xl border border-[#cbd5e1] text-[#334155] hover:bg-[#f8fafc] text-xs font-semibold transition-colors cursor-pointer focus-utility-ring shadow-xs"
             >
               Batal
             </button>
@@ -243,7 +336,7 @@ export function PurgeAllReviewsModal({
               type="submit"
               disabled={isPurging || !isConfirmed}
               className={cn(
-                "min-h-[44px] h-11 px-5 rounded-xl text-white text-xs font-semibold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer focus-utility-ring",
+                "min-h-[40px] h-10 px-5 rounded-xl text-white text-xs font-semibold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer focus-utility-ring",
                 !isConfirmed
                   ? "bg-slate-300 text-slate-500 cursor-not-allowed opacity-60"
                   : mode === "PERMANENT"
@@ -253,11 +346,13 @@ export function PurgeAllReviewsModal({
             >
               {isPurging ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
+              ) : mode === "PERMANENT" ? (
                 <Trash2 className="w-3.5 h-3.5" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5" />
               )}
               <span>
-                {mode === "PERMANENT" ? "Hapus Permanen Seluruh Data" : "Tolak Seluruh Data"}
+                {mode === "PERMANENT" ? "Hapus Permanen (Hard Delete)" : "Tolak Seluruh Data (Soft Delete)"}
               </span>
             </button>
           </div>
@@ -266,4 +361,3 @@ export function PurgeAllReviewsModal({
     </div>
   );
 }
-

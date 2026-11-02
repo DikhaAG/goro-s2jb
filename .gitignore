@@ -56,3 +56,9 @@ env/
 !/backups/db/.gitkeep
 /logs/*
 !/logs/.gitkeep
+
+# graphify cache and backups
+graphify-out/cache/
+graphify-out/20*/
+graphify-out/.graphify_*
+

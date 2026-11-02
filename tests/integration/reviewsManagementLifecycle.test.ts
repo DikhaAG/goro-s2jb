@@ -384,15 +384,15 @@ describe("Task 18: Reviews Management & Lifecycle Integration Test Suite", () =>
       ).rejects.toThrow("Konfirmasi teks harus tepat 'HAPUS SEMUA'.");
     });
 
-    it("should reject Pegawai from executing PERMANENT on deleteAll", async () => {
+    it("should permit Pegawai to execute PERMANENT on deleteAll", async () => {
       const caller = getCaller(pegawaiUser);
-      await expect(
-        caller.reviews.deleteAll({
-          mode: "PERMANENT",
-          reason: "Uji coba hapus semua",
-          confirmText: "HAPUS SEMUA",
-        })
-      ).rejects.toThrow("Hanya Super Admin yang berhak menghapus data ulasan secara permanen.");
+      const res = await caller.reviews.deleteAll({
+        mode: "PERMANENT",
+        reason: "Uji coba hapus semua oleh pegawai",
+        confirmText: "HAPUS SEMUA",
+      });
+      expect(res.success).toBe(true);
+      expect(res.mode).toBe("PERMANENT");
     });
   });
 

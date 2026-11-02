@@ -145,6 +145,19 @@ export const reviewsRouter = router({
               ulp: { select: { id: true, code: true, name: true } },
               appVersion: { select: { id: true, version: true } },
               verifiedBy: { select: { id: true, name: true, role: true } },
+              duplicateOf: {
+                select: {
+                  id: true,
+                  playstoreReviewerName: true,
+                  originalReviewerName: true,
+                  entryDate: true,
+                  evidenceImagePath: true,
+                  validationStatus: true,
+                  confidenceScore: true,
+                  up3: { select: { id: true, name: true } },
+                  ulp: { select: { id: true, name: true } },
+                },
+              },
             },
           }),
           ctx.prisma.ratingReview.count({
@@ -203,6 +216,19 @@ export const reviewsRouter = router({
           up3: true,
           ulp: true,
           appVersion: true,
+          duplicateOf: {
+            select: {
+              id: true,
+              playstoreReviewerName: true,
+              originalReviewerName: true,
+              entryDate: true,
+              evidenceImagePath: true,
+              validationStatus: true,
+              confidenceScore: true,
+              up3: { select: { id: true, name: true } },
+              ulp: { select: { id: true, name: true } },
+            },
+          },
           submittedBy: {
             select: { id: true, name: true, username: true, role: true },
           },
@@ -787,10 +813,10 @@ export const reviewsRouter = router({
       }
 
       if (input.mode === "PERMANENT") {
-        if (ctx.user.role !== Role.SUPER_ADMIN) {
+        if (ctx.user.role !== Role.SUPER_ADMIN && ctx.user.role !== Role.PEGAWAI) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Hanya Super Admin yang berhak menghapus data ulasan secara permanen.",
+            message: "Hanya Pegawai Operator atau Super Admin yang berhak menghapus data ulasan secara permanen.",
           });
         }
 
