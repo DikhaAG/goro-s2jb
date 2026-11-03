@@ -2,21 +2,11 @@ import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 import { OcrResultPayload, ValidationStatus } from "@/types";
-import { getActiveModelPath } from "./ocrModelRegistryService";
 
 export async function processEvidenceOcr(
   imageAbsolutePath: string,
-  expectedReviewerName: string,
-  options: {
-    modelPath?: string;
-  } = {}
+  expectedReviewerName: string
 ): Promise<OcrResultPayload> {
-  // Dynamically resolve active model path for hot-reload
-  const activeModelPath =
-    options.modelPath !== undefined
-      ? options.modelPath
-      : await getActiveModelPath().catch(() => null);
-
   return new Promise((resolve) => {
     const venvPython = path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3");
     const pythonExecutable = fs.existsSync(venvPython) ? venvPython : "python3";
@@ -31,10 +21,6 @@ export async function processEvidenceOcr(
       "--expected-name",
       expectedReviewerName,
     ];
-
-    if (activeModelPath && fs.existsSync(activeModelPath)) {
-      spawnArgs.push("--model-path", activeModelPath);
-    }
 
     const proc = spawn(pythonExecutable, spawnArgs, {
       timeout: 20000,

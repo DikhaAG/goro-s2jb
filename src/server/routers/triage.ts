@@ -1,8 +1,7 @@
 import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
-import { ValidationStatus, OcrProcessingStatus, Prisma, OcrSampleSource, OcrSampleInclusion, ReviewSource } from "@prisma/client";
+import { ValidationStatus, OcrProcessingStatus, Prisma, ReviewSource } from "@prisma/client";
 import { ocrQueue } from "../queues/ocrQueue";
-import { harvestFromApprovedReview } from "../services/ocrDatasetHarvester";
 
 export const triageRouter = router({
   getQueue: operatorProcedure
@@ -219,20 +218,6 @@ export const triageRouter = router({
         },
       });
 
-      // Active Learning Hook: if approved by human operator, queue sample into training dataset
-      if (input.decision === "APPROVED") {
-        harvestFromApprovedReview(
-          updated.id,
-          {
-            source: OcrSampleSource.TRIAGE_VALIDATION,
-            actorId: ctx.user.id,
-          },
-          ctx.prisma
-        ).catch((err) => {
-          console.error("[Active Learning] Failed to harvest sample on triage approval:", err);
-        });
-      }
-
       return updated;
     }),
 
@@ -253,17 +238,6 @@ export const triageRouter = router({
           reviewRemarks: "Keputusan dibatalkan (Undo)",
         },
       });
-
-      // Active Learning Hook: exclude sample from training dataset if approval was undone
-      await ctx.prisma.ocrTrainingSample
-        ?.updateMany({
-          where: { reviewId: input.reviewId },
-          data: {
-            inclusion: OcrSampleInclusion.EXCLUDED,
-            exclusionReason: "Keputusan persetujuan dibatalkan oleh operator (Undo)",
-          },
-        })
-        .catch(() => {});
 
       return reverted;
     }),

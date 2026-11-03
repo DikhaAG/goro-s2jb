@@ -5,13 +5,10 @@ import {
   OcrProcessingStatus,
   Prisma,
   Role,
-  OcrSampleSource,
-  OcrSampleInclusion,
   ReviewSource,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { ocrQueue } from "../queues/ocrQueue";
-import { harvestFromApprovedReview } from "../services/ocrDatasetHarvester";
 
 export const reviewsRouter = router({
   /**
@@ -384,21 +381,6 @@ export const reviewsRouter = router({
         }),
       ]);
 
-      // Active Learning Hook: if validationStatus is updated to APPROVED, harvest into training dataset
-      if (input.validationStatus === ValidationStatus.APPROVED) {
-        harvestFromApprovedReview(
-          updatedReview.id,
-          {
-            source: OcrSampleSource.CURATIVE_REVIEW,
-            actorId: ctx.user.id,
-            groundTruthOverride: input.playstoreReviewerName,
-          },
-          ctx.prisma
-        ).catch((err) => {
-          console.error("[Active Learning] Failed to harvest sample on curative edit:", err);
-        });
-      }
-
       return updatedReview;
     }),
 
@@ -464,22 +446,6 @@ export const reviewsRouter = router({
           },
         }),
       ]);
-
-      // Active Learning Hook: if bulk validationStatus is APPROVED, harvest samples in background
-      if (input.validationStatus === ValidationStatus.APPROVED) {
-        Promise.allSettled(
-          input.ids.map((id) =>
-            harvestFromApprovedReview(
-              id,
-              {
-                source: OcrSampleSource.CURATIVE_REVIEW,
-                actorId: ctx.user.id,
-              },
-              ctx.prisma
-            )
-          )
-        ).catch(() => {});
-      }
 
       return {
         success: true,
@@ -697,17 +663,6 @@ export const reviewsRouter = router({
         }),
       ]);
 
-      // Active Learning Hook: exclude training sample if review is rejected or deleted
-      await ctx.prisma.ocrTrainingSample
-        ?.updateMany({
-          where: { reviewId: input.id },
-          data: {
-            inclusion: OcrSampleInclusion.EXCLUDED,
-            exclusionReason: `Ulasan ditolak kuratif: ${input.reason}`,
-          },
-        })
-        .catch(() => {});
-
       return { success: true, mode: "SOFT_REJECT", review: updated };
     }),
 
@@ -777,17 +732,6 @@ export const reviewsRouter = router({
           },
         }),
       ]);
-
-      // Active Learning Hook: exclude training samples for bulk deleted/rejected reviews
-      await ctx.prisma.ocrTrainingSample
-        ?.updateMany({
-          where: { reviewId: { in: input.ids } },
-          data: {
-            inclusion: OcrSampleInclusion.EXCLUDED,
-            exclusionReason: `Ulasan dihapus/ditolak kuratif massal: ${input.reason}`,
-          },
-        })
-        .catch(() => {});
 
       return { success: true, mode: "SOFT_REJECT", count: updated.count };
     }),
@@ -863,16 +807,6 @@ export const reviewsRouter = router({
           },
         }),
       ]);
-
-      // Active Learning Hook: exclude all training samples on purge/reject all
-      await ctx.prisma.ocrTrainingSample
-        ?.updateMany({
-          data: {
-            inclusion: OcrSampleInclusion.EXCLUDED,
-            exclusionReason: `Pembersihan seluruh data ulasan: ${input.reason}`,
-          },
-        })
-        .catch(() => {});
 
       return { success: true, mode: "SOFT_REJECT", count: updated.count };
     }),

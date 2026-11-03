@@ -1164,9 +1164,9 @@
     "semantic_hash": ""
   },
   "python-services/ocr/main.py": {
-    "mtime": 1793552373.1361828,
-    "seen": 1793661150.067198,
-    "ast_hash": "8258e08feff404724d98f837681e00f4",
+    "mtime": 1793663811.499211,
+    "seen": 1793664357.8008142,
+    "ast_hash": "7e3379c75a627d2cbb352955afe4018a",
     "semantic_hash": ""
   },
   "python-services/ocr/matcher.py": {
@@ -1175,64 +1175,10 @@
     "ast_hash": "0f98eefd40a3a5eee61f446cdbde7520",
     "semantic_hash": ""
   },
-  "python-services/ocr/predictor.py": {
-    "mtime": 1793473179.0203946,
-    "seen": 1793661150.0672,
-    "ast_hash": "de4acab2c2913b505a06660ad2e64efd",
-    "semantic_hash": ""
-  },
   "python-services/ocr/preprocessor.py": {
     "mtime": 1793159946.6125038,
     "seen": 1793661150.067202,
     "ast_hash": "fc7361419951c3db44845e3096257d29",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/__init__.py": {
-    "mtime": 1793473179.1611156,
-    "seen": 1793661150.067203,
-    "ast_hash": "9c96533bdc2165961233a8acc2fef3ce",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/dataset.py": {
-    "mtime": 1793468221.933416,
-    "seen": 1793661150.0672052,
-    "ast_hash": "fcb355565bde67b875a2ada28eee0359",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/evaluator.py": {
-    "mtime": 1793467861.3527813,
-    "seen": 1793661150.067206,
-    "ast_hash": "2be4cef3ef692f8422722a079f3565af",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/lexicon_builder.py": {
-    "mtime": 1793469057.6409054,
-    "seen": 1793661150.067208,
-    "ast_hash": "abc8a26a25b6e7f4d9a35eb120fac4d2",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/model.py": {
-    "mtime": 1793467861.6748447,
-    "seen": 1793661150.067209,
-    "ast_hash": "33293422178bfcf62a2ac270aa15cbab",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/predictor.py": {
-    "mtime": 1793471014.5697477,
-    "seen": 1793661150.067211,
-    "ast_hash": "f26ff2a8881c8420cb440d32faacfde2",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/test_trainer_modules.py": {
-    "mtime": 1793472222.6087847,
-    "seen": 1793661150.067212,
-    "ast_hash": "0728f2d15c8389af82732d3a47e91775",
-    "semantic_hash": ""
-  },
-  "python-services/ocr_trainer/trainer.py": {
-    "mtime": 1793467862.0288284,
-    "seen": 1793661150.067213,
-    "ast_hash": "6bfd1ea85e514c5586d295f0419fdc31",
     "semantic_hash": ""
   },
   "scripts/backup-db.sh": {
@@ -1421,12 +1367,6 @@
     "ast_hash": "ef143a03c40c1208146d922b26a13f48",
     "semantic_hash": ""
   },
-  "src/app/(operator)/ocr-training/page.tsx": {
-    "mtime": 1793471462.7626474,
-    "seen": 1793661150.0672598,
-    "ast_hash": "0273a9565f91f12408c291cfee606706",
-    "semantic_hash": ""
-  },
   "src/app/(operator)/reviews/page.tsx": {
     "mtime": 1793460442.3891637,
     "seen": 1793661150.067261,
@@ -1608,9 +1548,9 @@
     "semantic_hash": ""
   },
   "src/components/layout/GlobalSidebar.tsx": {
-    "mtime": 1793556656.759695,
-    "seen": 1793661150.067306,
-    "ast_hash": "bfdf5ea4de21880eb2468978d35a5a4f",
+    "mtime": 1793663862.3225925,
+    "seen": 1793664357.804586,
+    "ast_hash": "c4f49ea9ef2162eca2eed2daedb5063c",
     "semantic_hash": ""
   },
   "src/components/layout/MobileNavDrawer.tsx": {
@@ -1806,9 +1746,9 @@
     "semantic_hash": ""
   },
   "src/components/operator/reviews/PurgeAllReviewsModal.tsx": {
-    "mtime": 1793662947.0535624,
-    "seen": 1793663067.059663,
-    "ast_hash": "cdecdb35edf5aaa941711659eb3c5d62",
+    "mtime": 1793663210.395387,
+    "seen": 1793664357.806973,
+    "ast_hash": "9575ac1c73aa3bc23e36c693be479cb9",
     "semantic_hash": ""
   },
   "src/components/operator/reviews/ReviewDetailDrawer.tsx": {
@@ -1839,60 +1779,6 @@
     "mtime": 1793658131.2769039,
     "seen": 1793661150.067362,
     "ast_hash": "d9bfc858d312cb45cc80e83842e71e49",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/ActiveModelHeroCard.tsx": {
-    "mtime": 1793504411.5622485,
-    "seen": 1793661150.067364,
-    "ast_hash": "c65c17acbc15b5e7b6558d8c5f13ce6f",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/ColdStartHarvestModal.tsx": {
-    "mtime": 1793503682.4441097,
-    "seen": 1793661150.067366,
-    "ast_hash": "381d89a31272304d2ee0b1a7f39983ae",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/DatasetCuratorTable.tsx": {
-    "mtime": 1793544683.3979256,
-    "seen": 1793661150.0673668,
-    "ast_hash": "7f78c3005ab26a31b41c7503c12a2717",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/LiveTrainingConsole.tsx": {
-    "mtime": 1793503683.0857189,
-    "seen": 1793661150.067369,
-    "ast_hash": "248d5fad3632c363b57ee8639f99b72a",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/ModelComparisonModal.tsx": {
-    "mtime": 1793503683.2810538,
-    "seen": 1793661150.06737,
-    "ast_hash": "367906c5bd51566ef7dcea0e1167dc95",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/ModelRegistryTable.tsx": {
-    "mtime": 1793503683.4890695,
-    "seen": 1793661150.067372,
-    "ast_hash": "196a7694ba1561dc25b0e2cdf8f9e8ad",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/OcrTrainingDashboard.tsx": {
-    "mtime": 1793503683.5619986,
-    "seen": 1793661150.067373,
-    "ast_hash": "d955c1ba052601eac3a87b9c16d94d09",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/TrainingJobsTable.tsx": {
-    "mtime": 1793503683.6220012,
-    "seen": 1793661150.0673752,
-    "ast_hash": "8147b6a651acba0bf12508b011aff3fc",
-    "semantic_hash": ""
-  },
-  "src/components/operator/training/TrainingTriggerModal.tsx": {
-    "mtime": 1793503683.6914036,
-    "seen": 1793661150.0673761,
-    "ast_hash": "071fa116c043868f1f189ccdfa2d4f97",
     "semantic_hash": ""
   },
   "src/components/providers.tsx": {
@@ -2087,16 +1973,10 @@
     "ast_hash": "84c670d2e004410475f7cc8cd7506e46",
     "semantic_hash": ""
   },
-  "src/server/queues/ocrTrainingQueue.ts": {
-    "mtime": 1793468814.856338,
-    "seen": 1793661150.067428,
-    "ast_hash": "5a10c8baa95caab23eae4059552df232",
-    "semantic_hash": ""
-  },
   "src/server/routers/_app.ts": {
-    "mtime": 1793466423.617872,
-    "seen": 1793661150.0674298,
-    "ast_hash": "f981b0fd281c857add1a8bb9aac8e2e6",
+    "mtime": 1793663832.601786,
+    "seen": 1793664357.809178,
+    "ast_hash": "f1782b79df01212f5dcd445353b1e785",
     "semantic_hash": ""
   },
   "src/server/routers/auth.ts": {
@@ -2129,12 +2009,6 @@
     "ast_hash": "6c1aab8b9803686479657bede454e446",
     "semantic_hash": ""
   },
-  "src/server/routers/ocrTraining.ts": {
-    "mtime": 1793471015.0032287,
-    "seen": 1793661150.067439,
-    "ast_hash": "43f6d1700253d231aa3a0959d4f45120",
-    "semantic_hash": ""
-  },
   "src/server/routers/report.ts": {
     "mtime": 1793161397.7789514,
     "seen": 1793661150.06744,
@@ -2142,9 +2016,9 @@
     "semantic_hash": ""
   },
   "src/server/routers/reviews.ts": {
-    "mtime": 1793662989.1195455,
-    "seen": 1793663067.061379,
-    "ast_hash": "49089b02cac4a222b84e46a5f7012af3",
+    "mtime": 1793663922.0692108,
+    "seen": 1793664357.80955,
+    "ast_hash": "21a30978120970064847dbff7b6cab6f",
     "semantic_hash": ""
   },
   "src/server/routers/systemProcesses.ts": {
@@ -2154,9 +2028,9 @@
     "semantic_hash": ""
   },
   "src/server/routers/triage.ts": {
-    "mtime": 1793552373.7838445,
-    "seen": 1793661150.067445,
-    "ast_hash": "de3cdfdd09e1fb7b7a79fee5ec396319",
+    "mtime": 1793663938.8858442,
+    "seen": 1793664357.8096159,
+    "ast_hash": "1adb5802d51c52173d7415fec550b25f",
     "semantic_hash": ""
   },
   "src/server/routers/user.ts": {
@@ -2189,34 +2063,10 @@
     "ast_hash": "975b7c4916ce2e3045999901e4715028",
     "semantic_hash": ""
   },
-  "src/server/services/ocrDatasetHarvester.ts": {
-    "mtime": 1793468572.1580026,
-    "seen": 1793661150.0674539,
-    "ast_hash": "e3ce78e12655eabecba6f22b79501f33",
-    "semantic_hash": ""
-  },
-  "src/server/services/ocrModelRegistryService.ts": {
-    "mtime": 1793472060.5565107,
-    "seen": 1793661150.067455,
-    "ast_hash": "ee6f70e4d70265b48a38cffea19e0e80",
-    "semantic_hash": ""
-  },
   "src/server/services/ocrService.ts": {
-    "mtime": 1793471015.0702105,
-    "seen": 1793661150.067457,
-    "ast_hash": "6ab600d6652e08cc0aa9bd0e56e8e310",
-    "semantic_hash": ""
-  },
-  "src/server/services/ocrTrainerService.ts": {
-    "mtime": 1793544690.8966532,
-    "seen": 1793661150.0674582,
-    "ast_hash": "1950153276b69937598a1156cc9bb4e6",
-    "semantic_hash": ""
-  },
-  "src/server/services/ocrTrainingTriggerService.ts": {
-    "mtime": 1793468815.1572585,
-    "seen": 1793661150.06746,
-    "ast_hash": "be0f68a988f5dda7fe13cd1dbcdde85f",
+    "mtime": 1793663824.1716337,
+    "seen": 1793664357.809921,
+    "ast_hash": "4d7723f3ad6efb04f54bf6c7f70dac31",
     "semantic_hash": ""
   },
   "src/server/services/reportService.ts": {
@@ -2235,12 +2085,6 @@
     "mtime": 1793553961.3765373,
     "seen": 1793661150.0674639,
     "ast_hash": "60ca4e5f1c86711c2dfd7e81a191f1cf",
-    "semantic_hash": ""
-  },
-  "src/server/workers/ocrTrainingWorker.ts": {
-    "mtime": 1793468815.264956,
-    "seen": 1793661150.067466,
-    "ast_hash": "84e0650ab747f162cbabb579c1240b98",
     "semantic_hash": ""
   },
   "src/server/workers/ocrWorker.ts": {
@@ -2316,9 +2160,9 @@
     "semantic_hash": ""
   },
   "tests/integration/fullPipelineEndToEnd.test.ts": {
-    "mtime": 1793506382.2163153,
-    "seen": 1793661150.0674849,
-    "ast_hash": "05fa48452d5082d5bbcc007679a063e1",
+    "mtime": 1793664067.4870133,
+    "seen": 1793664357.810772,
+    "ast_hash": "54f26001310f22d9a92667561b467e72",
     "semantic_hash": ""
   },
   "tests/integration/healthCheck.test.ts": {
@@ -2331,18 +2175,6 @@
     "mtime": 1793265173.7181716,
     "seen": 1793661150.067488,
     "ast_hash": "f3f00b0cf67331d9fc8726b24e2eee16",
-    "semantic_hash": ""
-  },
-  "tests/integration/ocrDatasetLifecycle.test.ts": {
-    "mtime": 1793466703.3246799,
-    "seen": 1793661150.06749,
-    "ast_hash": "3b063ab251e8639711db0e5e4603384e",
-    "semantic_hash": ""
-  },
-  "tests/integration/ocrTrainingLifecycle.test.ts": {
-    "mtime": 1793472223.1412911,
-    "seen": 1793661150.067491,
-    "ast_hash": "d1a4c307fa9deaa2d07bf93a3a4b6723",
     "semantic_hash": ""
   },
   "tests/integration/rateLimiter.test.ts": {
@@ -2364,8 +2196,8 @@
     "semantic_hash": ""
   },
   "tests/integration/reviewsManagementLifecycle.test.ts": {
-    "mtime": 1793663007.3983731,
-    "seen": 1793663067.062359,
+    "mtime": 1793663211.6022925,
+    "seen": 1793664357.811053,
     "ast_hash": "aa785e4b22f3ced500df973ccf445a73",
     "semantic_hash": ""
   },
@@ -2412,9 +2244,9 @@
     "semantic_hash": ""
   },
   "tests/ocr_service.test.ts": {
-    "mtime": 1793469313.5302887,
-    "seen": 1793661150.067509,
-    "ast_hash": "96e9cef8651d0c06d9dad3271b47549d",
+    "mtime": 1793664354.1787949,
+    "seen": 1793664357.811435,
+    "ast_hash": "1b6fdf6e090155c8a931fd6dd2c6e1c4",
     "semantic_hash": ""
   },
   "tests/queue.test.ts": {
@@ -2460,9 +2292,9 @@
     "semantic_hash": ""
   },
   "tests/unit/designSystemTokens.test.ts": {
-    "mtime": 1793556661.3112314,
-    "seen": 1793661150.067521,
-    "ast_hash": "9fda64de79e908aa2f0352c69c3ee467",
+    "mtime": 1793664113.041723,
+    "seen": 1793664357.811817,
+    "ast_hash": "9ca9d7988f261d341f52d7f8bb2a7be6",
     "semantic_hash": ""
   },
   "tests/unit/evidenceDownloader.test.ts": {
@@ -2508,45 +2340,15 @@
     "semantic_hash": ""
   },
   "tests/unit/navigationRbacFilter.test.ts": {
-    "mtime": 1793556661.5516543,
-    "seen": 1793661150.067533,
-    "ast_hash": "41f05646cfc30b9bf3cc3701cb54820a",
-    "semantic_hash": ""
-  },
-  "tests/unit/ocrDatasetHarvester.test.ts": {
-    "mtime": 1793466703.3878644,
-    "seen": 1793661150.067534,
-    "ast_hash": "30cb17ff6b34ec90656742ad06ce8450",
-    "semantic_hash": ""
-  },
-  "tests/unit/ocrModelRegistryService.test.ts": {
-    "mtime": 1793469378.5476284,
-    "seen": 1793661150.0675352,
-    "ast_hash": "fa6ca05511bea359f53b69485019926d",
+    "mtime": 1793664104.0397272,
+    "seen": 1793664357.812214,
+    "ast_hash": "b9c3889c2015304c9217b1b23e32abc1",
     "semantic_hash": ""
   },
   "tests/unit/ocrRowProgressLifecycle.test.ts": {
     "mtime": 1793339794.6601818,
     "seen": 1793661150.0675368,
     "ast_hash": "8a84551c526e848dfd7f200ffd6ed2c6",
-    "semantic_hash": ""
-  },
-  "tests/unit/ocrTrainerService.test.ts": {
-    "mtime": 1793467862.3821688,
-    "seen": 1793661150.067538,
-    "ast_hash": "db8fcf52957e16e18e22300a33c71fbc",
-    "semantic_hash": ""
-  },
-  "tests/unit/ocrTrainingRouter.test.ts": {
-    "mtime": 1793471015.3337784,
-    "seen": 1793661150.06754,
-    "ast_hash": "5aedcce14f2d62790e5810798f65db9d",
-    "semantic_hash": ""
-  },
-  "tests/unit/ocrTrainingTriggerService.test.ts": {
-    "mtime": 1793468815.5550163,
-    "seen": 1793661150.067541,
-    "ast_hash": "e80b9b8fe2f03a49b4763be20c239a0c",
     "semantic_hash": ""
   },
   "tests/unit/processManager.test.ts": {
@@ -2562,9 +2364,9 @@
     "semantic_hash": ""
   },
   "tests/unit/reviewsRouter.test.ts": {
-    "mtime": 1793663000.4060006,
-    "seen": 1793663067.063201,
-    "ast_hash": "367f76bed200a4f07bb81181df1f7b9c",
+    "mtime": 1793664079.2634985,
+    "seen": 1793664357.8123882,
+    "ast_hash": "7327df21f59077d85262f13922aaca4a",
     "semantic_hash": ""
   },
   "tests/unit/systemProcessesRouter.test.ts": {

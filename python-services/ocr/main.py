@@ -13,15 +13,6 @@ from engine import extract_text_from_image
 from matcher import calculate_similarity
 from hasher import calculate_phash, hamming_distance, is_visual_duplicate
 
-# Try importing CRNN deep learning predictor
-try:
-    from predictor import predict_crnn
-except ImportError:
-    try:
-        from ocr_trainer.predictor import predict_crnn
-    except ImportError:
-        predict_crnn = None
-
 # FastAPI imports
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -36,7 +27,6 @@ class ProcessRequest(BaseModel):
     image_path: Optional[str] = None
     image_base64: Optional[str] = None
     target_name: Optional[str] = ""
-    model_path: Optional[str] = ""
 
 class ProcessResponse(BaseModel):
     success: bool
@@ -61,7 +51,6 @@ def process_evidence(
     image_path: Optional[str] = None,
     image_base64: Optional[str] = None,
     target_name: Optional[str] = "",
-    model_path: Optional[str] = ""
 ) -> Dict[str, Any]:
     start_time = time.time()
 
@@ -91,16 +80,7 @@ def process_evidence(
             # 2. Extract text with preprocessing and OCR
             extracted_text = extract_text_from_image(img)
 
-            # 3. If deep learning model_path provided, run CRNN inference
-            if model_path and os.path.exists(model_path) and predict_crnn:
-                try:
-                    crnn_text = predict_crnn(img, model_path)
-                    if crnn_text:
-                        extracted_text = f"{crnn_text}\n{extracted_text}".strip()
-                except Exception as crnn_err:
-                    sys.stderr.write(f"Warning: CRNN inference failed: {crnn_err}\n")
-
-        # 4. Fuzzy match target reviewer name against extracted text
+        # 3. Fuzzy match target reviewer name against extracted text
         similarity_score, zone, recommended_status = calculate_similarity(
             target_name or "", extracted_text
         )
@@ -139,7 +119,6 @@ def api_process(req: ProcessRequest):
         image_path=req.image_path,
         image_base64=req.image_base64,
         target_name=req.target_name,
-        model_path=req.model_path,
     )
     return result
 
@@ -154,7 +133,6 @@ def cli_main():
     parser.add_argument("--image", default="", help="Path to evidence image")
     parser.add_argument("--base64", default="", help="Base64 encoded evidence image (in-memory streaming)")
     parser.add_argument("--expected-name", default="", help="Expected Play Store reviewer name")
-    parser.add_argument("--model-path", default="", help="Path to custom CRNN model checkpoint")
     args = parser.parse_args()
 
     b64_data = args.base64
@@ -165,7 +143,6 @@ def cli_main():
         image_path=args.image if args.image else None,
         image_base64=b64_data if b64_data else None,
         target_name=args.expected_name,
-        model_path=args.model_path,
     )
     print(json.dumps(result, indent=2))
 

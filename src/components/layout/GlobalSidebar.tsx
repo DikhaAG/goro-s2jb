@@ -20,7 +20,6 @@ import {
   Activity,
   Terminal,
   FolderKanban,
-  BrainCircuit,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -53,12 +52,6 @@ export const NAV_ITEMS: NavMenuItem[] = [
     label: "Triase & Data Ulasan",
     href: "/reviews",
     icon: FolderKanban,
-    roles: ["PEGAWAI", "SUPER_ADMIN"],
-  },
-  {
-    label: "Pelatihan & Model OCR",
-    href: "/ocr-training",
-    icon: BrainCircuit,
     roles: ["PEGAWAI", "SUPER_ADMIN"],
   },
   {
