@@ -35,7 +35,31 @@ export async function logAuditEvent(params: CreateAuditLogParams) {
         metadata: params.metadata || undefined,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Fallback: If foreign key constraint fails on userId, persist with userId: null and record attemptedUserId in metadata
+    if (params.userId && error?.code === "P2003") {
+      try {
+        const fallbackMeta =
+          typeof params.metadata === "object" && params.metadata !== null
+            ? { ...(params.metadata as Record<string, any>), attemptedUserId: params.userId }
+            : { attemptedUserId: params.userId };
+
+        return await prisma.auditLog.create({
+          data: {
+            userId: null,
+            action: params.action,
+            entityType: params.entityType,
+            entityId: params.entityId || null,
+            ipAddress: params.ipAddress || null,
+            userAgent: params.userAgent || null,
+            metadata: fallbackMeta as Prisma.InputJsonValue,
+          },
+        });
+      } catch {
+        // ignore fallback error
+      }
+    }
+
     console.error("Failed to write audit log:", error);
     // Non-fatal fallback so main business transaction isn't broken if logging has transient error
     return null;

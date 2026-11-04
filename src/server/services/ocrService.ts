@@ -23,7 +23,7 @@ export async function processEvidenceOcr(
     ];
 
     const proc = spawn(pythonExecutable, spawnArgs, {
-      timeout: 20000,
+      timeout: 45000,
       env: {
         ...process.env,
         PYTHONUNBUFFERED: "1",

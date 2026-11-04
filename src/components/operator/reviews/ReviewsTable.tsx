@@ -33,10 +33,14 @@ import {
   Keyboard,
   ExternalLink,
   SlidersHorizontal,
+  Columns2,
 } from "lucide-react";
 
 export interface ReviewItem {
   id: string;
+  source?: "INTAKE" | "MIGRATION" | string;
+  timestamp?: string | Date | null;
+  createdAt?: string | Date | null;
   playstoreReviewerName: string;
   originalReviewerName: string | null;
   entryDate: string | Date;
@@ -50,10 +54,15 @@ export interface ReviewItem {
   duplicateOfId?: string | null;
   duplicateOf?: {
     id: string;
+    source?: "INTAKE" | "MIGRATION" | string;
+    timestamp?: string | Date | null;
+    createdAt?: string | Date | null;
     playstoreReviewerName: string;
     originalReviewerName?: string | null;
     entryDate: string | Date;
     evidenceImagePath: string;
+    evidenceImageHash?: string | null;
+    extractedOcrText?: string | null;
     validationStatus: string;
     confidenceScore?: number | null;
     up3?: { id?: string; name: string } | null;
@@ -63,6 +72,7 @@ export interface ReviewItem {
   reviewRemarks: string | null;
   extractedOcrText: string | null;
   evidenceImagePath: string;
+  evidenceImageHash?: string | null;
 }
 
 // Module augmentation for TanStack Table Meta
@@ -75,6 +85,7 @@ declare module "@tanstack/react-table" {
     onReject?: (item: ReviewItem) => void;
     onRetryOcr?: (reviewId: string) => void;
     onOpenDelete?: (review: ReviewItem) => void;
+    onOpenDuplicateSplitView?: (item: ReviewItem) => void;
     activeId?: string | null;
     isRetryingOcrId?: string | null;
   }
@@ -99,6 +110,7 @@ interface ReviewsTableProps {
   onOpenDetail: (review: ReviewItem) => void;
   onRetryOcr: (reviewId: string) => void;
   onOpenDelete: (review: ReviewItem) => void;
+  onOpenDuplicateSplitView?: (item: ReviewItem) => void;
   isRetryingOcrId?: string | null;
   activeId?: string | null;
   onSelectActive?: (id: string) => void;
@@ -128,6 +140,7 @@ export function ReviewsTable({
   onOpenDetail,
   onRetryOcr,
   onOpenDelete,
+  onOpenDuplicateSplitView,
   isRetryingOcrId,
   activeId,
   onSelectActive,
@@ -188,7 +201,7 @@ export function ReviewsTable({
   const renderConfidencePill = (score: number | null, ocrStatus: string) => {
     if (ocrStatus === "PROCESSING" || ocrStatus === "DOWNLOADING") {
       return (
-        <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd]">
+        <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd]">
           <RefreshCw className="w-3 h-3 animate-spin text-[#0284c7]" />
           <span>Proses</span>
         </span>
@@ -197,7 +210,7 @@ export function ReviewsTable({
 
     if (ocrStatus === "FAILED" || score === null) {
       return (
-        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] font-mono text-[#64748b] bg-[#f8fafc] border border-[#e2e8f0]">
+        <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-mono text-[#64748b] bg-[#f8fafc] border border-[#e2e8f0]">
           -
         </span>
       );
@@ -205,7 +218,7 @@ export function ReviewsTable({
 
     if (score >= 90.0) {
       return (
-        <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-mono tabular-nums bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
+        <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold font-mono tabular-nums bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
           <span>{score.toFixed(1)}%</span>
         </span>
@@ -214,7 +227,7 @@ export function ReviewsTable({
 
     if (score >= 70.0) {
       return (
-        <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-mono tabular-nums bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
+        <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold font-mono tabular-nums bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
           <span>{score.toFixed(1)}%</span>
         </span>
@@ -222,7 +235,7 @@ export function ReviewsTable({
     }
 
     return (
-      <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-mono tabular-nums bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]">
+      <span className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold font-mono tabular-nums bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]">
         <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
         <span>{score.toFixed(1)}%</span>
       </span>
@@ -233,14 +246,14 @@ export function ReviewsTable({
     switch (status) {
       case "APPROVED":
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
+          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
             <CheckCircle2 className="w-3.5 h-3.5 text-[#16a34a]" />
             <span>Disetujui</span>
           </span>
         );
       case "REJECTED":
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]">
+          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]">
             <XCircle className="w-3.5 h-3.5 text-[#ef4444]" />
             <span>Ditolak</span>
           </span>
@@ -248,7 +261,7 @@ export function ReviewsTable({
       case "PENDING":
       default:
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
+          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
             <Clock className="w-3.5 h-3.5 text-[#f97316]" />
             <span>Menunggu</span>
           </span>
@@ -260,32 +273,32 @@ export function ReviewsTable({
     switch (status) {
       case "COMPLETED":
         return (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#f8fafc] text-[#334155] border border-[#e2e8f0]">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-semibold bg-[#f8fafc] text-[#334155] border border-[#e2e8f0]">
             Selesai
           </span>
         );
       case "PROCESSING":
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd]">
+          <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd]">
             <RefreshCw className="w-2.5 h-2.5 animate-spin" />
             <span>Proses</span>
           </span>
         );
       case "DOWNLOADING":
         return (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd]">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd]">
             Unduh
           </span>
         );
       case "QUEUED":
         return (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-medium bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]">
             Antre
           </span>
         );
       case "FAILED":
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]">
+          <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]">
             <AlertCircle className="w-2.5 h-2.5" />
             <span>Gagal</span>
           </span>
@@ -352,7 +365,7 @@ export function ReviewsTable({
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[10px] text-[#94a3b8] font-mono">
+                <div className="w-full h-full flex items-center justify-center text-xs text-[#94a3b8] font-mono">
                   N/A
                 </div>
               )}
@@ -361,7 +374,7 @@ export function ReviewsTable({
               </div>
               {item.isDuplicate && (
                 <div
-                  className="absolute top-0.5 right-0.5 bg-[#7e22ce] text-white text-[8px] font-extrabold px-1 rounded shadow-2xs leading-tight"
+                  className="absolute top-0.5 right-0.5 bg-[#7e22ce] text-white text-xs font-bold px-1.5 py-0.5 rounded shadow-2xs leading-none"
                   title="Terindikasi Duplikasi Visual"
                 >
                   DUP
@@ -398,21 +411,21 @@ export function ReviewsTable({
               </div>
 
               {item.originalReviewerName && (
-                <span className="text-[11px] text-[#64748b] mt-0.5 truncate max-w-[260px]">
+                <span className="text-xs text-[#64748b] mt-0.5 truncate max-w-[260px]">
                   Akun Form: <strong className="text-[#475569] font-medium">{item.originalReviewerName}</strong>
                 </span>
               )}
 
-              {/* Cohesive Duplication Attribution Micro-Card */}
+              {/* Cohesive Duplication Attribution Card with Split View Trigger */}
               {item.isDuplicate && (
-                <div className="mt-1.5 p-2 rounded-xl bg-[#faf5ff] border border-[#e9d5ff] text-xs space-y-1 max-w-[380px] shadow-2xs">
+                <div className="mt-2 p-2.5 rounded-xl bg-[#faf5ff] border border-[#e9d5ff] text-xs space-y-2 max-w-[380px] shadow-2xs">
                   <div className="flex items-center justify-between gap-1.5">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wide uppercase text-[#7e22ce]">
-                      <Copy className="w-3 h-3 text-[#7e22ce]" />
-                      Duplikat Visual
+                    <span className="inline-flex items-center gap-1 text-xs font-bold tracking-wide uppercase text-[#7e22ce]">
+                      <Copy className="w-3.5 h-3.5 text-[#7e22ce]" />
+                      <span>Duplikat Visual</span>
                     </span>
                     {item.duplicateOf?.entryDate && (
-                      <span className="text-[10px] font-mono text-[#8b5cf6]">
+                      <span className="text-xs font-mono text-[#8b5cf6]">
                         {formatDate(item.duplicateOf.entryDate)}
                       </span>
                     )}
@@ -420,8 +433,8 @@ export function ReviewsTable({
 
                   {item.duplicateOf ? (
                     <div className="flex items-center justify-between gap-2 pt-0.5">
-                      <span className="text-[11px] text-[#6b21a8] flex items-center gap-1 truncate">
-                        <span className="text-[#9333ea] text-[10px]">Sumber:</span>
+                      <span className="text-xs text-[#6b21a8] flex items-center gap-1 truncate">
+                        <span className="text-[#9333ea]">Sumber:</span>
                         <button
                           type="button"
                           aria-haspopup="dialog"
@@ -477,27 +490,43 @@ export function ReviewsTable({
                         className="shrink-0 p-1 rounded-md text-[#7e22ce] hover:bg-[#ede9fe] transition-colors cursor-pointer"
                         title="Buka ulasan asli"
                       >
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ) : item.duplicateOfId ? (
-                    <div className="text-[10px] font-mono text-[#7e22ce] bg-white px-2 py-0.5 rounded border border-[#ddd6fe] truncate">
+                    <div className="text-xs font-mono text-[#7e22ce] bg-white px-2 py-0.5 rounded border border-[#ddd6fe] truncate">
                       Ref ID: {item.duplicateOfId}
                     </div>
                   ) : (
-                    <p className="text-[10px] text-[#6b21a8] italic">
+                    <p className="text-xs text-[#6b21a8] italic">
                       {item.reviewRemarks || "Terindikasi duplikat citra eviden"}
                     </p>
                   )}
 
                   {item.duplicateOf?.ulp && (
-                    <div className="text-[10px] text-[#6b21a8]/80 flex items-center gap-1 pt-0.5 border-t border-[#f3e8ff]">
+                    <div className="text-xs text-[#6b21a8]/80 flex items-center gap-1 pt-0.5 border-t border-[#f3e8ff]">
                       <span>Unit:</span>
                       <span className="font-medium text-[#4c1d95] truncate">
                         {item.duplicateOf.up3?.name || "-"} • {item.duplicateOf.ulp.name}
                       </span>
                     </div>
                   )}
+
+                  {/* Primary Split View Comparison Action Button */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        table.options.meta?.onOpenDuplicateSplitView?.(item);
+                      }}
+                      className="w-full min-h-[34px] px-2.5 py-1.5 bg-white hover:bg-[#ede9fe] text-[#7e22ce] hover:text-[#581c87] border border-[#d8b4fe] rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-95 focus-utility-ring"
+                      title="Buka tampilan komparasi berdampingan (Split View) ulasan duplikat"
+                    >
+                      <Columns2 className="w-3.5 h-3.5 text-[#7e22ce]" />
+                      <span>Bandingkan (Split View)</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -514,7 +543,7 @@ export function ReviewsTable({
         cell: ({ row }) => {
           const item = row.original;
           return (
-            <div className="flex flex-col text-[11px] leading-snug">
+            <div className="flex flex-col text-xs leading-snug">
               <span className="font-semibold text-[#0f172a] truncate max-w-[170px]">
                 {item.up3?.name || "-"}
               </span>
@@ -533,7 +562,7 @@ export function ReviewsTable({
         header: "Tanggal Entri",
         enableSorting: true,
         cell: ({ row }) => (
-          <span className="text-[#475569] whitespace-nowrap font-mono tabular-nums text-[11px]">
+          <span className="text-[#475569] whitespace-nowrap font-mono tabular-nums text-xs">
             {formatDate(row.original.entryDate)}
           </span>
         ),
@@ -581,7 +610,7 @@ export function ReviewsTable({
       // 9. Actions Column
       columnHelper.display({
         id: "actions",
-        size: 240,
+        size: 260,
         header: "Aksi Verifikasi & Kelola",
         cell: ({ row, table }) => {
           const item = row.original;
@@ -613,7 +642,7 @@ export function ReviewsTable({
                 <Check className="w-3.5 h-3.5 text-[#16a34a] stroke-[2.5]" />
                 <span className="text-xs font-semibold">Setujui</span>
                 {isActive && !isOcrPending && (
-                  <span className="text-[10px] font-mono text-[#15803d] bg-white/80 px-1 py-0.2 rounded border border-[#a7f3d0]">
+                  <span className="text-xs font-mono text-[#15803d] bg-white/80 px-1.5 py-0.5 rounded border border-[#a7f3d0] leading-none">
                     A
                   </span>
                 )}
@@ -637,11 +666,24 @@ export function ReviewsTable({
                 <XCircle className="w-3.5 h-3.5 text-[#dc2626]" />
                 <span className="text-xs font-semibold">Tolak</span>
                 {isActive && !isOcrPending && (
-                  <span className="text-[10px] font-mono text-[#dc2626] bg-white/80 px-1 py-0.2 rounded border border-[#fecaca]">
+                  <span className="text-xs font-mono text-[#dc2626] bg-white/80 px-1.5 py-0.5 rounded border border-[#fecaca] leading-none">
                     R
                   </span>
                 )}
               </button>
+
+              {/* Duplicate Comparison Split View Quick Button */}
+              {item.isDuplicate && (
+                <button
+                  type="button"
+                  onClick={() => meta?.onOpenDuplicateSplitView?.(item)}
+                  className="min-h-[36px] min-w-[36px] h-9 w-9 rounded-xl border border-[#e9d5ff] bg-[#faf5ff] hover:bg-[#ede9fe] text-[#7e22ce] inline-flex items-center justify-center transition-all shadow-2xs hover:border-[#c084fc] hover:text-[#581c87] active:scale-95 cursor-pointer focus-utility-ring"
+                  title="Buka tampilan komparasi berdampingan (Split View) ulasan duplikat"
+                  aria-label="Split view perbandingan duplikat"
+                >
+                  <Columns2 className="w-4 h-4 text-[#7e22ce]" />
+                </button>
+              )}
 
               <div className="w-[1px] h-5 bg-[#e2e8f0] mx-0.5" />
 
@@ -728,6 +770,7 @@ export function ReviewsTable({
       onReject,
       onRetryOcr,
       onOpenDelete,
+      onOpenDuplicateSplitView,
       activeId,
       isRetryingOcrId,
     },
@@ -750,62 +793,62 @@ export function ReviewsTable({
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="inline-flex items-center gap-1.5 font-semibold text-[#0f172a] bg-white px-2 py-1 rounded-lg border border-[#e2e8f0] shadow-2xs">
             <Keyboard className="w-3.5 h-3.5 text-[#006877]" />
-            <span className="text-[11px]">Hotkey:</span>
+            <span className="text-xs">Hotkey:</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1 text-[#334155]">
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 A
               </kbd>
               <span>Setujui</span>
             </span>
             <span className="text-[#cbd5e1]">•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 R
               </kbd>
               <span>Tolak</span>
             </span>
             <span className="text-[#cbd5e1]">•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 J
               </kbd>
               <span>/</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 ↓
               </kbd>
               <span>Berikut</span>
             </span>
             <span className="text-[#cbd5e1]">•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 K
               </kbd>
               <span>/</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 ↑
               </kbd>
               <span>Sebelum</span>
             </span>
             <span className="text-[#cbd5e1]">•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 Spasi
               </kbd>
               <span>Lightbox</span>
             </span>
             <span className="text-[#cbd5e1]">•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-[10px] shadow-2xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 Esc
               </kbd>
               <span>Tutup</span>
             </span>
             <span className="text-[#cbd5e1]">•</span>
             <span className="inline-flex items-center gap-1 text-[#006877] font-medium">
-              <span className="bg-[#e0f2fe] px-1.5 py-0.5 rounded text-[10px] font-mono">Double-Click</span>
+              <span className="bg-[#e0f2fe] px-1.5 py-0.5 rounded text-xs font-mono">Double-Click</span>
               <span>Buka Detail</span>
             </span>
           </div>
@@ -813,7 +856,7 @@ export function ReviewsTable({
 
         <div className="flex items-center gap-2">
           {activeId && (
-            <div className="inline-flex items-center gap-1.5 text-[11px] text-[#006877] font-semibold bg-[#e7eeff] px-2.5 py-1 rounded-full border border-[#cfdaf2]">
+            <div className="inline-flex items-center gap-1.5 text-xs text-[#006877] font-semibold bg-[#e7eeff] px-2.5 py-1 rounded-full border border-[#cfdaf2]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#00a2b9]" />
               <span>Fokus Baris:</span>
               <span className="font-mono font-bold text-[#0f172a] truncate max-w-[140px]">
@@ -827,7 +870,7 @@ export function ReviewsTable({
             <button
               type="button"
               onClick={() => setIsColumnPickerOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#cbd5e1] bg-white text-[11px] font-semibold text-[#334155] hover:bg-[#f8fafc] hover:border-[#00a2b9] transition-colors shadow-2xs cursor-pointer focus-utility-ring"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#cbd5e1] bg-white text-xs font-semibold text-[#334155] hover:bg-[#f8fafc] hover:border-[#00a2b9] transition-colors shadow-2xs cursor-pointer focus-utility-ring"
               title="Atur Visibilitas Kolom Tabel"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#006877]" />
@@ -836,7 +879,7 @@ export function ReviewsTable({
 
             {isColumnPickerOpen && (
               <div className="absolute right-0 mt-1.5 w-48 bg-white border border-[#e2e8f0] rounded-xl shadow-lg p-2 z-30 space-y-1">
-                <div className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider px-2 py-1">
+                <div className="text-xs font-bold text-[#64748b] uppercase tracking-wider px-2 py-1">
                   Visibilitas Kolom
                 </div>
                 {table
@@ -876,7 +919,7 @@ export function ReviewsTable({
             {table.getHeaderGroups().map((headerGroup) => (
               <tr
                 key={headerGroup.id}
-                className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider select-none"
+                className="text-xs font-bold text-[#64748b] uppercase tracking-wider select-none"
               >
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
@@ -1017,7 +1060,7 @@ export function ReviewsTable({
                             cell.column.id === "validationStatus") &&
                             "text-center whitespace-nowrap",
                           cell.column.id === "entryDate" &&
-                            "whitespace-nowrap font-mono tabular-nums text-[11px] text-[#475569]",
+                            "whitespace-nowrap font-mono tabular-nums text-xs text-[#475569]",
                           cell.column.id === "actions" && "px-3.5 text-right whitespace-nowrap"
                         )}
                         onClick={(e) => {

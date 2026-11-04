@@ -1,12 +1,13 @@
 import { Worker, Job } from "bullmq";
 import redis from "@/lib/redis";
 import prisma from "@/lib/prisma";
-import { OcrProcessingStatus, ReviewSource } from "@prisma/client";
+import { OcrProcessingStatus, ReviewSource, ValidationStatus } from "@prisma/client";
 import { IMPORT_QUEUE_NAME, ImportJobData } from "../queues/importQueue";
 import { ocrQueue } from "../queues/ocrQueue";
 import { parseCsvStream } from "@/lib/parsers/csvStreamParser";
 import { parseXlsxStream } from "@/lib/parsers/xlsxStreamParser";
-import { downloadEvidenceImage, isExternalUrl } from "../services/evidenceDownloader";
+import { downloadEvidenceImage, isExternalUrl, extractGoogleDriveFileId } from "../services/evidenceDownloader";
+import { recordJobCompleted, recordJobFailed } from "../queues/queueTelemetry";
 import path from "path";
 import fs from "fs";
 
@@ -36,6 +37,7 @@ export function createImportWorker() {
   const worker = new Worker<ImportJobData>(
     IMPORT_QUEUE_NAME,
     async (job: Job<ImportJobData>) => {
+      const jobStartTime = Date.now();
       const { importBatchId, filePath, userId, startRowNumber } = job.data;
       console.log(`[Import Worker] Starting batch ${importBatchId} for file ${filePath} (startRow: ${startRowNumber || 0})`);
 
@@ -117,6 +119,9 @@ export function createImportWorker() {
           if (userRecord) validUserId = userRecord.id;
         }
 
+        // In-memory set to track seen deduplication keys across the entire file stream (Opsi A1)
+        const seenRowKeys = new Set<string>();
+
         const checkCancellation = async (): Promise<boolean> => {
           try {
             const cancelKey = await redis.get(`migration:cancel:${importBatchId}`);
@@ -139,61 +144,151 @@ export function createImportWorker() {
             return;
           }
 
-          // Build rating data payload directly without blocking on external file downloads
-          const ratingData = batchRows.map((row) => {
-            const ulpEntry =
-              ulpMap.get(row.ulpName.toUpperCase()) ||
-              ulpMap.get(`ULP ${row.ulpName.toUpperCase()}`) ||
-              { id: defaultUlp?.id || "", up3Id: defaultUp3?.id || "" };
+          // Pre-fetch existing matches from database to catch inter-batch duplicates
+          const rawImagePaths = batchRows
+            .map((r) => r.evidenceImagePath?.trim())
+            .filter((p): p is string => Boolean(p && p !== "legacy/gdrive_import"));
 
-            const up3Id =
-              up3Map.get(row.up3Name.toUpperCase()) ||
-              ulpEntry.up3Id ||
-              defaultUp3?.id ||
-              "";
+          if (rawImagePaths.length > 0) {
+            try {
+              const existingMatches = await prisma.ratingReview.findMany({
+                where: {
+                  evidenceImagePath: { in: rawImagePaths },
+                },
+                select: {
+                  evidenceImagePath: true,
+                  playstoreReviewerName: true,
+                },
+              });
 
-            const appVersionId =
-              versionMap.get(row.versionName.toUpperCase()) || defaultVersionId;
+              for (const em of existingMatches) {
+                const driveId = extractGoogleDriveFileId(em.evidenceImagePath);
+                const normPath = driveId ? `gdrive:${driveId}` : em.evidenceImagePath.trim().toLowerCase();
+                const normName = (em.playstoreReviewerName || "").trim().toLowerCase();
+                seenRowKeys.add(`img:${normPath}|rev:${normName}`);
+              }
+            } catch (dbErr) {
+              console.warn("[Import Worker] Failed to pre-fetch existing image duplicates:", dbErr);
+            }
+          }
 
-            return {
-              timestamp: row.timestamp,
-              up3Id,
-              ulpId: ulpEntry.id,
-              playstoreReviewerName: row.playstoreReviewerName,
-              entryDate: row.entryDate,
-              evidenceImagePath: row.evidenceImagePath || "legacy/gdrive_import",
-              appVersionId,
-              originalReviewerName: row.originalReviewerName || row.playstoreReviewerName,
-              reviewerCategory: row.reviewerCategory || "Pelanggan",
-              fieldNotes: row.fieldNotes || null,
-              isDuplicate: row.isDuplicate || false,
-              source: ReviewSource.MIGRATION,
-              migrationBatchId: importBatchId,
-              validationStatus: row.validationStatus || "PENDING",
-              ocrStatus:
-                row.evidenceImagePath &&
-                row.evidenceImagePath.trim() !== "" &&
-                row.evidenceImagePath !== "legacy/gdrive_import"
-                  ? OcrProcessingStatus.QUEUED
-                  : OcrProcessingStatus.COMPLETED,
-              reviewRemarks: row.reviewRemarks || null,
-              submittedById: validUserId,
-            };
-          });
+          // Separate unique rows from duplicate rows (Opsi A1: Pre-Import Deduplication)
+          const validRows: any[] = [];
+          const duplicateRows: any[] = [];
 
-          // High-speed bulk insertion returning inserted review records
-          const insertedReviews = await prisma.ratingReview.createManyAndReturn({
-            data: ratingData,
-            skipDuplicates: true,
-            select: {
-              id: true,
-              evidenceImagePath: true,
-              playstoreReviewerName: true,
-              validationStatus: true,
-            },
-          });
+          for (const row of batchRows) {
+            const rawPath = (row.evidenceImagePath || "").trim();
+            const driveId = extractGoogleDriveFileId(rawPath);
+            const normPath = driveId ? `gdrive:${driveId}` : rawPath.toLowerCase();
+            const reviewerName = (row.playstoreReviewerName || "").trim().toLowerCase();
 
-          // Non-blocking Tier 2: Asynchronously dispatch all reviews with evidence images to OCR background queue
+            let dedupKey: string;
+            if (normPath && normPath !== "legacy/gdrive_import") {
+              dedupKey = `img:${normPath}|rev:${reviewerName}`;
+            } else {
+              const timeStr =
+                row.timestamp instanceof Date && !isNaN(row.timestamp.getTime())
+                  ? row.timestamp.toISOString()
+                  : String(row.timestamp || "").trim();
+              dedupKey = `text:${reviewerName}|time:${timeStr}|ulp:${(row.ulpName || "").trim().toLowerCase()}`;
+            }
+
+            if (seenRowKeys.has(dedupKey)) {
+              duplicateRows.push({ row, dedupKey });
+            } else {
+              seenRowKeys.add(dedupKey);
+              validRows.push(row);
+            }
+          }
+
+          // Log duplicate rows to MigrationErrorLog and increment totalFailedRows (Skipped)
+          if (duplicateRows.length > 0) {
+            totalFailedRows += duplicateRows.length;
+            try {
+              await prisma.migrationErrorLog.createMany({
+                data: duplicateRows.map(({ row }) => ({
+                  batchId: importBatchId,
+                  rowNumber: row.rowNumber,
+                  rawRowData: JSON.stringify({
+                    reviewer: row.playstoreReviewerName,
+                    evidence: row.evidenceImagePath,
+                    timestamp: row.timestamp,
+                    unit: `${row.up3Name} / ${row.ulpName}`,
+                  }),
+                  errorReason: `Duplikasi Baris Diabaikan: Ulasan [${row.playstoreReviewerName}] dengan eviden gambar identik sudah terdaftar sebelumnya. Baris dilewati (Opsi A1).`,
+                })),
+              });
+            } catch (e) {
+              console.error("[Import Worker] Failed to log skipped duplicate rows:", e);
+            }
+          }
+
+          let insertedReviews: {
+            id: string;
+            evidenceImagePath: string;
+            playstoreReviewerName: string;
+            validationStatus: ValidationStatus;
+          }[] = [];
+
+          if (validRows.length > 0) {
+            // Build rating data payload directly without blocking on external file downloads
+            const ratingData = validRows.map((row) => {
+              const ulpEntry =
+                ulpMap.get(row.ulpName.toUpperCase()) ||
+                ulpMap.get(`ULP ${row.ulpName.toUpperCase()}`) ||
+                { id: defaultUlp?.id || "", up3Id: defaultUp3?.id || "" };
+
+              const up3Id =
+                up3Map.get(row.up3Name.toUpperCase()) ||
+                ulpEntry.up3Id ||
+                defaultUp3?.id ||
+                "";
+
+              const appVersionId =
+                versionMap.get(row.versionName.toUpperCase()) || defaultVersionId;
+
+              return {
+                timestamp: row.timestamp,
+                up3Id,
+                ulpId: ulpEntry.id,
+                playstoreReviewerName: row.playstoreReviewerName,
+                entryDate: row.entryDate,
+                evidenceImagePath: row.evidenceImagePath || "legacy/gdrive_import",
+                appVersionId,
+                originalReviewerName: row.originalReviewerName || row.playstoreReviewerName,
+                reviewerCategory: row.reviewerCategory || "Pelanggan",
+                fieldNotes: row.fieldNotes || null,
+                isDuplicate: row.isDuplicate || false,
+                source: ReviewSource.MIGRATION,
+                migrationBatchId: importBatchId,
+                validationStatus: row.validationStatus || "PENDING",
+                ocrStatus:
+                  row.evidenceImagePath &&
+                  row.evidenceImagePath.trim() !== "" &&
+                  row.evidenceImagePath !== "legacy/gdrive_import"
+                    ? OcrProcessingStatus.QUEUED
+                    : OcrProcessingStatus.COMPLETED,
+                reviewRemarks: row.reviewRemarks || null,
+                submittedById: validUserId,
+              };
+            });
+
+            // High-speed bulk insertion returning inserted review records
+            insertedReviews = await prisma.ratingReview.createManyAndReturn({
+              data: ratingData,
+              skipDuplicates: true,
+              select: {
+                id: true,
+                evidenceImagePath: true,
+                playstoreReviewerName: true,
+                validationStatus: true,
+              },
+            });
+
+            totalProcessedRows += validRows.length;
+          }
+
+          // Non-blocking Tier 2: Asynchronously dispatch only valid reviews with evidence images to OCR background queue
           const ocrJobs = insertedReviews
             .filter(
               (r) =>
@@ -219,17 +314,17 @@ export function createImportWorker() {
             ...batchRows.map((r: any) => r.rowNumber || 0),
             effectiveStartRow
           );
-          totalProcessedRows += batchRows.length;
 
           await prisma.migrationBatch.update({
             where: { id: importBatchId },
             data: {
               processedRows: totalProcessedRows,
+              failedRows: totalFailedRows,
               lastProcessedRow: maxRowInBatch,
             },
           });
 
-          await job.updateProgress({ processedRows: totalProcessedRows });
+          await job.updateProgress({ processedRows: totalProcessedRows, failedRows: totalFailedRows });
         };
 
         const onErrorLog = async (err: { rowNumber: number; raw: any; reason: string }) => {
@@ -313,12 +408,16 @@ export function createImportWorker() {
           `[Import Worker] Batch ${importBatchId} completed successfully! Processed: ${totalProcessedRows}, Errors: ${totalFailedRows}`
         );
 
+        const jobDurationMs = Date.now() - jobStartTime;
+        recordJobCompleted(IMPORT_QUEUE_NAME, jobDurationMs);
+
         return {
           success: true,
           processedRows: totalProcessedRows,
           failedRows: totalFailedRows,
         };
       } catch (err: any) {
+        recordJobFailed(IMPORT_QUEUE_NAME);
         console.error(`[Import Worker] Batch ${importBatchId} failed:`, err);
         try {
           await prisma.migrationBatch.update({

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, adminProcedure } from "../trpc";
+import { router, adminProcedure, operatorProcedure } from "../trpc";
 import {
   detectServicePorts,
   listAppProcesses,
@@ -10,8 +10,57 @@ import {
   cleanOrphanProcesses,
 } from "@/lib/processManager";
 import { logAuditEvent } from "@/server/services/auditService";
+import { getActiveAlerts, getPublicOperatorAlertSummary } from "@/server/services/alertService";
 
 export const systemProcessesRouter = router({
+  /**
+   * Proactive anomaly alerts for Super Admin dashboard.
+   */
+  getActiveSystemAlerts: adminProcedure.query(async () => {
+    const alerts = await getActiveAlerts();
+    return {
+      alerts,
+      totalCount: alerts.length,
+      timestamp: new Date().toISOString(),
+    };
+  }),
+
+  /**
+   * Sanitized operator alert summary for PEGAWAI.
+   */
+  getOperatorAlertSummary: operatorProcedure.query(async () => {
+    return await getPublicOperatorAlertSummary();
+  }),
+
+  /**
+   * Lightweight operational status indicator accessible by PEGAWAI and SUPER_ADMIN.
+   * Strips all internal OS kernel PIDs, ports, and memory data for safe operator consumption.
+   */
+  getServiceHealthSummary: operatorProcedure.query(async () => {
+    const services = await detectServicePorts();
+    const allUp = services.every((s) => s.status === "UP");
+    const anyDegraded = services.some((s) => s.status === "DEGRADED");
+    const anyDown = services.some((s) => s.status === "DOWN");
+
+    let status: "OPERATIONAL" | "DEGRADED" | "DOWN" = "OPERATIONAL";
+    let message = "Semua layanan sistem berjalan normal.";
+
+    if (anyDown) {
+      status = "DOWN";
+      message = "Sebagian layanan sistem sedang mengalami gangguan.";
+    } else if (anyDegraded) {
+      status = "DEGRADED";
+      message = "Layanan sistem beroperasi dengan latensi meningkat.";
+    }
+
+    return {
+      isHealthy: allUp,
+      status,
+      message,
+      timestamp: new Date().toISOString(),
+    };
+  }),
+
   /**
    * Returns overview of 4 primary service ports and machine telemetry.
    */
@@ -62,7 +111,7 @@ export const systemProcessesRouter = router({
     .input(
       z.object({
         pid: z.number().int().positive(),
-        reason: z.string().min(3, "Alasan penghentian proses wajib diisi minimal 3 karakter."),
+        reason: z.string().min(5, "Alasan penghentian proses wajib diisi minimal 5 karakter."),
         force: z.boolean().default(false),
       })
     )

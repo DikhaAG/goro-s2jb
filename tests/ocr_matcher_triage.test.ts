@@ -51,4 +51,48 @@ print(json.dumps({"score": score, "zone": zone, "status": status}))
     expect(res.zone).toBe("RED");
     expect(res.status).toBe("REJECTED");
   });
+
+  it("should recognize names with physical screen crack splits (e.g. 'Tom my' for 'Tommy') as GREEN zone", () => {
+    const res = runPythonMatcher("Tommy", "PLN Mobile\nTom my\n26/10/26\nBeli token");
+    expect(res.score).toBeGreaterThanOrEqual(90.0);
+    expect(res.zone).toBe("GREEN");
+    expect(res.status).toBe("APPROVED");
+  });
+
+  it("should tolerate optical OCR crack/blur substitutions (e.g. 'T0mmy', 'Tornmy') as GREEN zone", () => {
+    const res1 = runPythonMatcher("Tommy", "PLN Mobile\nT0mmy\n26/10/26\nBeli token");
+    expect(res1.score).toBeGreaterThanOrEqual(90.0);
+    expect(res1.zone).toBe("GREEN");
+
+    const res2 = runPythonMatcher("Tommy", "PLN Mobile\nTornmy\n26/10/26\nBeli token");
+    expect(res2.score).toBeGreaterThanOrEqual(90.0);
+    expect(res2.zone).toBe("GREEN");
+  });
+
+  it("should handle multi-word names with cracked screen noise (e.g. 'Bud1 Sant0so')", () => {
+    const res = runPythonMatcher("Budi Santoso", "PLN Mobile\nBud1 Sant0so\n26/10/26");
+    expect(res.score).toBeGreaterThanOrEqual(90.0);
+    expect(res.zone).toBe("GREEN");
+  });
+
+  it("should tolerate 1-char edit distance on short names with thin/merged letters (e.g. 'Tiara' vs 'Tara')", () => {
+    const res = runPythonMatcher("Tiara", "PLN Mobile\nTara\n26/10/26\nSangat membantu");
+    expect(res.score).toBeGreaterThanOrEqual(90.0);
+    expect(res.zone).toBe("GREEN");
+    expect(res.status).toBe("APPROVED");
+  });
+
+  it("should recognize valid single token from multi-word target when no conflicting name exists (e.g. 'Azkia keysah' vs 'Keysah')", () => {
+    const res = runPythonMatcher("Azkia keysah", "PLN Mobile\n) Keysah\n26/10/26\nAplikasi bagus");
+    expect(res.score).toBeGreaterThanOrEqual(90.0);
+    expect(res.zone).toBe("GREEN");
+    expect(res.status).toBe("APPROVED");
+  });
+
+  it("should recognize prefix/nickname matches for compound Google account names (e.g. 'DICKI' vs 'dickyyuhendra yhd')", () => {
+    const res = runPythonMatcher("DICKI", "PLN Mobile\ndickyyuhendra yhd\n26/10/26\nBagus sekali");
+    expect(res.score).toBeGreaterThanOrEqual(90.0);
+    expect(res.zone).toBe("GREEN");
+    expect(res.status).toBe("APPROVED");
+  });
 });

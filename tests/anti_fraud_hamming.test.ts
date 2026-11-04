@@ -52,6 +52,7 @@ describe("Anti-Fraud Perceptual Hashing & Hamming Distance Service", () => {
           playstoreReviewerName: "Pengulas Asli AntiFraud",
           evidenceImagePath: "uploads/test/sample_budi.png",
           evidenceImageHash: hashOriginal,
+          extractedOcrText: "PLN Mobile sangat membantu saat diluar kota",
           validationStatus: "APPROVED",
           entryDate: new Date("2026-05-15"),
           timestamp: new Date(),
@@ -86,6 +87,29 @@ describe("Anti-Fraud Perceptual Hashing & Hamming Distance Service", () => {
       const result = await checkImageDuplicate("new_temp_id_3", hashFar, 5);
       expect(result.isDuplicate).toBe(false);
       expect(result.duplicateOfId).toBeNull();
+    });
+
+    it("should dismiss template collision when pHash matches but reviewer name and OCR text differ", async () => {
+      const result = await checkImageDuplicate("new_temp_id_4", hashOriginal, 5, {
+        reviewerName: "Siti Rahmawati Berbeda",
+        extractedText: "Aplikasi sering keluar sendiri mohon diperbaiki kendala login",
+        evidenceImagePath: "https://drive.google.com/open?id=DIFFERENT_DRIVE_ID_123",
+      });
+      expect(result.isDuplicate).toBe(false);
+      expect(result.visualSimilarity).toBe(100);
+      expect(result.textSimilarity).toBeLessThan(70);
+      expect(result.reviewerSimilarity).toBeLessThan(75);
+    });
+
+    it("should confirm duplicate when reviewer name matches even with identical layout pHash", async () => {
+      const result = await checkImageDuplicate("new_temp_id_5", hashOriginal, 5, {
+        reviewerName: "Pengulas Asli AntiFraud",
+        extractedText: "Komentar lain",
+        evidenceImagePath: "https://drive.google.com/open?id=DIFFERENT_DRIVE_ID_456",
+      });
+      expect(result.isDuplicate).toBe(true);
+      expect(result.duplicateOfId).toBe(originalReviewId);
+      expect(result.matchReason).toContain("Nama Pengulas");
     });
   });
 });

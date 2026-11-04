@@ -9,7 +9,8 @@ import base64
 from typing import Optional, Dict, Any
 from PIL import Image
 
-from engine import extract_text_from_image
+from engine import extract_text_from_image, extract_text_with_auto_orientation
+from preprocessor import normalize_orientation
 from matcher import calculate_similarity
 from hasher import calculate_phash, hamming_distance, is_visual_duplicate
 
@@ -74,16 +75,16 @@ def process_evidence(
             }
 
         with img:
-            # 1. Calculate 64-bit perceptual hash (pHash)
-            phash = calculate_phash(img)
+            # 1. Normalize EXIF orientation (handles smartphone photos saved in landscape)
+            img = normalize_orientation(img)
 
-            # 2. Extract text with preprocessing and OCR
-            extracted_text = extract_text_from_image(img)
+            # 2. Extract text with auto-orientation fallback (handles physical screen photos, cracks, and blur)
+            extracted_text, similarity_score, zone, recommended_status, best_img = (
+                extract_text_with_auto_orientation(img, target_name or "")
+            )
 
-        # 3. Fuzzy match target reviewer name against extracted text
-        similarity_score, zone, recommended_status = calculate_similarity(
-            target_name or "", extracted_text
-        )
+            # 3. Calculate 64-bit perceptual hash (pHash) on the correctly oriented image
+            phash = calculate_phash(best_img)
 
         execution_time_ms = int((time.time() - start_time) * 1000)
 

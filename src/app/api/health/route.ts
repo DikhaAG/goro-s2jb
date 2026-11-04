@@ -9,6 +9,8 @@ import path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { logger } from "@/lib/logger";
+import { getDownloaderNetworkMetrics } from "@/server/services/evidenceDownloader";
+import { getOcrBridgeMetrics } from "@/server/services/ocrBridge";
 
 const execAsync = promisify(exec);
 
@@ -33,6 +35,37 @@ export async function GET() {
       writable: boolean;
       upload_dir: string;
       error?: string;
+    };
+    network_downloader?: {
+      status: "up" | "degraded";
+      total_requests: number;
+      successful_streams: number;
+      failed_streams: number;
+      average_latency_ms: number;
+      bytes_streamed_mb: number;
+      cache_hit_rate_pct: number;
+      candidate_hits: {
+        endpoint_uc: number;
+        endpoint_user_content: number;
+        endpoint_lh3: number;
+        direct_url: number;
+      };
+      rejection_reasons: {
+        html_response: number;
+        invalid_magic_bytes: number;
+        timeout_abort: number;
+        http_error: number;
+      };
+    };
+    ocr_bridge?: {
+      status: "up" | "degraded";
+      total_requests: number;
+      http_success_count: number;
+      cli_fallback_count: number;
+      cli_success_count: number;
+      cli_failure_count: number;
+      average_execution_ms: number;
+      fallback_rate_pct: number;
     };
   } = {
     database: { status: "down" },
@@ -140,6 +173,50 @@ export async function GET() {
       error: err.message || "Storage directory not writable",
     };
   }
+
+  // 6. Network Downloader Telemetry
+  const dlMetrics = getDownloaderNetworkMetrics();
+  const cacheTotal = dlMetrics.cacheStats.hits + dlMetrics.cacheStats.misses;
+  const cacheHitRate = cacheTotal > 0 ? (dlMetrics.cacheStats.hits / cacheTotal) * 100 : 0;
+  const dlFailureRate = dlMetrics.totalRequests > 0 ? (dlMetrics.failedStreams / dlMetrics.totalRequests) * 100 : 0;
+
+  services.network_downloader = {
+    status: dlFailureRate > 50 && dlMetrics.totalRequests >= 5 ? "degraded" : "up",
+    total_requests: dlMetrics.totalRequests,
+    successful_streams: dlMetrics.successfulStreams,
+    failed_streams: dlMetrics.failedStreams,
+    average_latency_ms: dlMetrics.averageLatencyMs,
+    bytes_streamed_mb: Number((dlMetrics.totalBytesStreamed / (1024 * 1024)).toFixed(2)),
+    cache_hit_rate_pct: Number(cacheHitRate.toFixed(1)),
+    candidate_hits: {
+      endpoint_uc: dlMetrics.candidateHits.endpointUc,
+      endpoint_user_content: dlMetrics.candidateHits.endpointUserContent,
+      endpoint_lh3: dlMetrics.candidateHits.endpointLh3,
+      direct_url: dlMetrics.candidateHits.directUrl,
+    },
+    rejection_reasons: {
+      html_response: dlMetrics.rejectionReasons.htmlResponse,
+      invalid_magic_bytes: dlMetrics.rejectionReasons.invalidMagicBytes,
+      timeout_abort: dlMetrics.rejectionReasons.timeoutAbort,
+      http_error: dlMetrics.rejectionReasons.httpError,
+    },
+  };
+
+  // 7. OCR Bridge Loopback Telemetry
+  const bridgeMetrics = getOcrBridgeMetrics();
+  const bridgeTotal = bridgeMetrics.totalRequests;
+  const fallbackRate = bridgeTotal > 0 ? (bridgeMetrics.cliFallbackCount / bridgeTotal) * 100 : 0;
+
+  services.ocr_bridge = {
+    status: fallbackRate > 50 && bridgeTotal >= 5 ? "degraded" : "up",
+    total_requests: bridgeMetrics.totalRequests,
+    http_success_count: bridgeMetrics.httpSuccessCount,
+    cli_fallback_count: bridgeMetrics.cliFallbackCount,
+    cli_success_count: bridgeMetrics.cliSuccessCount,
+    cli_failure_count: bridgeMetrics.cliFailureCount,
+    average_execution_ms: bridgeMetrics.averageExecutionMs,
+    fallback_rate_pct: Number(fallbackRate.toFixed(1)),
+  };
 
   const isCriticalUp =
     services.database.status === "up" &&

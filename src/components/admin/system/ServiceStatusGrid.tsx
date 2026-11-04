@@ -10,6 +10,8 @@ export interface ServiceItem {
   serviceType: string;
   status: "UP" | "DOWN" | "DEGRADED";
   latencyMs?: number;
+  recentLatencies?: number[];
+  averageLatencyMs?: number;
   pid?: number;
   processCommand?: string;
 }
@@ -46,21 +48,21 @@ export function ServiceStatusGrid({
     switch (status) {
       case "UP":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
             Aktif
           </span>
         );
       case "DEGRADED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
             Terganggu
           </span>
         );
       case "DOWN":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
             Terhenti
           </span>
@@ -78,6 +80,9 @@ export function ServiceStatusGrid({
             : svc.serviceType === "WEB_SERVER"
             ? "system_runtime.log"
             : null;
+
+        const recent = svc.recentLatencies && svc.recentLatencies.length > 0 ? svc.recentLatencies : [];
+        const avgLatency = svc.averageLatencyMs ?? svc.latencyMs;
 
         return (
           <div
@@ -103,11 +108,46 @@ export function ServiceStatusGrid({
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[#64748b]">Latensi Respon:</span>
+                  <span className="text-[#64748b]">Latensi Terakhir:</span>
                   <span className="font-mono font-bold text-[#006877]">
                     {svc.latencyMs !== undefined ? `${svc.latencyMs} ms` : "-"}
                   </span>
                 </div>
+                {avgLatency !== undefined && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748b]">Rata-rata Socket:</span>
+                    <span className="font-mono font-bold text-slate-700">
+                      {avgLatency} ms
+                    </span>
+                  </div>
+                )}
+                {recent.length > 0 && (
+                  <div className="pt-1.5">
+                    <div className="flex justify-between items-center text-xs text-[#64748b] mb-1">
+                      <span>Riwayat 5 Latensi:</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {recent.map((lat, idx) => {
+                        const barColor =
+                          lat < 50
+                            ? "bg-emerald-500"
+                            : lat < 150
+                            ? "bg-amber-500"
+                            : "bg-rose-500";
+                        return (
+                          <span
+                            key={idx}
+                            title={`${lat} ms`}
+                            className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 border border-slate-200 text-[#0f172a]"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full mr-1 ${barColor}`} />
+                            {lat}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   ZoomIn,
@@ -13,6 +13,8 @@ import {
   Copy,
   CheckCheck,
   SplitSquareVertical,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +61,14 @@ export function EvidenceLightbox({
   const [rotation, setRotation] = useState<number>(0);
   const [showSplitView, setShowSplitView] = useState<boolean>(true);
   const [copiedText, setCopiedText] = useState<boolean>(false);
+  const [imageLoadError, setImageLoadError] = useState<boolean>(false);
+  const [isReloading, setIsReloading] = useState<boolean>(false);
+  const [reloadKey, setReloadKey] = useState<number>(0);
+
+  useEffect(() => {
+    setImageLoadError(false);
+    setReloadKey(0);
+  }, [item?.id]);
 
   if (!isOpen || !item) return null;
 
@@ -194,20 +204,57 @@ export function EvidenceLightbox({
         <div className="flex-1 flex overflow-hidden">
           {/* Left Canvas: Evidence Image */}
           <div className="flex-1 relative flex items-center justify-center bg-slate-950 p-4 overflow-auto cursor-grab active:cursor-grabbing">
-            <div
-              className="transition-transform duration-100 ease-out flex items-center justify-center max-w-full max-h-full"
-              style={{
-                transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
-                transformOrigin: "center center",
-              }}
-            >
-              <img
-                src={imageUrl}
-                alt={`Eviden ${item.playstoreReviewerName}`}
-                className="max-h-[80vh] max-w-full object-contain rounded border border-slate-800 shadow-2xl select-none pointer-events-none"
-                loading="eager"
-              />
-            </div>
+            {imageLoadError ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-400">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-semibold text-slate-100 mb-1.5">
+                  {item.evidenceImagePath.includes("drive.google.com") || item.evidenceImagePath.includes("googleusercontent.com")
+                    ? "Tautan Google Drive Terkendala"
+                    : "Gagal Mengalirkan Gambar Eviden"}
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                  {item.evidenceImagePath.includes("drive.google.com") || item.evidenceImagePath.includes("googleusercontent.com")
+                    ? "Berkas pada Google Drive kemungkinan disetel privat, dibatasi oleh pengulas, atau kuota akses publik terlampaui."
+                    : "Server tidak dapat mengalirkan citra bukti dari CDN atau penyedia eksternal saat ini."}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isReloading}
+                    onClick={() => {
+                      setIsReloading(true);
+                      setImageLoadError(false);
+                      setReloadKey((prev) => prev + 1);
+                      setTimeout(() => setIsReloading(false), 500);
+                    }}
+                    className="h-8 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 gap-1.5"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isReloading ? "animate-spin" : ""}`} />
+                    <span>Coba Muat Ulang Gambar</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="transition-transform duration-100 ease-out flex items-center justify-center max-w-full max-h-full"
+                style={{
+                  transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
+                  transformOrigin: "center center",
+                }}
+              >
+                <img
+                  key={`${imageUrl}-${reloadKey}`}
+                  src={`${imageUrl}${imageUrl.includes("?") ? "&" : "?"}_retry=${reloadKey}`}
+                  alt={`Eviden ${item.playstoreReviewerName}`}
+                  className="max-h-[80vh] max-w-full object-contain rounded border border-slate-800 shadow-2xl select-none pointer-events-none"
+                  loading="eager"
+                  onError={() => setImageLoadError(true)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Right Sidepanel: OCR Details & Comparison */}

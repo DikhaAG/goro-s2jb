@@ -5,6 +5,43 @@ import { OcrResultPayload, ValidationStatus } from "@/types";
 
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8001";
 
+export interface OcrBridgeMetrics {
+  totalRequests: number;
+  httpSuccessCount: number;
+  cliFallbackCount: number;
+  cliSuccessCount: number;
+  cliFailureCount: number;
+  lastFallbackAt?: string;
+  averageExecutionMs: number;
+}
+
+let ocrBridgeTotalDurationMs = 0;
+
+let ocrBridgeMetrics: OcrBridgeMetrics = {
+  totalRequests: 0,
+  httpSuccessCount: 0,
+  cliFallbackCount: 0,
+  cliSuccessCount: 0,
+  cliFailureCount: 0,
+  averageExecutionMs: 0,
+};
+
+export function getOcrBridgeMetrics(): OcrBridgeMetrics {
+  return { ...ocrBridgeMetrics };
+}
+
+export function resetOcrBridgeMetrics(): void {
+  ocrBridgeTotalDurationMs = 0;
+  ocrBridgeMetrics = {
+    totalRequests: 0,
+    httpSuccessCount: 0,
+    cliFallbackCount: 0,
+    cliSuccessCount: 0,
+    cliFailureCount: 0,
+    averageExecutionMs: 0,
+  };
+}
+
 /**
  * Executes Python OCR process via HTTP endpoint if reachable,
  * with seamless fallback to isolated Python child process.
@@ -14,13 +51,14 @@ export async function executeOcrBridge(
   imageInput: string | Buffer,
   targetReviewerName: string
 ): Promise<OcrResultPayload> {
+  ocrBridgeMetrics.totalRequests++;
   const startTime = Date.now();
   const isBuffer = Buffer.isBuffer(imageInput);
 
   // 1. Attempt HTTP request to local FastAPI microservice
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
 
     const bodyPayload = isBuffer
       ? {
@@ -42,13 +80,22 @@ export async function executeOcrBridge(
 
     if (res.ok) {
       const data = (await res.json()) as OcrResultPayload;
+      const duration = data.execution_time_ms || Date.now() - startTime;
+      ocrBridgeMetrics.httpSuccessCount++;
+      ocrBridgeTotalDurationMs += duration;
+      ocrBridgeMetrics.averageExecutionMs = Math.round(
+        ocrBridgeTotalDurationMs / (ocrBridgeMetrics.httpSuccessCount + ocrBridgeMetrics.cliSuccessCount || 1)
+      );
+
       return {
         ...data,
-        execution_time_ms: data.execution_time_ms || Date.now() - startTime,
+        execution_time_ms: duration,
       };
     }
   } catch (httpErr) {
     // HTTP service unavailable or timed out, gracefully continue to subprocess fallback
+    ocrBridgeMetrics.cliFallbackCount++;
+    ocrBridgeMetrics.lastFallbackAt = new Date().toISOString();
   }
 
   // 2. Subprocess fallback execution
@@ -97,6 +144,7 @@ export async function executeOcrBridge(
     });
 
     proc.on("error", (err) => {
+      ocrBridgeMetrics.cliFailureCount++;
       resolve({
         success: false,
         extracted_text: "",
@@ -110,7 +158,9 @@ export async function executeOcrBridge(
     });
 
     proc.on("close", (code) => {
+      const duration = Date.now() - startTime;
       if (code !== 0) {
+        ocrBridgeMetrics.cliFailureCount++;
         resolve({
           success: false,
           extracted_text: "",
@@ -118,7 +168,7 @@ export async function executeOcrBridge(
           similarity_score: 0,
           zone: "RED",
           recommended_status: ValidationStatus.REJECTED,
-          execution_time_ms: Date.now() - startTime,
+          execution_time_ms: duration,
           error: stderrData || `Process exited with code ${code}`,
         });
         return;
@@ -126,11 +176,18 @@ export async function executeOcrBridge(
 
       try {
         const parsed = JSON.parse(stdoutData.trim()) as OcrResultPayload;
+        ocrBridgeMetrics.cliSuccessCount++;
+        ocrBridgeTotalDurationMs += duration;
+        ocrBridgeMetrics.averageExecutionMs = Math.round(
+          ocrBridgeTotalDurationMs / (ocrBridgeMetrics.httpSuccessCount + ocrBridgeMetrics.cliSuccessCount || 1)
+        );
+
         resolve({
           ...parsed,
-          execution_time_ms: parsed.execution_time_ms || Date.now() - startTime,
+          execution_time_ms: parsed.execution_time_ms || duration,
         });
       } catch (parseErr: any) {
+        ocrBridgeMetrics.cliFailureCount++;
         resolve({
           success: false,
           extracted_text: stdoutData,
@@ -138,7 +195,7 @@ export async function executeOcrBridge(
           similarity_score: 0,
           zone: "RED",
           recommended_status: ValidationStatus.REJECTED,
-          execution_time_ms: Date.now() - startTime,
+          execution_time_ms: duration,
           error: `JSON parse error: ${parseErr.message}. Output: ${stdoutData}`,
         });
       }

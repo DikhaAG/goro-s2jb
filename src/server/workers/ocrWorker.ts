@@ -10,11 +10,13 @@ import {
 } from "../services/evidenceDownloader";
 import path from "path";
 import { BASE_UPLOAD_DIR } from "@/lib/storage";
+import { recordJobCompleted, recordJobFailed } from "../queues/queueTelemetry";
 
 export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
   const worker = new Worker<OcrJobData>(
     queueName,
     async (job: Job<OcrJobData>) => {
+      const jobStartTime = Date.now();
       console.log(`[OCR Worker] Processing job ${job.id} for reviewId: ${job.data.reviewId}`);
       const { reviewId, evidenceImagePath, expectedReviewerName } = job.data;
 
@@ -28,6 +30,7 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
           reviewRemarks: true,
           entryDate: true,
           evidenceImagePath: true,
+          playstoreReviewerName: true,
         },
       });
 
@@ -93,8 +96,17 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
         return { success: false, error: ocrResult.error };
       }
 
-      // 2. Anti-Fraud Perceptual Hashing Check (Hamming Distance <= 5)
-      const antiFraudResult = await checkImageDuplicate(reviewId, ocrResult.phash, 5);
+      // 2. Multimodal Anti-Fraud Check (Visual pHash + OCR Extracted Text + Reviewer Name)
+      const antiFraudResult = await checkImageDuplicate(
+        reviewId,
+        ocrResult.phash,
+        5,
+        {
+          extractedText: ocrResult.extracted_text,
+          reviewerName: expectedReviewerName || existingReview.playstoreReviewerName,
+          evidenceImagePath: existingReview.evidenceImagePath,
+        }
+      );
 
       let finalStatus = ocrResult.recommended_status;
       let reviewRemarks = `Verifikasi Otomatis AI (Skor: ${ocrResult.similarity_score}%, Zona: ${ocrResult.zone})`;
@@ -111,9 +123,9 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
 
       if (antiFraudResult.isDuplicate) {
         finalStatus = "REJECTED";
-        reviewRemarks = `Terindikasi duplikasi visual dengan ID: ${antiFraudResult.duplicateOfId} (Hamming Distance: ${antiFraudResult.minDistance})`;
+        reviewRemarks = `Terindikasi duplikasi visual dengan ID: ${antiFraudResult.duplicateOfId} (Visual: ${antiFraudResult.visualSimilarity}%, Teks OCR: ${antiFraudResult.textSimilarity}%, Pengulas: ${antiFraudResult.reviewerSimilarity}%)`;
         console.warn(
-          `[OCR Worker] Fraud Duplicate Detected! Review ${reviewId} matches ${antiFraudResult.duplicateOfId} (Distance: ${antiFraudResult.minDistance})`
+          `[OCR Worker] Fraud Duplicate Detected! Review ${reviewId} matches ${antiFraudResult.duplicateOfId} (Visual: ${antiFraudResult.visualSimilarity}%, Text: ${antiFraudResult.textSimilarity}%, Reviewer: ${antiFraudResult.reviewerSimilarity}%)`
         );
       }
 
@@ -140,6 +152,9 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
         `[OCR Worker] Successfully processed review ${reviewId}: Zone ${ocrResult.zone}, Score ${ocrResult.similarity_score}%, Status: ${finalStatus}, Dup: ${antiFraudResult.isDuplicate}`
       );
 
+      const jobDurationMs = Date.now() - jobStartTime;
+      recordJobCompleted(queueName, jobDurationMs);
+
       return {
         success: true,
         ocrStatus: "COMPLETED",
@@ -158,6 +173,7 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
   );
 
   worker.on("failed", (job, err) => {
+    recordJobFailed(queueName);
     console.error(`[OCR Worker] Job ${job?.id} failed with error:`, err);
   });
 

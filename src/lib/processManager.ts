@@ -23,9 +23,30 @@ export interface ServicePortInfo {
   serviceType: ServiceType;
   status: "UP" | "DOWN" | "DEGRADED";
   latencyMs?: number;
+  recentLatencies?: number[];
+  averageLatencyMs?: number;
   pid?: number;
   processCommand?: string;
   error?: string;
+}
+
+const portLatencyHistory = new Map<number, number[]>();
+
+export function recordPortLatency(port: number, latencyMs: number): void {
+  const list = portLatencyHistory.get(port) || [];
+  list.push(Math.max(0, latencyMs));
+  if (list.length > 5) {
+    list.splice(0, list.length - 5);
+  }
+  portLatencyHistory.set(port, list);
+}
+
+export function getPortLatencyHistory(port: number): number[] {
+  return [...(portLatencyHistory.get(port) || [])];
+}
+
+export function resetPortLatencyHistory(): void {
+  portLatencyHistory.clear();
 }
 
 export interface ManagedProcess {
@@ -91,6 +112,7 @@ export async function checkPortConnectivity(
       if (resolved) return;
       resolved = true;
       const latencyMs = Date.now() - startTime;
+      recordPortLatency(port, latencyMs);
       cleanup();
       resolve({ isReachable: true, latencyMs });
     });
@@ -146,9 +168,18 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
       const conn = await checkPortConnectivity(svc.port);
       const pid = await getPidForPort(svc.port);
 
+      const recentLatencies = getPortLatencyHistory(svc.port);
+      let averageLatencyMs: number | undefined;
+      if (recentLatencies.length > 0) {
+        const sum = recentLatencies.reduce((a, b) => a + b, 0);
+        averageLatencyMs = Math.round(sum / recentLatencies.length);
+      } else if (conn.isReachable) {
+        averageLatencyMs = conn.latencyMs;
+      }
+
       let status: "UP" | "DOWN" | "DEGRADED" = "DOWN";
       if (conn.isReachable) {
-        status = conn.latencyMs > 300 ? "DEGRADED" : "UP";
+        status = (averageLatencyMs && averageLatencyMs > 300) || conn.latencyMs > 300 ? "DEGRADED" : "UP";
       }
 
       let processCommand: string | undefined;
@@ -167,6 +198,8 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
         serviceType: svc.serviceType,
         status,
         latencyMs: conn.isReachable ? conn.latencyMs : undefined,
+        recentLatencies,
+        averageLatencyMs,
         pid: pid || undefined,
         processCommand,
       };
@@ -375,6 +408,10 @@ export async function terminateProcess(
     throw new Error("DILARANG: Tidak dapat menghentikan proses server web sendiri.");
   }
 
+  if (pid === process.ppid) {
+    throw new Error("DILARANG: Tidak dapat menghentikan parent proses server web.");
+  }
+
   const runningProcesses = await listAppProcesses();
   const target = runningProcesses.find((p) => p.pid === pid);
 
@@ -491,24 +528,37 @@ export async function restartWorker(
 /**
  * Scans and cleans orphan or hanging background processes matching start-mac.sh or detached workers.
  */
-export async function cleanOrphanProcesses(): Promise<{ killedPids: number[]; count: number }> {
-  const currentProcs = await listAppProcesses();
+export async function cleanOrphanProcesses(
+  providedProcs?: ManagedProcess[]
+): Promise<{ killedPids: number[]; count: number; errors: string[] }> {
+  const currentProcs = providedProcs || (await listAppProcesses());
   const killedPids: number[] = [];
+  const errors: string[] = [];
 
   for (const proc of currentProcs) {
-    // Only kill safe-to-kill CLI tasks or workers with PPID 1 or defunct status
+    // Protection guard: never kill vital OS processes or web server
+    if (proc.pid <= 100 || proc.pid === process.pid || proc.pid === process.ppid) {
+      continue;
+    }
+
+    // Identify candidate orphan processes
     const isDetachedCli = proc.serviceType === "CLI_TASK" && proc.isSafeToKill;
     const isDefunct = proc.status.includes("Z");
+    const isOrphanWorker =
+      (proc.serviceType === "IMPORT_WORKER" || proc.serviceType === "OCR_WORKER") &&
+      (proc.ppid === 1 || proc.status.includes("Z"));
 
-    if (isDetachedCli || isDefunct) {
+    if (isDetachedCli || isDefunct || isOrphanWorker) {
       try {
         process.kill(proc.pid, "SIGTERM");
         killedPids.push(proc.pid);
-      } catch {
-        // ignore
+      } catch (err: any) {
+        if (err.code !== "ESRCH") {
+          errors.push(`Gagal menghentikan PID ${proc.pid}: ${err.message}`);
+        }
       }
     }
   }
 
-  return { killedPids, count: killedPids.length };
+  return { killedPids, count: killedPids.length, errors };
 }

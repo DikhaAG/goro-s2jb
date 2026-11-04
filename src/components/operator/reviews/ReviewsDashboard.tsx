@@ -26,9 +26,12 @@ import { BulkReassignUnitModal } from "./BulkReassignUnitModal";
 import { DeleteReviewModal } from "./DeleteReviewModal";
 import { BulkDeleteReviewModal } from "./BulkDeleteReviewModal";
 import { PurgeAllReviewsModal } from "./PurgeAllReviewsModal";
+import { DuplicateSplitViewModal } from "./DuplicateSplitViewModal";
 import { EvidenceLightbox } from "@/components/operator/EvidenceLightbox";
 import { RejectReasonDialog } from "@/components/operator/RejectReasonDialog";
+import { OperatorPipelineStatusBar } from "./OperatorPipelineStatusBar";
 import { useTriageHotkeys } from "@/hooks/useTriageHotkeys";
+import { SessionUser } from "@/types";
 
 interface UndoState {
   reviewId: string;
@@ -38,10 +41,23 @@ interface UndoState {
   expiresAt: number;
 }
 
-export function ReviewsDashboard() {
-  // Session to check user role
-  const { data: session } = trpc.auth.getSession.useQuery();
-  const userRole = session?.role || "PEGAWAI";
+export interface ReviewsDashboardProps {
+  initialSession?: SessionUser | null;
+}
+
+export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {}) {
+  // Session to check user role with initial SSR session fallback
+  const { data: session } = trpc.auth.getSession.useQuery(undefined, {
+    initialData: initialSession || undefined,
+  });
+  const currentSession = session || initialSession;
+  const userRole = currentSession?.role || "PEGAWAI";
+
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Filter State
   const [filters, setFilters] = useState<FilterState>({
@@ -65,6 +81,7 @@ export function ReviewsDashboard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [lightboxItem, setLightboxItem] = useState<ReviewItem | null>(null);
   const [rejectDialogItem, setRejectDialogItem] = useState<ReviewItem | null>(null);
+  const [duplicateSplitViewItem, setDuplicateSplitViewItem] = useState<ReviewItem | null>(null);
 
   // Optimistic 5-Second Undo Toast State
   const [undoState, setUndoState] = useState<UndoState | null>(null);
@@ -344,6 +361,7 @@ export function ReviewsDashboard() {
           activeId &&
           !lightboxItem &&
           !rejectDialogItem &&
+          !duplicateSplitViewItem &&
           !isDrawerOpen &&
           !isDeleteModalOpen &&
           !isBulkDeleteModalOpen &&
@@ -358,6 +376,7 @@ export function ReviewsDashboard() {
           activeItem &&
           !lightboxItem &&
           !rejectDialogItem &&
+          !duplicateSplitViewItem &&
           !isDrawerOpen &&
           !isDeleteModalOpen &&
           !isBulkDeleteModalOpen &&
@@ -371,6 +390,7 @@ export function ReviewsDashboard() {
         if (
           !lightboxItem &&
           !rejectDialogItem &&
+          !duplicateSplitViewItem &&
           !isDrawerOpen &&
           currentItems.length > 0
         ) {
@@ -384,6 +404,7 @@ export function ReviewsDashboard() {
         if (
           !lightboxItem &&
           !rejectDialogItem &&
+          !duplicateSplitViewItem &&
           !isDrawerOpen &&
           currentItems.length > 0
         ) {
@@ -396,6 +417,7 @@ export function ReviewsDashboard() {
       onToggleLightbox: () => {
         if (
           rejectDialogItem ||
+          duplicateSplitViewItem ||
           isDrawerOpen ||
           isDeleteModalOpen ||
           isBulkDeleteModalOpen ||
@@ -413,11 +435,12 @@ export function ReviewsDashboard() {
       onCloseModal: () => {
         setLightboxItem(null);
         setRejectDialogItem(null);
+        setDuplicateSplitViewItem(null);
       },
     },
     {
       enabled: true,
-      isModalOpen: !!lightboxItem || !!rejectDialogItem,
+      isModalOpen: !!lightboxItem || !!rejectDialogItem || !!duplicateSplitViewItem,
     }
   );
 
@@ -636,7 +659,7 @@ export function ReviewsDashboard() {
               <span className="text-xs text-[#64748b]">
                 Sistem Validasi Eviden Rating PLN Mobile 2026
               </span>
-              <span className="bg-[#00A3E0]/10 text-[#00A3E0] border border-[#00A3E0]/20 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="bg-[#00A3E0]/10 text-[#00A3E0] border border-[#00A3E0]/20 text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
                 Human-in-the-Loop & Triase
               </span>
             </div>
@@ -655,8 +678,12 @@ export function ReviewsDashboard() {
             {/* Operator Info Pill */}
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs">
               <div className="w-2.5 h-2.5 rounded-full bg-[#16a34a] animate-pulse" />
-              <span className="text-[#0f172a] font-semibold">{session?.name || "Petugas Verifikator"}</span>
-              <span className="text-[#64748b] font-mono text-[10px] uppercase">({userRole})</span>
+              <span className="text-[#0f172a] font-semibold" suppressHydrationWarning>
+                {currentSession?.name || (isMounted ? "Petugas Verifikator" : "Petugas Verifikator")}
+              </span>
+              <span className="text-[#64748b] font-mono text-xs uppercase" suppressHydrationWarning>
+                ({userRole})
+              </span>
             </div>
 
             {/* Refresh Button */}
@@ -708,6 +735,9 @@ export function ReviewsDashboard() {
         </div>
       </div>
 
+      {/* Operator Background Pipeline & AI Health Status Bar */}
+      <OperatorPipelineStatusBar />
+
       {/* Live OCR In-Progress Banner */}
       {(listData?.kpi?.activeOcr ?? 0) > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#f0f9ff] border border-[#00a2b9]/30 rounded-2xl shadow-xs text-[#0f172a] animate-in fade-in duration-200">
@@ -718,11 +748,11 @@ export function ReviewsDashboard() {
             <div>
               <div className="text-xs font-bold text-[#0f172a] flex items-center gap-2">
                 <span>Background OCR Worker & Image Proxy Sedang Berjalan</span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#00a2b9] text-white">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#00a2b9] text-white">
                   {listData?.kpi?.activeOcr} baris dalam pemrosesan
                 </span>
               </div>
-              <p className="text-[11px] text-[#64748b] mt-0.5">
+              <p className="text-xs text-[#64748b] mt-0.5">
                 Citra eviden beresolusi tinggi sedang diunduh dari Google Drive dan diekstraksi teksnya secara asinkron. Halaman otomatis memperbarui progress.
               </p>
             </div>
@@ -780,12 +810,28 @@ export function ReviewsDashboard() {
         onOpenDetail={handleOpenDetail}
         onRetryOcr={handleRetrySingleOcr}
         onOpenDelete={handleOpenDelete}
+        onOpenDuplicateSplitView={(item) => setDuplicateSplitViewItem(item)}
         isRetryingOcrId={retryingSingleId}
         activeId={activeId}
         onSelectActive={(id) => setActiveId(id)}
         onApprove={handleApprove}
         onReject={handleOpenRejectDialog}
         onOpenLightbox={(item) => setLightboxItem(item)}
+      />
+
+      {/* Duplicate Split View Comparison Modal */}
+      <DuplicateSplitViewModal
+        isOpen={!!duplicateSplitViewItem}
+        duplicateReview={duplicateSplitViewItem}
+        onClose={() => setDuplicateSplitViewItem(null)}
+        onOpenFullDetail={(item) => {
+          setDuplicateSplitViewItem(null);
+          handleOpenDetail(item);
+        }}
+        onActionComplete={() => {
+          showToast("success", "Tindakan verifikasi pada ulasan duplikat berhasil diproses.");
+          refetchList();
+        }}
       />
 
       {/* Lightbox Modal */}

@@ -148,7 +148,12 @@ export const reviewsRouter = router({
                   playstoreReviewerName: true,
                   originalReviewerName: true,
                   entryDate: true,
+                  timestamp: true,
+                  source: true,
+                  createdAt: true,
                   evidenceImagePath: true,
+                  evidenceImageHash: true,
+                  extractedOcrText: true,
                   validationStatus: true,
                   confidenceScore: true,
                   up3: { select: { id: true, name: true } },
@@ -219,7 +224,12 @@ export const reviewsRouter = router({
               playstoreReviewerName: true,
               originalReviewerName: true,
               entryDate: true,
+              timestamp: true,
+              source: true,
+              createdAt: true,
               evidenceImagePath: true,
+              evidenceImageHash: true,
+              extractedOcrText: true,
               validationStatus: true,
               confidenceScore: true,
               up3: { select: { id: true, name: true } },
@@ -340,6 +350,9 @@ export const reviewsRouter = router({
       }
       if (input.isDuplicate !== undefined) {
         updateData.isDuplicate = input.isDuplicate;
+        if (!input.isDuplicate) {
+          updateData.duplicateOf = { disconnect: true };
+        }
       }
       if (input.validationStatus !== undefined) {
         updateData.validationStatus = input.validationStatus;

@@ -1,7 +1,9 @@
 import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
 import { importQueue } from "../queues/importQueue";
+import { getQueueThroughputStats } from "../queues/queueTelemetry";
 import { TRPCError } from "@trpc/server";
+import { logAuditEvent } from "@/server/services/auditService";
 import fs from "fs";
 
 export const migrationRouter = router({
@@ -421,6 +423,12 @@ export const migrationRouter = router({
       ocrQueue.isPaused().catch(() => false),
     ]);
 
+    // 2.1 Fetch Queue Throughput and Stall Detection Telemetry
+    const [importThroughput, ocrThroughput] = await Promise.all([
+      getQueueThroughputStats(importQueue.name, importQueue),
+      getQueueThroughputStats(ocrQueue.name, ocrQueue),
+    ]);
+
     // 3. Fetch active jobs sample for real-time visualization
     const [importActiveJobs, ocrActiveJobs] = await Promise.all([
       importQueue.getJobs(["active"], 0, 5).catch(() => []),
@@ -510,6 +518,18 @@ export const migrationRouter = router({
             delayed: importCounts.delayed || 0,
             paused: importCounts.paused || 0,
           },
+          throughput: {
+            jobsPerMinute: importThroughput.throughputJobsPerMinute,
+            averageDurationMs: importThroughput.averageExecutionDurationMs,
+            completedInWindow: importThroughput.totalCompletedInWindow,
+            failedInWindow: importThroughput.totalFailedInWindow,
+            lastCompletedAt: importThroughput.lastCompletedJobAt,
+          },
+          stallDetection: {
+            isStalled: importThroughput.stalledJobsCount > 0,
+            stalledCount: importThroughput.stalledJobsCount,
+            stalledJobIds: isSuperAdmin ? importThroughput.stalledJobIds : [],
+          },
           activeJobs: importActiveJobs.map((j) => ({
             id: j.id || "unknown",
             name: j.name,
@@ -531,6 +551,18 @@ export const migrationRouter = router({
             failed: ocrCounts.failed || 0,
             delayed: ocrCounts.delayed || 0,
             paused: ocrCounts.paused || 0,
+          },
+          throughput: {
+            jobsPerMinute: ocrThroughput.throughputJobsPerMinute,
+            averageDurationMs: ocrThroughput.averageExecutionDurationMs,
+            completedInWindow: ocrThroughput.totalCompletedInWindow,
+            failedInWindow: ocrThroughput.totalFailedInWindow,
+            lastCompletedAt: ocrThroughput.lastCompletedJobAt,
+          },
+          stallDetection: {
+            isStalled: ocrThroughput.stalledJobsCount > 0,
+            stalledCount: ocrThroughput.stalledJobsCount,
+            stalledJobIds: isSuperAdmin ? ocrThroughput.stalledJobIds : [],
           },
           activeJobs: ocrActiveJobs.map((j) => ({
             id: j.id || "unknown",
@@ -602,6 +634,17 @@ export const migrationRouter = router({
       const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
       await targetQueue.pause();
 
+      await logAuditEvent({
+        userId: ctx.user?.id,
+        action: "PAUSE_QUEUE",
+        entityType: "Queue",
+        entityId: input.queueName,
+        metadata: {
+          queueName: input.queueName,
+          executor: ctx.user?.username || ctx.user?.name,
+        },
+      });
+
       return {
         success: true,
         message: `Antrean worker ${input.queueName.toUpperCase()} berhasil dijeda.`,
@@ -621,6 +664,17 @@ export const migrationRouter = router({
       const { ocrQueue } = await import("../queues/ocrQueue");
       const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
       await targetQueue.resume();
+
+      await logAuditEvent({
+        userId: ctx.user?.id,
+        action: "RESUME_QUEUE",
+        entityType: "Queue",
+        entityId: input.queueName,
+        metadata: {
+          queueName: input.queueName,
+          executor: ctx.user?.username || ctx.user?.name,
+        },
+      });
 
       return {
         success: true,
@@ -656,6 +710,18 @@ export const migrationRouter = router({
 
       await job.retry();
 
+      await logAuditEvent({
+        userId: ctx.user?.id,
+        action: "RETRY_JOB",
+        entityType: "Job",
+        entityId: input.jobId,
+        metadata: {
+          queueName: input.queueName,
+          jobId: input.jobId,
+          executor: ctx.user?.username || ctx.user?.name,
+        },
+      });
+
       return {
         success: true,
         message: `Job ${input.jobId} berhasil dijadwalkan ulang untuk dieksekusi.`,
@@ -690,6 +756,18 @@ export const migrationRouter = router({
 
       await job.remove();
 
+      await logAuditEvent({
+        userId: ctx.user?.id,
+        action: "REMOVE_JOB",
+        entityType: "Job",
+        entityId: input.jobId,
+        metadata: {
+          queueName: input.queueName,
+          jobId: input.jobId,
+          executor: ctx.user?.username || ctx.user?.name,
+        },
+      });
+
       return {
         success: true,
         message: `Job ${input.jobId} berhasil dihapus dari antrean.`,
@@ -711,6 +789,18 @@ export const migrationRouter = router({
       const failedJobs = await targetQueue.getJobs(["failed"], 0, 100);
 
       await Promise.all(failedJobs.map((j) => j.retry().catch(() => {})));
+
+      await logAuditEvent({
+        userId: ctx.user?.id,
+        action: "RETRY_ALL_FAILED_JOBS",
+        entityType: "Queue",
+        entityId: input.queueName,
+        metadata: {
+          queueName: input.queueName,
+          retriedCount: failedJobs.length,
+          executor: ctx.user?.username || ctx.user?.name,
+        },
+      });
 
       return {
         success: true,
@@ -737,6 +827,18 @@ export const migrationRouter = router({
       const { ocrQueue } = await import("../queues/ocrQueue");
       const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
       await targetQueue.clean(0, 1000, input.type);
+
+      await logAuditEvent({
+        userId: ctx.user?.id,
+        action: "CLEAN_QUEUE",
+        entityType: "Queue",
+        entityId: input.queueName,
+        metadata: {
+          queueName: input.queueName,
+          type: input.type,
+          executor: ctx.user?.username || ctx.user?.name,
+        },
+      });
 
       return {
         success: true,

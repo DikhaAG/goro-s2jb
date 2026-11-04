@@ -4,6 +4,116 @@ import fs from "fs";
 // Cache for previously downloaded external file IDs (avoids repeated network calls)
 const gdriveCache = new Map<string, { relativePath: string; absolutePath: string }>();
 
+export interface DownloaderNetworkMetrics {
+  totalRequests: number;
+  successfulStreams: number;
+  failedStreams: number;
+  totalBytesStreamed: number;
+  averageLatencyMs: number;
+  candidateHits: {
+    endpointUc: number;
+    endpointUserContent: number;
+    endpointLh3: number;
+    directUrl: number;
+  };
+  rejectionReasons: {
+    htmlResponse: number;
+    invalidMagicBytes: number;
+    timeoutAbort: number;
+    httpError: number;
+  };
+  cacheStats: {
+    hits: number;
+    misses: number;
+    cachedEntriesCount: number;
+  };
+  lastIncident?: {
+    timestamp: string;
+    url: string;
+    error: string;
+  };
+}
+
+let totalLatencyAccumulator = 0;
+
+let networkMetrics: DownloaderNetworkMetrics = {
+  totalRequests: 0,
+  successfulStreams: 0,
+  failedStreams: 0,
+  totalBytesStreamed: 0,
+  averageLatencyMs: 0,
+  candidateHits: {
+    endpointUc: 0,
+    endpointUserContent: 0,
+    endpointLh3: 0,
+    directUrl: 0,
+  },
+  rejectionReasons: {
+    htmlResponse: 0,
+    invalidMagicBytes: 0,
+    timeoutAbort: 0,
+    httpError: 0,
+  },
+  cacheStats: {
+    hits: 0,
+    misses: 0,
+    cachedEntriesCount: 0,
+  },
+};
+
+function recordCandidateHit(candidateUrl: string) {
+  if (candidateUrl.includes("drive.google.com/uc")) {
+    networkMetrics.candidateHits.endpointUc++;
+  } else if (candidateUrl.includes("drive.usercontent.google.com")) {
+    networkMetrics.candidateHits.endpointUserContent++;
+  } else if (candidateUrl.includes("lh3.googleusercontent.com")) {
+    networkMetrics.candidateHits.endpointLh3++;
+  } else {
+    networkMetrics.candidateHits.directUrl++;
+  }
+}
+
+export function getDownloaderNetworkMetrics(): DownloaderNetworkMetrics {
+  return {
+    ...networkMetrics,
+    candidateHits: { ...networkMetrics.candidateHits },
+    rejectionReasons: { ...networkMetrics.rejectionReasons },
+    cacheStats: {
+      ...networkMetrics.cacheStats,
+      cachedEntriesCount: gdriveCache.size,
+    },
+    lastIncident: networkMetrics.lastIncident ? { ...networkMetrics.lastIncident } : undefined,
+  };
+}
+
+export function resetDownloaderMetrics(): void {
+  totalLatencyAccumulator = 0;
+  networkMetrics = {
+    totalRequests: 0,
+    successfulStreams: 0,
+    failedStreams: 0,
+    totalBytesStreamed: 0,
+    averageLatencyMs: 0,
+    candidateHits: {
+      endpointUc: 0,
+      endpointUserContent: 0,
+      endpointLh3: 0,
+      directUrl: 0,
+    },
+    rejectionReasons: {
+      htmlResponse: 0,
+      invalidMagicBytes: 0,
+      timeoutAbort: 0,
+      httpError: 0,
+    },
+    cacheStats: {
+      hits: 0,
+      misses: 0,
+      cachedEntriesCount: gdriveCache.size,
+    },
+  };
+}
+
 /**
  * Extracts Google Drive file ID from various URL patterns.
  * Supports:
@@ -70,12 +180,17 @@ export async function streamEvidenceImageBuffer(
   urlOrPath: string,
   timeoutMs: number = 15000
 ): Promise<{ success: boolean; buffer?: Buffer; mimeType?: string; error?: string }> {
+  networkMetrics.totalRequests++;
+  const requestStart = Date.now();
+
   if (!urlOrPath || typeof urlOrPath !== "string") {
+    networkMetrics.failedStreams++;
     return { success: false, error: "Tautan gambar kosong" };
   }
 
   const trimmed = urlOrPath.trim();
   if (!isExternalUrl(trimmed)) {
+    networkMetrics.failedStreams++;
     return { success: false, error: "Bukan tautan URL eksternal" };
   }
 
@@ -98,15 +213,24 @@ export async function streamEvidenceImageBuffer(
 
       clearTimeout(timeout);
 
-      if (!res.ok) continue;
+      if (!res.ok) {
+        networkMetrics.rejectionReasons.httpError++;
+        continue;
+      }
 
       const contentType = res.headers.get("content-type")?.toLowerCase() || "";
-      if (contentType.includes("text/html")) continue;
+      if (contentType.includes("text/html")) {
+        networkMetrics.rejectionReasons.htmlResponse++;
+        continue;
+      }
 
       const arrayBuf = await res.arrayBuffer();
       const buffer = Buffer.from(arrayBuf);
 
-      if (buffer.length === 0) continue;
+      if (buffer.length === 0) {
+        networkMetrics.rejectionReasons.invalidMagicBytes++;
+        continue;
+      }
 
       let detectedMimeType: string | null = null;
       if (
@@ -134,22 +258,52 @@ export async function streamEvidenceImageBuffer(
 
       if (!detectedMimeType) {
         // Reject non-image response bodies (e.g. error texts, non-image binaries)
+        networkMetrics.rejectionReasons.invalidMagicBytes++;
         continue;
       }
+
+      networkMetrics.successfulStreams++;
+      networkMetrics.totalBytesStreamed += buffer.length;
+      recordCandidateHit(candidate);
+
+      const latency = Date.now() - requestStart;
+      totalLatencyAccumulator += latency;
+      networkMetrics.averageLatencyMs = Math.round(
+        totalLatencyAccumulator / (networkMetrics.successfulStreams + networkMetrics.failedStreams || 1)
+      );
 
       return {
         success: true,
         buffer,
         mimeType: detectedMimeType,
       };
-    } catch {
+    } catch (err: any) {
       clearTimeout(timeout);
+      if (err?.name === "AbortError" || controller.signal.aborted) {
+        networkMetrics.rejectionReasons.timeoutAbort++;
+      } else {
+        networkMetrics.rejectionReasons.httpError++;
+      }
     }
   }
 
+  networkMetrics.failedStreams++;
+  const latency = Date.now() - requestStart;
+  totalLatencyAccumulator += latency;
+  networkMetrics.averageLatencyMs = Math.round(
+    totalLatencyAccumulator / (networkMetrics.successfulStreams + networkMetrics.failedStreams || 1)
+  );
+
+  const errorMsg = `Gagal streaming gambar dari tautan Google Drive: ${trimmed}`;
+  networkMetrics.lastIncident = {
+    timestamp: new Date().toISOString(),
+    url: trimmed,
+    error: errorMsg,
+  };
+
   return {
     success: false,
-    error: `Gagal streaming gambar dari tautan Google Drive: ${trimmed}`,
+    error: errorMsg,
   };
 }
 
@@ -176,14 +330,19 @@ export async function downloadEvidenceImage(
   const googleDriveFileId = extractGoogleDriveFileId(trimmed);
 
   // Check in-memory cache first
-  if (googleDriveFileId && gdriveCache.has(googleDriveFileId)) {
-    const cached = gdriveCache.get(googleDriveFileId)!;
-    if (fs.existsSync(cached.absolutePath)) {
-      return {
-        success: true,
-        relativePath: cached.relativePath,
-        absolutePath: cached.absolutePath,
-      };
+  if (googleDriveFileId) {
+    if (gdriveCache.has(googleDriveFileId)) {
+      networkMetrics.cacheStats.hits++;
+      const cached = gdriveCache.get(googleDriveFileId)!;
+      if (fs.existsSync(cached.absolutePath)) {
+        return {
+          success: true,
+          relativePath: cached.relativePath,
+          absolutePath: cached.absolutePath,
+        };
+      }
+    } else {
+      networkMetrics.cacheStats.misses++;
     }
   }
 
@@ -278,6 +437,10 @@ export async function downloadEvidenceImage(
           absolutePath: saved.absolutePath,
         });
       }
+
+      networkMetrics.cacheStats.cachedEntriesCount = gdriveCache.size;
+      networkMetrics.totalBytesStreamed += buffer.length;
+      recordCandidateHit(downloadUrl);
 
       return {
         success: true,

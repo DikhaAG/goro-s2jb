@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Terminal, RefreshCw, Copy, Check, ArrowDown, FileText } from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Terminal, RefreshCw, Copy, Check, ArrowDown, FileText, Download, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface LiveLogViewerProps {
@@ -38,21 +38,45 @@ export function LiveLogViewer({
 }: LiveLogViewerProps) {
   const [copied, setCopied] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const terminalEndRef = useRef<HTMLDivElement>(null);
+
+  const filteredLines = useMemo(() => {
+    if (!searchQuery.trim()) return lines;
+    const q = searchQuery.toLowerCase();
+    return lines.filter((l) => l.toLowerCase().includes(q));
+  }, [lines, searchQuery]);
 
   useEffect(() => {
     if (autoScroll && terminalEndRef.current) {
       terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [lines, autoScroll]);
+  }, [filteredLines, autoScroll]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await navigator.clipboard.writeText(filteredLines.join("\n"));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // ignore clipboard error
+    }
+  };
+
+  const handleDownload = () => {
+    try {
+      const content = lines.join("\n");
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = activeFile;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // ignore download error
     }
   };
 
@@ -63,7 +87,7 @@ export function LiveLogViewer({
   };
 
   return (
-    <div className="bg-[#0b1329] rounded-2xl border border-[#1e293b] shadow-2xl overflow-hidden flex flex-col h-[520px]">
+    <div className="bg-[#0b1329] rounded-2xl border border-[#1e293b] shadow-2xl overflow-hidden flex flex-col h-[560px]">
       {/* Top Bar: Tabs & Controls */}
       <div className="p-3 bg-[#0f172a] border-b border-[#1e293b] flex flex-wrap items-center justify-between gap-3">
         {/* Log File Tabs */}
@@ -86,7 +110,29 @@ export function LiveLogViewer({
         </div>
 
         {/* Toolbar Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Real-time search filter */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari dalam log..."
+              className="text-xs h-9 min-h-[36px] pl-8 pr-7 rounded-xl bg-[#1e293b] border border-[#334155] text-slate-200 placeholder:text-slate-500 font-medium focus-utility-ring w-36 sm:w-44"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 text-slate-400 hover:text-white p-0.5"
+                title="Hapus pencarian"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
           {/* Line count selector */}
           <select
             value={lineCount}
@@ -110,6 +156,17 @@ export function LiveLogViewer({
           >
             <ArrowDown className="w-3.5 h-3.5" />
             <span>Auto-Scroll</span>
+          </button>
+
+          {/* Download raw log */}
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="min-h-[36px] px-3 py-1.5 text-xs font-bold text-slate-300 hover:text-white bg-[#1e293b] hover:bg-[#334155] rounded-xl transition-all flex items-center gap-1 focus-utility-ring cursor-pointer"
+            title="Unduh berkas log mentah"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Unduh</span>
           </button>
 
           {/* Copy button */}
@@ -137,13 +194,15 @@ export function LiveLogViewer({
 
       {/* Terminal Content Body */}
       <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed text-slate-300 selection:bg-[#00a2b9]/40 selection:text-white">
-        {lines.length === 0 ? (
+        {filteredLines.length === 0 ? (
           <div className="flex items-center justify-center h-full text-slate-500">
             <Terminal className="w-5 h-5 mr-2 opacity-50" />
-            Berkas log kosong atau belum ada catatan aktivitas.
+            {searchQuery
+              ? `Tidak ada baris yang cocok dengan kata kunci "${searchQuery}".`
+              : "Berkas log kosong atau belum ada catatan aktivitas."}
           </div>
         ) : (
-          lines.map((line, index) => {
+          filteredLines.map((line, index) => {
             const isError = line.includes("ERROR") || line.includes("Error:") || line.includes("FATAL");
             const isWarn = line.includes("WARN") || line.includes("Warning");
             const isSuccess = line.includes("SUCCESS") || line.includes("✓") || line.includes("completed");
@@ -167,14 +226,22 @@ export function LiveLogViewer({
       </div>
 
       {/* Terminal Footer Bar */}
-      <div className="px-4 py-2.5 bg-[#090e1f] border-t border-[#1e293b] text-[11px] font-mono text-slate-400 flex items-center justify-between">
+      <div className="px-4 py-2.5 bg-[#090e1f] border-t border-[#1e293b] text-xs font-mono text-slate-400 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <span>Berkas: <strong className="text-slate-200">{activeFile}</strong></span>
           <span>Ukuran: <strong className="text-slate-200">{formatFileSize(sizeBytes)}</strong></span>
-          <span>Total: <strong className="text-slate-200">{totalLines} baris</strong></span>
+          <span>
+            {searchQuery ? (
+              <span className="text-cyan-400 font-semibold">
+                Tampil: {filteredLines.length} / {lines.length} baris
+              </span>
+            ) : (
+              <span>Total: <strong className="text-slate-200">{totalLines} baris</strong></span>
+            )}
+          </span>
         </div>
         {lastModified && (
-          <div className="text-slate-500">
+          <div className="text-slate-400">
             Terakhir diubah: {new Date(lastModified).toLocaleTimeString("id-ID")}
           </div>
         )}

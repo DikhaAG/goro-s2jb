@@ -16,6 +16,8 @@ import {
   RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PipelineFlowVisualizer } from "@/components/admin/system/PipelineFlowVisualizer";
+import { NetworkCdnMetricsCard } from "@/components/admin/system/NetworkCdnMetricsCard";
 import { ServiceStatusGrid } from "@/components/admin/system/ServiceStatusGrid";
 import { RunningProcessTable, ManagedProcessItem } from "@/components/admin/system/RunningProcessTable";
 import { LiveLogViewer } from "@/components/admin/system/LiveLogViewer";
@@ -195,7 +197,10 @@ export default function SystemProcessesPage() {
         </div>
       )}
 
-      {/* 2. Service Status Grid */}
+      {/* 2. Topologi Pipeline Flow Visualizer (Hulu ke Hilir) */}
+      <PipelineFlowVisualizer />
+
+      {/* 3. Service Status Grid */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
@@ -212,15 +217,19 @@ export default function SystemProcessesPage() {
         />
       </div>
 
-      {/* 3. System Hardware & Runtime Telemetry */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[#006877]" />
-            <span>Telemetri Sumber Daya Sistem Host</span>
-          </h2>
+      {/* 4. Network CDN Telemetry & Hardware Resources */}
+      <div className="space-y-6">
+        <NetworkCdnMetricsCard />
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#006877]" />
+              <span>Telemetri Sumber Daya Sistem Host</span>
+            </h2>
+          </div>
+          <SystemResourceGauge resources={overviewQuery.data?.resources || null} />
         </div>
-        <SystemResourceGauge resources={overviewQuery.data?.resources || null} />
       </div>
 
       {/* 4. Running OS Process Table */}
