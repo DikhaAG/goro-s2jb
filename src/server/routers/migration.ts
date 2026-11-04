@@ -357,7 +357,7 @@ export const migrationRouter = router({
     const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
     return ctx.prisma.migrationBatch.findMany({
       where: isSuperAdmin ? {} : { uploadedById: ctx.user?.id },
-      take: 10,
+      take: 100,
       orderBy: { createdAt: "desc" },
       include: {
         _count: {

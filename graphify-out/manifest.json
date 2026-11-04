@@ -1362,9 +1362,9 @@
     "semantic_hash": ""
   },
   "src/app/(operator)/migration/page.tsx": {
-    "mtime": 1793462589.5483646,
-    "seen": 1793661150.0672588,
-    "ast_hash": "ef143a03c40c1208146d922b26a13f48",
+    "mtime": 1793806480.7866669,
+    "seen": 1793806586.037555,
+    "ast_hash": "7f2fae9972b555482052fc8f32f08fbb",
     "semantic_hash": ""
   },
   "src/app/(operator)/reviews/page.tsx": {
@@ -1896,8 +1896,8 @@
     "semantic_hash": ""
   },
   "src/lib/processManager.ts": {
-    "mtime": 1793778475.1611447,
-    "seen": 1793778681.2858071,
+    "mtime": 1793778738.9456944,
+    "seen": 1793806586.045301,
     "ast_hash": "f7a911e27d716aaaca84f7c9da24a0a6",
     "semantic_hash": ""
   },
@@ -2004,9 +2004,9 @@
     "semantic_hash": ""
   },
   "src/server/routers/migration.ts": {
-    "mtime": 1793774480.9860792,
-    "seen": 1793775091.5086248,
-    "ast_hash": "707e1d9e93f920d74b21bfc64ca2378b",
+    "mtime": 1793806346.9671025,
+    "seen": 1793806586.0476449,
+    "ast_hash": "dff7e1ead51907c59126fdb8a2dd5980",
     "semantic_hash": ""
   },
   "src/server/routers/report.ts": {
@@ -4890,8 +4890,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793778569.1696913,
-    "seen": 1793778681.3032598,
+    "mtime": 1793778841.7246475,
+    "seen": 1793806586.090636,
     "ast_hash": "9c75b1789184a73af1ff0c7b15653988",
     "semantic_hash": ""
   },
@@ -5196,15 +5196,21 @@
     "semantic_hash": ""
   },
   "scripts/setup-linux.sh": {
-    "mtime": 1793778512.0185387,
-    "seen": 1793778681.28126,
-    "ast_hash": "d97179769812d80ed1844b422ab0c2ec",
+    "mtime": 1793778713.7703211,
+    "seen": 1793806586.033812,
+    "ast_hash": "3a74fac5b2e28152c9cb93f14d38287e",
     "semantic_hash": ""
   },
   "scripts/start-linux.sh": {
-    "mtime": 1793778527.048792,
-    "seen": 1793778681.2813172,
-    "ast_hash": "f6cca6beedea4d031d31fc28f61a87d5",
+    "mtime": 1793778714.035278,
+    "seen": 1793806586.034683,
+    "ast_hash": "52ddba6cc2309cc5145214381288b5ce",
+    "semantic_hash": ""
+  },
+  "src/components/operator/migration/MigrationBatchTable.tsx": {
+    "mtime": 1793806528.145853,
+    "seen": 1793806586.042855,
+    "ast_hash": "f9521e139f92a8e09fb0ba22dd24647c",
     "semantic_hash": ""
   },
   "package-lock.json": {
