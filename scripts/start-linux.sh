@@ -108,3 +108,4 @@ echo -e "${YELLOW}Tekan Ctrl+C untuk menghentikan seluruh layanan secara bersama
 
 # 6. Menjalankan Next.js Web Server di foreground
 npm run dev
+

@@ -122,3 +122,4 @@ echo -e "Untuk langsung menjalankan sistem secara lengkap di Linux:"
 echo -e "👉 ${YELLOW}./scripts/start-linux.sh${NC}"
 echo -e "   atau"
 echo -e "👉 ${YELLOW}npm run dev${NC} (terminal 1) & ${YELLOW}npm run worker:ocr${NC} (terminal 2)\n"
+
