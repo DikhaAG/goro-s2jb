@@ -404,6 +404,30 @@ export function createImportWorker() {
           },
         });
 
+        // 4. Pastikan semua ulasan pada batch migrasi ini dengan skor OCR >= 90% otomatis menjadi APPROVED (True)
+        try {
+          const autoApproved = await prisma.ratingReview.updateMany({
+            where: {
+              migrationBatchId: importBatchId,
+              confidenceScore: { gte: 90.0 },
+              isDuplicate: false,
+              validationStatus: { not: "APPROVED" },
+            },
+            data: {
+              validationStatus: "APPROVED",
+              verifiedAt: new Date(),
+              reviewRemarks: "Verifikasi Otomatis AI (Skor OCR >= 90%, Zona Hijau Valid)",
+            },
+          });
+          if (autoApproved.count > 0) {
+            console.log(
+              `[Import Worker] Batch ${importBatchId}: ${autoApproved.count} baris zona hijau (>=90%) otomatis disetujui (APPROVED / True).`
+            );
+          }
+        } catch (syncErr: any) {
+          console.warn(`[Import Worker] Failed green-zone auto-approval sync:`, syncErr.message);
+        }
+
         console.log(
           `[Import Worker] Batch ${importBatchId} completed successfully! Processed: ${totalProcessedRows}, Errors: ${totalFailedRows}`
         );

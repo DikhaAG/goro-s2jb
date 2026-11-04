@@ -1266,8 +1266,8 @@
     "semantic_hash": ""
   },
   "src/app/(admin)/system-processes/page.tsx": {
-    "mtime": 1793774285.016592,
-    "seen": 1793775091.3743382,
+    "mtime": 1793776334.8945036,
+    "seen": 1793777293.806189,
     "ast_hash": "b6b9d092dff9afce093412dce93ea9a1",
     "semantic_hash": ""
   },
@@ -1494,8 +1494,8 @@
     "semantic_hash": ""
   },
   "src/components/admin/system/LiveLogViewer.tsx": {
-    "mtime": 1793774345.3091712,
-    "seen": 1793775091.402308,
+    "mtime": 1793776335.5803719,
+    "seen": 1793777293.8099031,
     "ast_hash": "bf7268c8f7ec8cfd87e92d71c1e949e3",
     "semantic_hash": ""
   },
@@ -1506,8 +1506,8 @@
     "semantic_hash": ""
   },
   "src/components/admin/system/ServiceStatusGrid.tsx": {
-    "mtime": 1793774177.109811,
-    "seen": 1793775091.4024498,
+    "mtime": 1793776336.4962184,
+    "seen": 1793777293.8099892,
     "ast_hash": "fb501d1cf6c8b8dfc42921c45f69ab1d",
     "semantic_hash": ""
   },
@@ -2046,8 +2046,8 @@
     "semantic_hash": ""
   },
   "src/server/services/auditService.ts": {
-    "mtime": 1793774887.2969656,
-    "seen": 1793775091.509204,
+    "mtime": 1793776337.4399638,
+    "seen": 1793777293.822606,
     "ast_hash": "7a83f2f87f5c6a84d460950c09a2f15a",
     "semantic_hash": ""
   },
@@ -2082,15 +2082,15 @@
     "semantic_hash": ""
   },
   "src/server/workers/importWorker.ts": {
-    "mtime": 1793772960.8311198,
-    "seen": 1793773116.816464,
-    "ast_hash": "3e888275fb96e072857bd5b25423a490",
+    "mtime": 1793776855.1163168,
+    "seen": 1793777293.8230479,
+    "ast_hash": "e32b2e03a846c9af0d9b32108a6363a7",
     "semantic_hash": ""
   },
   "src/server/workers/ocrWorker.ts": {
-    "mtime": 1793772926.8632545,
-    "seen": 1793773116.816465,
-    "ast_hash": "6f919e6f905651eb28d34454a782201e",
+    "mtime": 1793777049.9506564,
+    "seen": 1793777293.823052,
+    "ast_hash": "af2141691b004daffc0ea50aacd4ad81",
     "semantic_hash": ""
   },
   "src/types/index.ts": {
@@ -5100,8 +5100,8 @@
     "semantic_hash": ""
   },
   "docs/tasks/task_20_1.md": {
-    "mtime": 1793772673.6358128,
-    "seen": 1793772716.773789,
+    "mtime": 1793776333.2865872,
+    "seen": 1793777293.8582988,
     "ast_hash": "7ac05fde3769d933f874ef135c56a4c9",
     "semantic_hash": ""
   },
@@ -5118,14 +5118,14 @@
     "semantic_hash": ""
   },
   "docs/tasks/task_20_4.md": {
-    "mtime": 1793774381.1733203,
-    "seen": 1793775091.861248,
+    "mtime": 1793776333.780038,
+    "seen": 1793777293.8583958,
     "ast_hash": "8049445aee44d2f8fedfbff769241ef7",
     "semantic_hash": ""
   },
   "docs/tasks/task_20_5.md": {
-    "mtime": 1793775063.1687164,
-    "seen": 1793775091.861252,
+    "mtime": 1793776333.9227479,
+    "seen": 1793777293.8584,
     "ast_hash": "5799197a7f5704a7248fdaee87eadd41",
     "semantic_hash": ""
   },
@@ -5154,39 +5154,45 @@
     "semantic_hash": ""
   },
   "src/components/admin/system/NetworkCdnMetricsCard.tsx": {
-    "mtime": 1793774148.7191072,
-    "seen": 1793775091.402314,
+    "mtime": 1793776335.8166604,
+    "seen": 1793777293.809908,
     "ast_hash": "49b2f7e664e942cfb08179964d85b2e0",
     "semantic_hash": ""
   },
   "src/components/admin/system/PipelineFlowVisualizer.tsx": {
-    "mtime": 1793774111.7521453,
-    "seen": 1793775091.402318,
+    "mtime": 1793776335.96715,
+    "seen": 1793777293.809911,
     "ast_hash": "4d41401b130bada949b688cd0ff761ad",
     "semantic_hash": ""
   },
   "src/components/operator/reviews/OperatorPipelineStatusBar.tsx": {
-    "mtime": 1793774237.7166493,
-    "seen": 1793775091.446048,
-    "ast_hash": "54c89061b64d370ee84c8fbdeac5cd04",
+    "mtime": 1793775134.1709533,
+    "seen": 1793777293.8138509,
+    "ast_hash": "1ef0c2bdfe5fc164e65db050ab86e909",
     "semantic_hash": ""
   },
   "src/server/services/alertService.ts": {
-    "mtime": 1793774947.6892922,
-    "seen": 1793775091.508936,
+    "mtime": 1793776337.195576,
+    "seen": 1793777293.822418,
     "ast_hash": "6a688d30c056f817c486795c488f82ec",
     "semantic_hash": ""
   },
   "tests/integration/backgroundResilience.test.ts": {
-    "mtime": 1793775015.4118683,
-    "seen": 1793775091.510036,
+    "mtime": 1793776337.6912682,
+    "seen": 1793777293.8237498,
     "ast_hash": "1096432ad3f8078f6296acad2ff0fad0",
     "semantic_hash": ""
   },
   "docs/runbooks/background_services_recovery.md": {
-    "mtime": 1793774906.8893733,
-    "seen": 1793775091.860032,
-    "ast_hash": "9281bc09b1a91be4fa127d530a63ace4",
+    "mtime": 1793775132.2866795,
+    "seen": 1793777293.857486,
+    "ast_hash": "0fe1d74cacec2f5d4754c8aee3ca35c4",
+    "semantic_hash": ""
+  },
+  "tests/unit/greenZoneAutoApproval.test.ts": {
+    "mtime": 1793777222.5332806,
+    "seen": 1793777293.825592,
+    "ast_hash": "4c5b18c202307680d2f50a1040ae7095",
     "semantic_hash": ""
   },
   "package-lock.json": {
