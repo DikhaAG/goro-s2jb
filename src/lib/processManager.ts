@@ -140,6 +140,19 @@ export async function checkPortConnectivity(
  */
 export async function getPidForPort(port: number): Promise<number | null> {
   try {
+    if (process.platform === "win32") {
+      const { stdout } = await execAsync(`netstat -ano -p tcp | findstr :${port}`);
+      const lines = stdout.trim().split("\n");
+      for (const line of lines) {
+        if (line.includes("LISTENING")) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(pid) && pid > 0) return pid;
+        }
+      }
+      return null;
+    }
+
     const { stdout } = await execAsync(`lsof -ti :${port} -sTCP:LISTEN 2>/dev/null || lsof -ti :${port} 2>/dev/null`);
     const pids = stdout
       .trim()
@@ -466,13 +479,16 @@ export async function restartWorker(
 
   // 2. Spawn new instance
   fs.mkdirSync(LOGS_DIR, { recursive: true });
+  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+  const isWindows = process.platform === "win32";
 
   if (workerType === "import") {
     const logFd = fs.openSync(path.join(LOGS_DIR, "worker_import.log"), "a");
-    const child = spawn("npm", ["run", "worker:import"], {
+    const child = spawn(npmCmd, ["run", "worker:import"], {
       cwd: PROJECT_ROOT,
       detached: true,
       stdio: ["ignore", logFd, logFd],
+      shell: isWindows,
     });
     child.unref();
     return {
@@ -484,10 +500,11 @@ export async function restartWorker(
 
   if (workerType === "ocr") {
     const logFd = fs.openSync(path.join(LOGS_DIR, "worker_ocr.log"), "a");
-    const child = spawn("npm", ["run", "worker:ocr"], {
+    const child = spawn(npmCmd, ["run", "worker:ocr"], {
       cwd: PROJECT_ROOT,
       detached: true,
       stdio: ["ignore", logFd, logFd],
+      shell: isWindows,
     });
     child.unref();
     return {
@@ -500,10 +517,13 @@ export async function restartWorker(
   if (workerType === "python") {
     const logFd = fs.openSync(path.join(LOGS_DIR, "ocr_service.log"), "a");
     const ocrDir = path.join(PROJECT_ROOT, "python-services", "ocr");
-    let pythonBin = path.join(ocrDir, "venv", "bin", "python");
-    if (!fs.existsSync(pythonBin)) {
-      pythonBin = "python3";
-    }
+    const pythonCandidates = [
+      path.join(ocrDir, "venv", "Scripts", "python.exe"),
+      path.join(ocrDir, "venv", "bin", "python"),
+      path.join(ocrDir, "venv", "bin", "python3"),
+    ];
+    const pythonBin =
+      pythonCandidates.find((p) => fs.existsSync(p)) || (isWindows ? "python" : "python3");
 
     const child = spawn(
       pythonBin,
@@ -512,6 +532,7 @@ export async function restartWorker(
         cwd: ocrDir,
         detached: true,
         stdio: ["ignore", logFd, logFd],
+        shell: isWindows,
       }
     );
     child.unref();

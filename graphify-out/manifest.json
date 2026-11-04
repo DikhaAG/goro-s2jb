@@ -1122,9 +1122,9 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1793656667.9804592,
-    "seen": 1793661150.0671868,
-    "ast_hash": "000c54dd687d35aa456908cb456e5f25",
+    "mtime": 1793778537.9009602,
+    "seen": 1793778681.2808928,
+    "ast_hash": "f92f0bab7626f038bd3a43b9ae03c87b",
     "semantic_hash": ""
   },
   "playwright.config.ts": {
@@ -1896,9 +1896,9 @@
     "semantic_hash": ""
   },
   "src/lib/processManager.ts": {
-    "mtime": 1793773781.2290804,
-    "seen": 1793775091.458411,
-    "ast_hash": "342190a3dcd98885fed93039b09eea05",
+    "mtime": 1793778475.1611447,
+    "seen": 1793778681.2858071,
+    "ast_hash": "f7a911e27d716aaaca84f7c9da24a0a6",
     "semantic_hash": ""
   },
   "src/lib/rateLimit.ts": {
@@ -2088,8 +2088,8 @@
     "semantic_hash": ""
   },
   "src/server/workers/ocrWorker.ts": {
-    "mtime": 1793777049.9506564,
-    "seen": 1793777293.823052,
+    "mtime": 1793777715.1511507,
+    "seen": 1793778681.286861,
     "ast_hash": "af2141691b004daffc0ea50aacd4ad81",
     "semantic_hash": ""
   },
@@ -4890,9 +4890,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793105070.495058,
-    "seen": 1793661150.068183,
-    "ast_hash": "3c2e99044bf74a881bd6297a1a3cda93",
+    "mtime": 1793778569.1696913,
+    "seen": 1793778681.3032598,
+    "ast_hash": "9c75b1789184a73af1ff0c7b15653988",
     "semantic_hash": ""
   },
   "ai_context_guide.md": {
@@ -5190,9 +5190,21 @@
     "semantic_hash": ""
   },
   "tests/unit/greenZoneAutoApproval.test.ts": {
-    "mtime": 1793777222.5332806,
-    "seen": 1793777293.825592,
+    "mtime": 1793777715.4444191,
+    "seen": 1793778681.288053,
     "ast_hash": "4c5b18c202307680d2f50a1040ae7095",
+    "semantic_hash": ""
+  },
+  "scripts/setup-linux.sh": {
+    "mtime": 1793778512.0185387,
+    "seen": 1793778681.28126,
+    "ast_hash": "d97179769812d80ed1844b422ab0c2ec",
+    "semantic_hash": ""
+  },
+  "scripts/start-linux.sh": {
+    "mtime": 1793778527.048792,
+    "seen": 1793778681.2813172,
+    "ast_hash": "f6cca6beedea4d031d31fc28f61a87d5",
     "semantic_hash": ""
   },
   "package-lock.json": {
