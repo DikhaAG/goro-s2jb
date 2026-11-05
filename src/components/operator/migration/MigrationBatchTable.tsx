@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   createColumnHelper,
@@ -39,6 +39,10 @@ import {
   AlertCircle,
   FileText,
   Calendar,
+  Download,
+  Zap,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -92,6 +96,19 @@ function formatDateTime(date: Date | string | null | undefined): string {
   });
 }
 
+function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined || ms < 0) return "-";
+  if (ms < 1000) return `${ms} ms`;
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  const decimalSec = (ms / 1000).toFixed(1);
+  return `${decimalSec} dtk`;
+}
+
 const columnHelper = createColumnHelper<MigrationBatchItem>();
 
 export function MigrationBatchTable({
@@ -113,8 +130,47 @@ export function MigrationBatchTable({
 
   // Selected batch for detail modal
   const [selectedBatch, setSelectedBatch] = useState<MigrationBatchItem | null>(null);
+  const [modalTab, setModalTab] = useState<"ROWS" | "TIMING" | "ERRORS">("ROWS");
+  const [rowsPage, setRowsPage] = useState<number>(1);
+  const [rowsPageSize, setRowsPageSize] = useState<number>(15);
   const [errorLogPage, setErrorLogPage] = useState<number>(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Keyboard navigation (Escape) & body scroll locking for modal
+  useEffect(() => {
+    if (!selectedBatch) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedBatch(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [selectedBatch]);
+
+  // Fetch detailed batch telemetry and per-row duration
+  const batchDetailsQuery = trpc.migration.getBatchDetails.useQuery(
+    {
+      batchId: selectedBatch?.id || "",
+      rowsPage,
+      rowsPageSize,
+    },
+    {
+      enabled: Boolean(selectedBatch),
+      refetchInterval: (query) => {
+        const status = query.state.data?.batch.status;
+        return status === "PROCESSING" || status === "PENDING" ? 3000 : false;
+      },
+    }
+  );
 
   // Query error logs when modal is open and batch has failures
   const errorLogsQuery = trpc.migration.getBatchErrorLogs.useQuery(
@@ -161,7 +217,7 @@ export function MigrationBatchTable({
     return batches.filter((b) => b.status === statusFilter);
   }, [batches, statusFilter]);
 
-  // Memoized Column Definitions adhering to TanStack Table Best Practices
+  // Memoized Column Definitions without TARGET SKEMA
   const columns = useMemo(
     () => [
       columnHelper.accessor("createdAt", {
@@ -238,7 +294,11 @@ export function MigrationBatchTable({
                 <p
                   className="font-bold text-xs text-[#0f172a] truncate hover:text-[#006877] transition-colors cursor-pointer"
                   title={row.fileName}
-                  onClick={() => setSelectedBatch(row)}
+                  onClick={() => {
+                    setSelectedBatch(row);
+                    setModalTab("ROWS");
+                    setRowsPage(1);
+                  }}
                 >
                   {row.fileName}
                 </p>
@@ -256,44 +316,58 @@ export function MigrationBatchTable({
         },
       }),
 
-      columnHelper.accessor("targetType", {
-        id: "targetType",
-        header: ({ column }) => {
-          const isSorted = column.getIsSorted();
-          return (
-            <button
-              type="button"
-              onClick={column.getToggleSortingHandler()}
-              className="flex items-center gap-1.5 font-bold text-xs text-[#475569] hover:text-[#0f172a] uppercase tracking-wider transition-colors cursor-pointer group"
-              title="Urutkan berdasarkan target skema"
-            >
-              <span>Target Skema</span>
-              <span className="p-0.5 rounded group-hover:bg-slate-200/60 transition-colors">
-                {isSorted === "asc" ? (
-                  <ArrowUp className="w-3.5 h-3.5 text-[#006877]" />
-                ) : isSorted === "desc" ? (
-                  <ArrowDown className="w-3.5 h-3.5 text-[#006877]" />
-                ) : (
-                  <ArrowUpDown className="w-3.5 h-3.5 text-[#94a3b8] opacity-60 group-hover:opacity-100" />
-                )}
+      columnHelper.display({
+        id: "duration",
+        header: () => (
+          <span className="font-bold text-xs text-[#475569] uppercase tracking-wider flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-[#006877]" />
+            <span>Lama Proses Selesai</span>
+          </span>
+        ),
+        cell: ({ row }) => {
+          const b = row.original;
+          const startedAt = b.startedAt ? new Date(b.startedAt).getTime() : new Date(b.createdAt).getTime();
+          const completedAt = b.completedAt ? new Date(b.completedAt).getTime() : null;
+
+          if (b.status === "COMPLETED" && completedAt) {
+            const diffMs = Math.max(0, completedAt - startedAt);
+            return (
+              <div className="flex flex-col gap-0.5">
+                <span className="font-mono font-bold text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                  {formatDuration(diffMs)}
+                </span>
+                <span className="text-xs text-[#64748b]">
+                  Ingest Database Selesai
+                </span>
+              </div>
+            );
+          }
+
+          if (b.status === "PROCESSING") {
+            const diffMs = Math.max(0, Date.now() - startedAt);
+            return (
+              <div className="flex flex-col gap-0.5">
+                <span className="font-mono font-bold text-xs text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded animate-pulse w-fit">
+                  {formatDuration(diffMs)} (Aktif)
+                </span>
+                <span className="text-xs text-sky-600">
+                  Memproses Baris...
+                </span>
+              </div>
+            );
+          }
+
+          if (b.status === "FAILED") {
+            return (
+              <span className="font-mono text-xs text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded w-fit">
+                Gagal
               </span>
-            </button>
-          );
-        },
-        cell: (info) => {
-          const val = info.getValue();
-          const isFormRaw = val === "FORM_RESPONSES_RAW";
+            );
+          }
+
           return (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border",
-                isFormRaw
-                  ? "bg-[#006877]/10 text-[#006877] border-[#006877]/20"
-                  : "bg-indigo-50 text-indigo-700 border-indigo-200"
-              )}
-            >
-              <Database className="w-3 h-3" />
-              {isFormRaw ? "Google Form Raw" : "Laporan Acuan"}
+            <span className="font-mono text-xs text-[#94a3b8]">
+              Menunggu Antrian
             </span>
           );
         },
@@ -400,7 +474,11 @@ export function MigrationBatchTable({
             <div className="flex items-center justify-end gap-1.5">
               <button
                 type="button"
-                onClick={() => setSelectedBatch(row)}
+                onClick={() => {
+                  setSelectedBatch(row);
+                  setModalTab("ERRORS");
+                  setRowsPage(1);
+                }}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold font-mono hover:bg-rose-100 transition-colors cursor-pointer"
                 title="Klik untuk melihat catatan baris gagal"
               >
@@ -486,11 +564,26 @@ export function MigrationBatchTable({
           const b = row.original;
           return (
             <div className="flex items-center justify-end gap-1.5">
+              {/* Download Action Button */}
+              <a
+                href={`/api/migration/download?batchId=${b.id}`}
+                download={b.fileName}
+                className="p-1.5 text-[#475569] hover:text-[#006877] hover:bg-[#e7eeff] rounded-lg transition-colors border border-transparent hover:border-[#bae6fd] cursor-pointer"
+                title={`Unduh berkas sumber ${b.fileName}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Download className="w-4 h-4 text-[#006877]" />
+              </a>
+
               <button
                 type="button"
-                onClick={() => setSelectedBatch(b)}
+                onClick={() => {
+                  setSelectedBatch(b);
+                  setModalTab("ROWS");
+                  setRowsPage(1);
+                }}
                 className="p-1.5 text-[#475569] hover:text-[#006877] hover:bg-[#e7eeff] rounded-lg transition-colors border border-transparent hover:border-[#bae6fd] cursor-pointer"
-                title="Lihat detail lengkap batch"
+                title="Lihat detail lengkap batch dan waktu per baris"
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -540,6 +633,8 @@ export function MigrationBatchTable({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const batchDetails = batchDetailsQuery.data;
+
   return (
     <div className="rounded-2xl border border-[#e2e8f0] bg-white shadow-xs overflow-hidden flex flex-col">
       {/* 1. Header Toolbar with Status Filter Tabs & Action Bar */}
@@ -554,7 +649,7 @@ export function MigrationBatchTable({
                 Riwayat Batch Migrasi Massal
               </h3>
               <p className="text-xs text-[#64748b]">
-                Manajemen rekam data historis, status eksekusi parser streaming, dan catatan log kegagalan.
+                Manajemen rekam data historis, durasi waktu proses selesai, dan catatan waktu per baris data.
               </p>
             </div>
           </div>
@@ -714,7 +809,7 @@ export function MigrationBatchTable({
                 setGlobalFilter(e.target.value);
                 table.setPageIndex(0);
               }}
-              placeholder="Cari nama berkas, skema, ID..."
+              placeholder="Cari nama berkas, status, ID..."
               className="w-full min-h-[38px] pl-9 pr-8 text-xs bg-[#f8fafc] border border-[#cbd5e1] rounded-xl text-[#0f172a] placeholder-[#94a3b8] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#006877]/20 focus:border-[#006877] transition-all"
             />
             {globalFilter && (
@@ -799,7 +894,11 @@ export function MigrationBatchTable({
                 <tr
                   key={row.id}
                   className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                  onClick={() => setSelectedBatch(row.original)}
+                  onClick={() => {
+                    setSelectedBatch(row.original);
+                    setModalTab("ROWS");
+                    setRowsPage(1);
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
@@ -915,24 +1014,37 @@ export function MigrationBatchTable({
         </div>
       )}
 
-      {/* 5. Detailed Batch Inspector Modal */}
+      {/* 5. Detailed Batch Inspector Modal with Phase Timings & Per-Row Duration */}
       {selectedBatch && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="batch-inspector-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto"
+        >
+          {/* Backdrop with dark blur and click-outside handler */}
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setSelectedBatch(null)}
+            aria-hidden="true"
+          />
+
+          {/* Modal Card with Balanced Dimensions and Breathing Margins */}
+          <div className="relative w-full max-w-5xl lg:max-w-6xl max-h-[88vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-10 overflow-hidden my-auto animate-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="p-5 border-b border-[#e2e8f0] flex items-center justify-between bg-[#f8fafc]">
+            <div className="px-5 sm:px-6 py-4 border-b border-[#e2e8f0] flex items-center justify-between bg-[#f8fafc] shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
                   <FileSpreadsheet className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-black text-sm text-[#0f172a] truncate" title={selectedBatch.fileName}>
+                    <h3 id="batch-inspector-title" className="font-black text-sm text-[#0f172a] truncate" title={selectedBatch.fileName}>
                       {selectedBatch.fileName}
                     </h3>
                     <span
                       className={cn(
-                        "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
+                        "px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider",
                         selectedBatch.status === "COMPLETED"
                           ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           : selectedBatch.status === "FAILED"
@@ -963,88 +1075,108 @@ export function MigrationBatchTable({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setSelectedBatch(null)}
-                className="p-1.5 rounded-lg text-[#64748b] hover:text-[#0f172a] hover:bg-slate-200 transition-colors cursor-pointer"
-                title="Tutup dialog"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Download Button in Header */}
+                <a
+                  href={`/api/migration/download?batchId=${selectedBatch.id}`}
+                  download={selectedBatch.fileName}
+                  className="min-h-[38px] px-3.5 py-1.5 bg-white hover:bg-slate-50 text-[#006877] border border-[#00a2b9] text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer focus-utility-ring"
+                  title="Unduh berkas sumber migrasi"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#00a2b9]" />
+                  <span>Unduh Berkas</span>
+                </a>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedBatch(null)}
+                  className="min-h-[38px] min-w-[38px] p-2 rounded-xl text-[#64748b] hover:text-[#0f172a] hover:bg-slate-200/70 transition-colors cursor-pointer flex items-center justify-center focus-utility-ring"
+                  title="Tutup dialog (Esc)"
+                  aria-label="Tutup dialog"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 overflow-y-auto space-y-5 text-xs">
-              {/* Quick Summary Cards */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-xs flex-1 min-h-0">
+              {/* 1. Telemetry & Phase Timing Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                  <span className="text-xs text-[#64748b] block mb-1">Ukuran Berkas</span>
-                  <span className="text-sm font-bold font-mono text-[#0f172a]">
-                    {formatBytes(selectedBatch.fileSize)}
+                {/* Ingestion & Completion Duration */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-[#64748b]">
+                    <span className="text-xs font-semibold">Total Durasi Selesai</span>
+                    <Clock className="w-3.5 h-3.5 text-[#006877]" />
+                  </div>
+                  <span className="text-base font-bold font-mono text-[#0f172a] block">
+                    {formatDuration(batchDetails?.timings.totalDurationMs)}
+                  </span>
+                  <span className="text-xs text-[#64748b] block">
+                    Ingest: {formatDuration(batchDetails?.timings.ingestDurationMs)}
                   </span>
                 </div>
 
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                  <span className="text-xs text-[#64748b] block mb-1">Total Baris</span>
-                  <span className="text-sm font-bold font-mono text-[#0f172a]">
-                    {selectedBatch.totalRows.toLocaleString("id-ID")}
+                {/* Database Ingest Rate */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-[#64748b]">
+                    <span className="text-xs font-semibold">Ingest ke Database</span>
+                    <Database className="w-3.5 h-3.5 text-[#006877]" />
+                  </div>
+                  <span className="text-base font-bold font-mono text-emerald-700 block">
+                    {selectedBatch.processedRows.toLocaleString("id-ID")} Baris
+                  </span>
+                  <span className="text-xs text-[#64748b] block">
+                    Total: {selectedBatch.totalRows.toLocaleString("id-ID")} Baris
                   </span>
                 </div>
 
-                <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl">
-                  <span className="text-xs text-emerald-700 block mb-1">Baris Berhasil</span>
-                  <span className="text-sm font-bold font-mono text-emerald-700">
-                    {selectedBatch.processedRows.toLocaleString("id-ID")}
+                {/* OCR Processing & AI Matching */}
+                <div className="p-3 bg-sky-50/60 border border-sky-200 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-sky-800">
+                    <span className="text-xs font-semibold">Ekstraksi OCR & AI</span>
+                    <Activity className="w-3.5 h-3.5 text-sky-600" />
+                  </div>
+                  <span className="text-base font-bold font-mono text-sky-900 block">
+                    {batchDetails?.timings.ocrCompletedCount ?? 0} Selesai
+                  </span>
+                  <span className="text-xs text-sky-700 block">
+                    Rata-rata: {batchDetails?.timings.avgOcrRowMs ? `${batchDetails.timings.avgOcrRowMs} ms/baris` : "Memproses..."}
                   </span>
                 </div>
 
-                <div className="p-3 bg-rose-50/60 border border-rose-200 rounded-xl">
-                  <span className="text-xs text-rose-700 block mb-1">Baris Gagal</span>
-                  <span className="text-sm font-bold font-mono text-rose-700">
-                    {selectedBatch.failedRows.toLocaleString("id-ID")}
+                {/* Auto-Approval & Anti-Fraud */}
+                <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between text-emerald-800">
+                    <span className="text-xs font-semibold">Validasi Otomatis AI</span>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <span className="text-base font-bold font-mono text-emerald-900 block">
+                    {batchDetails?.timings.autoApprovedCount ?? 0} Disetujui
+                  </span>
+                  <span className="text-xs text-emerald-700 block">
+                    Zona Hijau (&ge;90%) Otomatis
                   </span>
                 </div>
               </div>
 
-              {/* Progress & Duration */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-[#475569]">Rasio Keberhasilan Migrasi</span>
-                  <span className="text-[#006877] font-bold font-mono">
-                    {selectedBatch.totalRows > 0
-                      ? Math.round((selectedBatch.processedRows / selectedBatch.totalRows) * 100)
-                      : selectedBatch.status === "COMPLETED"
-                      ? 100
-                      : 0}
-                    %
+              {/* Anti-Fraud & Duplication Summary Badge */}
+              <div className="p-3.5 bg-[#f8fafc] border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#006877]" />
+                  <span className="font-semibold text-xs text-[#0f172a]">Integritas Data & Anti-Fraud:</span>
+                  <span className="text-xs text-[#475569]">
+                    {batchDetails?.timings.duplicateCount ?? 0} duplikasi terdeteksi melalui pencocokan pHash citra & nama.
                   </span>
                 </div>
-                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all",
-                      selectedBatch.status === "COMPLETED" ? "bg-emerald-500" : "bg-[#00a2b9]"
-                    )}
-                    style={{
-                      width: `${
-                        selectedBatch.totalRows > 0
-                          ? Math.round((selectedBatch.processedRows / selectedBatch.totalRows) * 100)
-                          : selectedBatch.status === "COMPLETED"
-                          ? 100
-                          : 0
-                      }%`,
-                    }}
-                  />
-                </div>
-                <div className="flex flex-wrap items-center justify-between text-xs text-[#64748b] pt-1 font-mono">
-                  <span>Dibuat: {formatDateTime(selectedBatch.createdAt)}</span>
-                  {selectedBatch.completedAt && (
-                    <span>Selesai: {formatDateTime(selectedBatch.completedAt)}</span>
-                  )}
+                <div className="flex items-center gap-3 font-mono text-xs text-[#64748b]">
+                  <span>Ukuran Berkas: <strong>{formatBytes(selectedBatch.fileSize)}</strong></span>
+                  <span>Skor OCR Rata-rata: <strong className="text-[#006877]">{batchDetails?.timings.averageConfidence}%</strong></span>
                 </div>
               </div>
 
-              {/* Error Message if failed */}
+              {/* Error Message banner if failed */}
               {selectedBatch.errorMessage && (
                 <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 flex items-start gap-2.5">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
@@ -1055,21 +1187,205 @@ export function MigrationBatchTable({
                 </div>
               )}
 
-              {/* Error Logs Table Section */}
-              {selectedBatch.failedRows > 0 && (
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-xs text-[#0f172a] flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Catatan Baris Gagal ({selectedBatch.failedRows} baris)</span>
-                    </h4>
-                    {errorLogsQuery.data && errorLogsQuery.data.totalPages > 1 && (
-                      <span className="text-xs text-[#64748b]">
-                        Halaman {errorLogsQuery.data.page} dari {errorLogsQuery.data.totalPages}
-                      </span>
-                    )}
-                  </div>
+              {/* Modal Tabs Navigation */}
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setModalTab("ROWS")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5",
+                    modalTab === "ROWS"
+                      ? "bg-[#006877] text-white shadow-xs"
+                      : "bg-slate-100 text-[#475569] hover:bg-slate-200"
+                  )}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Catatan Waktu & Status Per Baris Data ({batchDetails?.rowsPagination.total ?? 0})</span>
+                </button>
 
+                {selectedBatch.failedRows > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setModalTab("ERRORS")}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5",
+                      modalTab === "ERRORS"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
+                    )}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Log Baris Gagal ({selectedBatch.failedRows})</span>
+                  </button>
+                )}
+              </div>
+
+              {/* TAB 1: INDIVIDUAL ROW-BY-ROW PROCESSING TIME TABLE */}
+              {modalTab === "ROWS" && (
+                <div className="space-y-3">
+                  {batchDetailsQuery.isLoading ? (
+                    <div className="py-8 text-center text-xs text-[#64748b] animate-pulse">
+                      Memuat catatan waktu proses per baris data...
+                    </div>
+                  ) : !batchDetails?.rows || batchDetails.rows.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#64748b] bg-slate-50 rounded-xl border border-slate-200">
+                      Belum ada baris ulasan tersimpan untuk batch ini.
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-slate-100 border-b border-slate-200 text-[#475569] font-bold">
+                          <tr>
+                            <th className="py-2.5 px-3 w-12 text-center">#</th>
+                            <th className="py-2.5 px-3">Pengulas Play Store</th>
+                            <th className="py-2.5 px-3 w-44">Unit (UP3 / ULP)</th>
+                            <th className="py-2.5 px-3 w-28 text-center">Versi PLN</th>
+                            <th className="py-2.5 px-3 w-28 text-center">Skor OCR</th>
+                            <th className="py-2.5 px-3 w-28 text-center">Anti-Fraud</th>
+                            <th className="py-2.5 px-3 w-28 text-center">Status</th>
+                            <th className="py-2.5 px-3 w-36 text-right">Lama Waktu Proses</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 bg-white text-[#0f172a]">
+                          {batchDetails.rows.map((row) => (
+                            <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
+                              <td className="py-2.5 px-3 text-center font-mono font-bold text-[#64748b]">
+                                {row.rowSequence}
+                              </td>
+                              <td className="py-2.5 px-3 font-semibold">
+                                <div className="truncate max-w-[240px]" title={row.playstoreReviewerName}>
+                                  {row.playstoreReviewerName}
+                                </div>
+                                <span className="text-xs text-[#64748b] font-mono block">
+                                  {formatDateTime(row.createdAt)}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-[#475569]">
+                                <span className="block truncate font-semibold">{row.up3?.name || "-"}</span>
+                                <span className="block truncate text-xs text-[#64748b]">{row.ulp?.name || "-"}</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="font-mono text-xs text-[#0f172a] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                  {row.appVersion?.version || "V5.2.79"}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                {row.confidenceScore !== null ? (
+                                  <span
+                                    className={cn(
+                                      "font-mono font-bold px-2 py-0.5 rounded text-xs",
+                                      row.confidenceScore >= 90
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                        : row.confidenceScore >= 70
+                                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                        : "bg-rose-50 text-rose-700 border border-rose-200"
+                                    )}
+                                  >
+                                    {row.confidenceScore}%
+                                  </span>
+                                ) : (
+                                  <span className="font-mono text-xs text-[#94a3b8]">-</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                {row.isDuplicate ? (
+                                  <span className="inline-flex items-center gap-1 font-mono font-bold px-2 py-0.5 rounded text-xs bg-rose-50 text-rose-700 border border-rose-200">
+                                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                    Duplikat
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 font-mono text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                    Valid
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-xs font-bold uppercase",
+                                    row.validationStatus === "APPROVED"
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : row.validationStatus === "REJECTED"
+                                      ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                      : "bg-amber-50 text-amber-700 border border-amber-200"
+                                  )}
+                                >
+                                  {row.validationStatus}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <div className="flex flex-col items-end">
+                                  <span className="font-mono font-bold text-xs text-[#006877] bg-[#e7eeff] border border-[#bae6fd] px-2 py-0.5 rounded">
+                                    {formatDuration(row.rowProcessTimeMs)}
+                                  </span>
+                                  <span className="text-xs text-[#64748b] mt-0.5">
+                                    {row.ocrStatus === "COMPLETED" ? "OCR Selesai" : row.ocrStatus}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {/* Row pagination footer with rows-per-page selector */}
+                      <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-xs text-[#64748b]">
+                          <span>Tampilkan per halaman:</span>
+                          <select
+                            value={rowsPageSize}
+                            onChange={(e) => {
+                              setRowsPageSize(Number(e.target.value));
+                              setRowsPage(1);
+                            }}
+                            className="px-2 py-1 text-xs font-bold border border-slate-200 rounded-lg bg-white text-[#0f172a] focus-utility-ring cursor-pointer"
+                          >
+                            <option value={10}>10 baris</option>
+                            <option value={15}>15 baris</option>
+                            <option value={25}>25 baris</option>
+                            <option value={50}>50 baris</option>
+                            <option value={100}>100 baris</option>
+                          </select>
+                        </div>
+
+                        {batchDetails.rowsPagination.totalPages > 1 && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setRowsPage((p) => Math.max(1, p - 1))}
+                              disabled={rowsPage <= 1}
+                              className="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                            >
+                              Sebelumnya
+                            </button>
+                            <span className="text-xs text-[#64748b]">
+                              Halaman <strong className="text-[#0f172a]">{rowsPage}</strong> dari{" "}
+                              <strong className="text-[#0f172a]">{batchDetails.rowsPagination.totalPages}</strong> ({batchDetails.rowsPagination.total} baris)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRowsPage((p) =>
+                                  Math.min(batchDetails.rowsPagination.totalPages, p + 1)
+                                )
+                              }
+                              disabled={rowsPage >= batchDetails.rowsPagination.totalPages}
+                              className="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                            >
+                              Berikutnya
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: ERROR LOGS TABLE */}
+              {modalTab === "ERRORS" && selectedBatch.failedRows > 0 && (
+                <div className="space-y-3">
                   {errorLogsQuery.isLoading ? (
                     <div className="py-6 text-center text-xs text-[#64748b] animate-pulse">
                       Memuat rincian kesalahan...
@@ -1083,8 +1399,8 @@ export function MigrationBatchTable({
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-100 border-b border-slate-200 text-[#475569] font-bold">
                           <tr>
-                            <th className="py-2 px-3 w-20">Baris</th>
-                            <th className="py-2 px-3">Penyebab Kesalahan</th>
+                            <th className="py-2.5 px-3 w-20">Baris</th>
+                            <th className="py-2.5 px-3">Penyebab Kesalahan</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 bg-white">
@@ -1111,14 +1427,13 @@ export function MigrationBatchTable({
                         </tbody>
                       </table>
 
-                      {/* Error log pagination buttons */}
                       {errorLogsQuery.data.totalPages > 1 && (
                         <div className="p-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                           <button
                             type="button"
                             onClick={() => setErrorLogPage((p) => Math.max(1, p - 1))}
                             disabled={errorLogPage <= 1}
-                            className="px-2.5 py-1 text-xs font-bold bg-white border border-slate-200 rounded hover:bg-slate-100 disabled:opacity-40"
+                            className="px-2.5 py-1 text-xs font-bold bg-white border border-slate-200 rounded hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
                           >
                             Sebelumnya
                           </button>
@@ -1133,7 +1448,7 @@ export function MigrationBatchTable({
                               )
                             }
                             disabled={errorLogPage >= errorLogsQuery.data.totalPages}
-                            className="px-2.5 py-1 text-xs font-bold bg-white border border-slate-200 rounded hover:bg-slate-100 disabled:opacity-40"
+                            className="px-2.5 py-1 text-xs font-bold bg-white border border-slate-200 rounded hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
                           >
                             Berikutnya
                           </button>
@@ -1146,21 +1461,32 @@ export function MigrationBatchTable({
             </div>
 
             {/* Modal Footer Actions */}
-            <div className="p-4 border-t border-[#e2e8f0] bg-[#f8fafc] flex flex-wrap items-center justify-between gap-2">
-              <Link
-                href={`/reviews?batchId=${selectedBatch.id}`}
-                className="px-3.5 py-2 bg-[#006877] hover:bg-[#00525e] text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Buka Ulasan Batch Ini</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </Link>
+            <div className="px-5 sm:px-6 py-4 border-t border-[#e2e8f0] bg-[#f8fafc] flex flex-wrap items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/api/migration/download?batchId=${selectedBatch.id}`}
+                  download={selectedBatch.fileName}
+                  className="min-h-[38px] px-3.5 py-2 bg-white hover:bg-slate-50 text-[#006877] border border-[#cbd5e1] text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer focus-utility-ring"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#006877]" />
+                  <span>Unduh Berkas ({formatBytes(selectedBatch.fileSize)})</span>
+                </a>
+
+                <Link
+                  href={`/reviews?batchId=${selectedBatch.id}`}
+                  className="min-h-[38px] px-3.5 py-2 bg-[#006877] hover:bg-[#00525e] text-white text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1.5 focus-utility-ring"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Buka Ulasan Batch Ini</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </div>
 
               <div className="flex items-center gap-2">
                 {selectedBatch.status === "PROCESSING" && (
                   <Link
                     href="/migration/monitor"
-                    className="px-3 py-2 bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+                    className="min-h-[38px] px-3 py-2 bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 focus-utility-ring"
                   >
                     <Activity className="w-3.5 h-3.5" />
                     <span>Pantau Live</span>
@@ -1169,7 +1495,7 @@ export function MigrationBatchTable({
                 <button
                   type="button"
                   onClick={() => setSelectedBatch(null)}
-                  className="px-3.5 py-2 bg-white hover:bg-slate-100 text-[#475569] border border-[#cbd5e1] text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  className="min-h-[38px] px-4 py-2 bg-white hover:bg-slate-50 text-[#475569] border border-[#cbd5e1] text-xs font-bold rounded-xl transition-colors cursor-pointer focus-utility-ring"
                 >
                   Tutup
                 </button>

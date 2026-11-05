@@ -1362,8 +1362,8 @@
     "semantic_hash": ""
   },
   "src/app/(operator)/migration/page.tsx": {
-    "mtime": 1793806480.7866669,
-    "seen": 1793806586.037555,
+    "mtime": 1793807517.0350728,
+    "seen": 1793808380.626745,
     "ast_hash": "7f2fae9972b555482052fc8f32f08fbb",
     "semantic_hash": ""
   },
@@ -1464,9 +1464,9 @@
     "semantic_hash": ""
   },
   "src/components/admin/BulkDropzone.tsx": {
-    "mtime": 1793462589.8583982,
-    "seen": 1793661150.067285,
-    "ast_hash": "514f8d973e048f17b5b75a66e5581c67",
+    "mtime": 1793842075.539094,
+    "seen": 1793842386.206526,
+    "ast_hash": "43830b237db630be9ecbdca244294e5c",
     "semantic_hash": ""
   },
   "src/components/admin/InterruptedBatchRecoveryCard.tsx": {
@@ -2004,9 +2004,9 @@
     "semantic_hash": ""
   },
   "src/server/routers/migration.ts": {
-    "mtime": 1793806346.9671025,
-    "seen": 1793806586.0476449,
-    "ast_hash": "dff7e1ead51907c59126fdb8a2dd5980",
+    "mtime": 1793807825.926728,
+    "seen": 1793808380.630156,
+    "ast_hash": "5343059a6194939ede21707153c7ecf3",
     "semantic_hash": ""
   },
   "src/server/routers/report.ts": {
@@ -5208,9 +5208,15 @@
     "semantic_hash": ""
   },
   "src/components/operator/migration/MigrationBatchTable.tsx": {
-    "mtime": 1793806528.145853,
-    "seen": 1793806586.042855,
-    "ast_hash": "f9521e139f92a8e09fb0ba22dd24647c",
+    "mtime": 1793845112.8819811,
+    "seen": 1793845160.8165572,
+    "ast_hash": "e1d59c4c013ab693c7a916c99f1d1a1c",
+    "semantic_hash": ""
+  },
+  "src/app/api/migration/download/route.ts": {
+    "mtime": 1793808416.4868114,
+    "seen": 1793842386.20632,
+    "ast_hash": "d2ae88e6479aa5388db9e3e171bf6735",
     "semantic_hash": ""
   },
   "package-lock.json": {

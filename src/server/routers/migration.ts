@@ -398,6 +398,161 @@ export const migrationRouter = router({
       };
     }),
 
+  getBatchDetails: operatorProcedure
+    .input(
+      z.object({
+        batchId: z.string().min(1),
+        rowsPage: z.number().int().min(1).default(1),
+        rowsPageSize: z.number().int().min(1).max(100).default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
+      const batch = await ctx.prisma.migrationBatch.findUnique({
+        where: { id: input.batchId },
+        include: {
+          uploadedBy: {
+            select: { id: true, name: true, username: true, role: true },
+          },
+          _count: {
+            select: { errors: true, reviews: true },
+          },
+        },
+      });
+
+      if (!batch) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Data batch migrasi tidak ditemukan",
+        });
+      }
+
+      if (!isSuperAdmin && batch.uploadedById && batch.uploadedById !== ctx.user?.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak memiliki akses ke rincian batch ini",
+        });
+      }
+
+      // Timing calculations
+      const startedAtTime = batch.startedAt ? new Date(batch.startedAt).getTime() : new Date(batch.createdAt).getTime();
+      const completedAtTime = batch.completedAt ? new Date(batch.completedAt).getTime() : null;
+      const ingestDurationMs = completedAtTime
+        ? Math.max(0, completedAtTime - startedAtTime)
+        : batch.status === "PROCESSING"
+        ? Math.max(0, Date.now() - startedAtTime)
+        : null;
+
+      // Aggregates for reviews in this batch
+      const [
+        reviewsAgg,
+        ocrCompletedCount,
+        ocrProcessingCount,
+        ocrQueuedCount,
+        ocrFailedCount,
+        autoApprovedCount,
+        duplicateCount,
+      ] = await Promise.all([
+        ctx.prisma.ratingReview.aggregate({
+          where: { migrationBatchId: input.batchId },
+          _avg: { confidenceScore: true },
+        }),
+        ctx.prisma.ratingReview.count({
+          where: { migrationBatchId: input.batchId, ocrStatus: "COMPLETED" },
+        }),
+        ctx.prisma.ratingReview.count({
+          where: { migrationBatchId: input.batchId, ocrStatus: { in: ["DOWNLOADING", "PROCESSING"] } },
+        }),
+        ctx.prisma.ratingReview.count({
+          where: { migrationBatchId: input.batchId, ocrStatus: "QUEUED" },
+        }),
+        ctx.prisma.ratingReview.count({
+          where: { migrationBatchId: input.batchId, ocrStatus: "FAILED" },
+        }),
+        ctx.prisma.ratingReview.count({
+          where: { migrationBatchId: input.batchId, validationStatus: "APPROVED" },
+        }),
+        ctx.prisma.ratingReview.count({
+          where: { migrationBatchId: input.batchId, isDuplicate: true },
+        }),
+      ]);
+
+      // Paginated individual rows with timing computation
+      const skip = (input.rowsPage - 1) * input.rowsPageSize;
+      const [rows, totalRowsCount] = await Promise.all([
+        ctx.prisma.ratingReview.findMany({
+          where: { migrationBatchId: input.batchId },
+          skip,
+          take: input.rowsPageSize,
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            playstoreReviewerName: true,
+            entryDate: true,
+            timestamp: true,
+            confidenceScore: true,
+            ocrStatus: true,
+            validationStatus: true,
+            isDuplicate: true,
+            reviewRemarks: true,
+            createdAt: true,
+            updatedAt: true,
+            verifiedAt: true,
+            up3: { select: { name: true } },
+            ulp: { select: { name: true } },
+            appVersion: { select: { version: true } },
+          },
+        }),
+        ctx.prisma.ratingReview.count({
+          where: { migrationBatchId: input.batchId },
+        }),
+      ]);
+
+      // Calculate row-level processing time
+      const mappedRows = rows.map((r, idx) => {
+        const ingestTime = new Date(r.createdAt).getTime();
+        const ocrFinishedTime = new Date(r.updatedAt).getTime();
+        // Time taken from database creation to OCR / validation completion
+        const rowProcessTimeMs = Math.max(0, ocrFinishedTime - ingestTime);
+
+        return {
+          ...r,
+          rowSequence: skip + idx + 1,
+          rowProcessTimeMs,
+        };
+      });
+
+      // Sample average row duration from completed items
+      const completedRows = mappedRows.filter((r) => r.ocrStatus === "COMPLETED");
+      const avgOcrRowMs =
+        completedRows.length > 0
+          ? Math.round(completedRows.reduce((sum, r) => sum + r.rowProcessTimeMs, 0) / completedRows.length)
+          : 0;
+
+      return {
+        batch,
+        timings: {
+          totalDurationMs: ingestDurationMs,
+          ingestDurationMs,
+          ocrCompletedCount,
+          ocrProcessingCount,
+          ocrQueuedCount,
+          ocrFailedCount,
+          autoApprovedCount,
+          duplicateCount,
+          avgOcrRowMs,
+          averageConfidence: reviewsAgg._avg.confidenceScore ? Math.round(reviewsAgg._avg.confidenceScore * 10) / 10 : 0,
+        },
+        rows: mappedRows,
+        rowsPagination: {
+          page: input.rowsPage,
+          pageSize: input.rowsPageSize,
+          total: totalRowsCount,
+          totalPages: Math.ceil(totalRowsCount / input.rowsPageSize),
+        },
+      };
+    }),
+
   getDetailedWorkerStatus: operatorProcedure.query(async ({ ctx }) => {
     const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
     const { ocrQueue } = await import("../queues/ocrQueue");

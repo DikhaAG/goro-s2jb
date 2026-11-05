@@ -16,16 +16,22 @@ import {
   Database,
   Activity,
   Zap,
+  Info,
+  X,
+  HelpCircle,
+  ExternalLink,
+  Check,
 } from "lucide-react";
 import { useMigrationGuard } from "@/context/MigrationGuardContext";
 import { InterruptedBatchRecoveryCard } from "./InterruptedBatchRecoveryCard";
 
 export function BulkDropzone() {
   const [file, setFile] = useState<File | null>(null);
-  const [targetType, setTargetType] = useState<"FORM_RESPONSES_RAW" | "HISTORICAL_REPORTS">("FORM_RESPONSES_RAW");
+  const targetType = "FORM_RESPONSES_RAW";
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
+  const [showColumnInfoModal, setShowColumnInfoModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -170,55 +176,35 @@ export function BulkDropzone() {
             </div>
           )}
 
-          {/* Target Schema Selector */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-[#0f172a] uppercase tracking-wider flex items-center space-x-1.5">
-              <Layers className="w-3.5 h-3.5 text-[#006877]" />
-              <span>Pilih Target Skema Data</span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setTargetType("FORM_RESPONSES_RAW")}
-                disabled={isProcessing}
-                className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] focus-utility-ring ${
-                  targetType === "FORM_RESPONSES_RAW"
-                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-2 ring-[#00a2b9]"
-                    : "bg-[#f8fafc] border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1]"
-                }`}
-              >
-                <div className="font-bold text-sm text-[#0f172a] flex items-center justify-between">
-                  <span>Form Responses (13 Kolom)</span>
-                  {targetType === "FORM_RESPONSES_RAW" && (
-                    <CheckCircle2 className="w-4 h-4 text-[#00a2b9]" />
-                  )}
+          {/* Target Schema & Column Guidelines Banner */}
+          <div className="p-4 rounded-2xl bg-[#f0fdfa] border border-[#bae6fd] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white border border-[#bae6fd] flex items-center justify-center text-[#006877] shrink-0 shadow-xs">
+                <FileSpreadsheet className="w-5 h-5 text-[#006877]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-sm text-[#0f172a]">
+                    Format Data: Form Responses Google Form
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#006877]/10 text-[#006877] border border-[#006877]/20">
+                    13 Kolom Acuan
+                  </span>
                 </div>
-                <p className="text-xs text-[#64748b] mt-1">
-                  Data ulasan mentah Play Store dari Google Forms historis.
+                <p className="text-xs text-[#475569] mt-0.5">
+                  Streaming parser memproses rekam data Google Forms historis ulasan bintang 5 aplikasi PLN Mobile.
                 </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTargetType("HISTORICAL_REPORTS")}
-                disabled={isProcessing}
-                className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer min-h-[44px] focus-utility-ring ${
-                  targetType === "HISTORICAL_REPORTS"
-                    ? "bg-[#f0fdfa] border-[#00a2b9] text-[#006877] shadow-xs ring-2 ring-[#00a2b9]"
-                    : "bg-[#f8fafc] border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1]"
-                }`}
-              >
-                <div className="font-bold text-sm text-[#0f172a] flex items-center justify-between">
-                  <span>Laporan Harian / Bulanan</span>
-                  {targetType === "HISTORICAL_REPORTS" && (
-                    <CheckCircle2 className="w-4 h-4 text-[#00a2b9]" />
-                  )}
-                </div>
-                <p className="text-xs text-[#64748b] mt-1">
-                  Rekap capaian historis unit dan perbandingan target operasional.
-                </p>
-              </button>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowColumnInfoModal(true)}
+              className="min-h-[38px] px-3.5 py-1.5 bg-white hover:bg-slate-50 text-[#006877] border border-[#00a2b9] text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-2 self-start sm:self-auto shrink-0 cursor-pointer focus-utility-ring"
+            >
+              <Info className="w-4 h-4 text-[#00a2b9]" />
+              <span>Panduan Format Kolom</span>
+            </button>
           </div>
 
           {/* Drag & Drop File Zone */}
@@ -278,12 +264,12 @@ export function BulkDropzone() {
                   <span className="text-xs font-bold text-[#0f172a]">
                     Progres Migrasi Aktif
                   </span>
-                  <span className="text-[11px] font-mono text-[#64748b]">
+                  <span className="text-xs font-mono text-[#64748b]">
                     ({batchData.id})
                   </span>
                 </div>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                     isFinished
                       ? "bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]"
                       : isFailed
@@ -348,7 +334,7 @@ export function BulkDropzone() {
               {/* 3 Metric Cards (Enterprise Monospace Numbers) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs">
-                  <span className="text-[11px] uppercase font-bold text-[#64748b] tracking-wider block">
+                  <span className="text-xs uppercase font-bold text-[#64748b] tracking-wider block">
                     Baris Sukses
                   </span>
                   <div className="text-2xl font-bold font-mono text-[#15803d] mt-1">
@@ -357,7 +343,7 @@ export function BulkDropzone() {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs">
-                  <span className="text-[11px] uppercase font-bold text-[#64748b] tracking-wider block">
+                  <span className="text-xs uppercase font-bold text-[#64748b] tracking-wider block">
                     Baris Gagal (Terisolasi)
                   </span>
                   <div className="text-2xl font-bold font-mono text-[#b91c1c] mt-1">
@@ -366,7 +352,7 @@ export function BulkDropzone() {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs">
-                  <span className="text-[11px] uppercase font-bold text-[#64748b] tracking-wider block">
+                  <span className="text-xs uppercase font-bold text-[#64748b] tracking-wider block">
                     Kecepatan Streaming
                   </span>
                   <div className="text-2xl font-bold font-mono text-[#006877] mt-1 flex items-baseline gap-1">
@@ -383,7 +369,7 @@ export function BulkDropzone() {
                     <AlertTriangle className="w-3.5 h-3.5" />
                     <span>Log Galat Baris Terisolasi (Proses Tidak Dihentikan):</span>
                   </div>
-                  <div className="max-h-36 overflow-y-auto rounded-xl border border-[#fecaca] bg-[#fef2f2] p-3 text-[11px] font-mono text-[#7f1d1d] space-y-1.5">
+                  <div className="max-h-36 overflow-y-auto rounded-xl border border-[#fecaca] bg-[#fef2f2] p-3 text-xs font-mono text-[#7f1d1d] space-y-1.5">
                     {batchData.errors.map((err) => (
                       <div key={err.id} className="border-b border-[#fee2e2] pb-1 last:border-0 last:pb-0">
                         <span className="font-bold text-[#991b1b]">Baris #{err.rowNumber}:</span> {err.errorReason}
@@ -439,6 +425,188 @@ export function BulkDropzone() {
           </button>
         </div>
       </div>
+
+      {/* 3. Modal Panduan Format Kolom Google Form */}
+      {showColumnInfoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#cbd5e1] shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[#e2e8f0] flex items-center justify-between bg-[#f8fafc]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#e7eeff] border border-[#bae6fd] flex items-center justify-center text-[#006877] shrink-0">
+                  <FileSpreadsheet className="w-5 h-5 text-[#006877]" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-[#0f172a]">
+                    Panduan Format Kolom Berkas Google Form Responses
+                  </h3>
+                  <p className="text-xs text-[#64748b] mt-0.5">
+                    Berkas CSV atau XLSX wajib memiliki 13 urutan kolom berikut agar parser dapat memproses rekam data dengan presisi.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowColumnInfoModal(false)}
+                className="p-1.5 rounded-lg text-[#64748b] hover:text-[#0f172a] hover:bg-slate-200 transition-colors cursor-pointer"
+                title="Tutup dialog"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-4 text-xs">
+              {/* Highlight Alert */}
+              <div className="p-3.5 bg-[#f0fdfa] border border-[#bae6fd] rounded-xl text-[#006877] flex items-start gap-2.5">
+                <Zap className="w-4 h-4 shrink-0 mt-0.5 text-[#00a2b9] fill-[#00a2b9]" />
+                <div className="space-y-1">
+                  <p className="font-bold text-xs text-[#0f172a]">
+                    Fitur Otomatisasi AI Zona Hijau (Skor OCR &ge; 90%):
+                  </p>
+                  <p className="text-xs text-[#475569]">
+                    Setiap baris data dengan skor kecocokan fuzzy OCR dalam zona hijau (&ge; 90%) otomatis disetujui (Status Validasi = TRUE / APPROVED) saat ekstraksi OCR selesai.
+                  </p>
+                </div>
+              </div>
+
+              {/* Table of Columns */}
+              <div className="rounded-xl border border-slate-200 overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 border-b border-slate-200 text-[#475569] font-bold">
+                    <tr>
+                      <th className="py-2.5 px-3 w-16 text-center">No</th>
+                      <th className="py-2.5 px-3 w-48">Nama Kolom Acuan</th>
+                      <th className="py-2.5 px-3 w-40">Tipe / Format</th>
+                      <th className="py-2.5 px-3">Contoh Nilai & Keterangan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 bg-white text-[#0f172a]">
+                    <tr>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">1 (A)</td>
+                      <td className="py-2 px-3 font-bold">Timestamp</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Tanggal & Waktu</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">7/2/2026 11:02:22</code> Waktu submit form
+                      </td>
+                    </tr>
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">2 (B)</td>
+                      <td className="py-2 px-3 font-bold">UP3</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks (Wajib)</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        Contoh: <span className="font-semibold text-[#0f172a]">UP3 Palembang</span>, UP3 Jambi, UP3 Ogan Ilir
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">3 (C)</td>
+                      <td className="py-2 px-3 font-bold">ULP</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks (Wajib)</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        Contoh: <span className="font-semibold text-[#0f172a]">ULP Rivai</span>, ULP Kenten, ULP Ampera
+                      </td>
+                    </tr>
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">4 (D)</td>
+                      <td className="py-2 px-3 font-bold">Nama Pengulas Play Store</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks (Wajib)</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        Nama akun Google yang menulis ulasan di Google Play Store
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">5 (E)</td>
+                      <td className="py-2 px-3 font-bold">Tanggal Masuk (Entry Date)</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Tanggal (DD/MM/YYYY)</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        Contoh: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">25/07/2026</code>
+                      </td>
+                    </tr>
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">6 (F)</td>
+                      <td className="py-2 px-3 font-bold">Tautan Bukti Gambar</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">URL Google Drive</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs break-all">https://drive.google.com/file/d/ID_FILE/view</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">7 (G)</td>
+                      <td className="py-2 px-3 font-bold">Versi Aplikasi PLN Mobile</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        Contoh: <span className="font-semibold text-[#0f172a]">V5.2.79</span> (default: V5.2.79)
+                      </td>
+                    </tr>
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">8 (H)</td>
+                      <td className="py-2 px-3 font-bold">Nama Pengulas Asli</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks (Opsional)</td>
+                      <td className="py-2 px-3 text-[#475569]">Nama asli pengulas jika berbeda dengan akun Play Store</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">9 (I)</td>
+                      <td className="py-2 px-3 font-bold">Kategori Pengulas</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks</td>
+                      <td className="py-2 px-3 text-[#475569]">Contoh: Pelanggan, Pegawai, atau Mitra</td>
+                    </tr>
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">10 (J)</td>
+                      <td className="py-2 px-3 font-bold">Catatan Lapangan</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks (Opsional)</td>
+                      <td className="py-2 px-3 text-[#475569]">Catatan khusus oleh petugas survei / lapangan</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">11 (K)</td>
+                      <td className="py-2 px-3 font-bold">Indikator Duplikasi</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Boolean / Teks</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        <span className="font-mono font-semibold text-rose-600">YA</span> (Duplikat) atau <span className="font-mono font-semibold text-emerald-600">TIDAK</span>
+                      </td>
+                    </tr>
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">12 (L)</td>
+                      <td className="py-2 px-3 font-bold">Status Validasi Awal</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Boolean / Status</td>
+                      <td className="py-2 px-3 text-[#475569]">
+                        Nilai <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">1 / TRUE</code> (Approved) atau <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">0 / FALSE</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-[#006877]">13 (M)</td>
+                      <td className="py-2 px-3 font-bold">Catatan Review (Remarks)</td>
+                      <td className="py-2 px-3 font-mono text-[#64748b]">Teks (Opsional)</td>
+                      <td className="py-2 px-3 text-[#475569]">Keterangan hasil verifikasi atau ulasan manual</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Format Tips */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs text-[#64748b]">
+                <p className="font-bold text-[#0f172a]">Catatan Teknis:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li>Format berkas yang didukung adalah <strong>.CSV (UTF-8)</strong> dan <strong>.XLSX</strong>.</li>
+                  <li>Baris header pertama akan dilewati secara otomatis oleh streaming parser jika mengandung kata "Timestamp" atau "Column".</li>
+                  <li>Streaming parser menggunakan alokasi memori dinamis hemat sumber daya (&lt;200MB) bahkan untuk berkas berukuran &gt;140.000 baris.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowColumnInfoModal(false)}
+                className="px-4 py-2 bg-[#006877] hover:bg-[#00525e] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              >
+                Mengerti & Tutup Panduan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
