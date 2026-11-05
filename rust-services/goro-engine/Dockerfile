@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy build manifests and source code
-COPY Cargo.toml build.rs ./
+COPY Cargo.toml Cargo.lock* build.rs ./
 COPY src/ ./src/
 
 # Compile release binary with full optimizations

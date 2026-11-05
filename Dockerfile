@@ -9,8 +9,8 @@ RUN apk add --no-cache libc6-compat curl
 
 # Stage 1: Install dependencies
 FROM base AS deps
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json package-lock.json* .npmrc* ./
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
 # Stage 2: Build the Next.js application
 FROM base AS builder
