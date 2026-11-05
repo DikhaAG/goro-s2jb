@@ -58,3 +58,4 @@ process.on("SIGTERM", () => handleSignal("SIGTERM"));
 child.on("exit", (code) => {
   process.exit(code ?? 0);
 });
+

@@ -1212,8 +1212,8 @@
     "semantic_hash": ""
   },
   "scripts/setup-windows.ps1": {
-    "mtime": 1793900494.0365663,
-    "seen": 1793900805.778684,
+    "mtime": 1793901033.1174598,
+    "seen": 1793901202.63886,
     "ast_hash": "40af038d52d2f3e9ecc475717fe0d49a",
     "semantic_hash": ""
   },
@@ -1266,8 +1266,8 @@
     "semantic_hash": ""
   },
   "src/app/(admin)/system-processes/page.tsx": {
-    "mtime": 1793899984.6455722,
-    "seen": 1793900096.9604878,
+    "mtime": 1793901032.4572406,
+    "seen": 1793901202.639165,
     "ast_hash": "b67f828dbb963f9772051cbb8c748a4e",
     "semantic_hash": ""
   },
@@ -4890,8 +4890,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793900625.0614169,
-    "seen": 1793900805.839037,
+    "mtime": 1793901032.8618078,
+    "seen": 1793901202.6655009,
     "ast_hash": "e89d39cb56e8e68b6c578773eb79e2c1",
     "semantic_hash": ""
   },
@@ -5376,21 +5376,21 @@
     "semantic_hash": ""
   },
   "scripts/check-system.ts": {
-    "mtime": 1793900380.3668303,
-    "seen": 1793900805.778381,
-    "ast_hash": "387e27ca2b14aa3bd1c34713499bfbbf",
+    "mtime": 1793900879.592651,
+    "seen": 1793901202.638698,
+    "ast_hash": "e842f22fe7d09635fecd97fbf881375a",
     "semantic_hash": ""
   },
   "scripts/setup-all.js": {
-    "mtime": 1793900529.2483056,
-    "seen": 1793900805.7785401,
-    "ast_hash": "4308017e39a5f0309160c73ab77a959a",
+    "mtime": 1793900879.8367078,
+    "seen": 1793901202.638795,
+    "ast_hash": "2ad92e08a4be3a2f1ae14fba06ba3f0b",
     "semantic_hash": ""
   },
   "scripts/start-all.js": {
-    "mtime": 1793900522.1000905,
-    "seen": 1793900805.778688,
-    "ast_hash": "37764718ebb3d4a92ad2e1dd397c381b",
+    "mtime": 1793900880.1406825,
+    "seen": 1793901202.6388621,
+    "ast_hash": "be61d58e5599551eb45db3a049db326b",
     "semantic_hash": ""
   },
   "package-lock.json": {
