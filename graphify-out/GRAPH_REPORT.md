@@ -1,17 +1,17 @@
 # Graph Report - goro-s2jb  (2026-11-06)
 
 ## Corpus Check
-- 889 files · ~1,093,747 words
+- 889 files · ~1,094,635 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 117 file(s) not represented in the graph (top: .csv 45, .xsd 39, (none) 13)
 
 ## Summary
-- 9726 nodes · 15693 edges · 671 communities (550 shown, 121 thin omitted)
+- 9752 nodes · 15719 edges · 643 communities (532 shown, 111 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 412 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `dc5010cc`
+- Built from commit: `b6ead34b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -24,8 +24,8 @@
 - behavior.py
 - dependencies
 - System Process & Port Connectivity
-- lucide-react
-- PPTXSchemaValidator
+- serverLayoutGuards.test.ts
+- helpers/__init__.py
 - live-browser.js
 - vitest
 - OCR Accuracy & CER/WER Evaluator
@@ -34,21 +34,21 @@
 - connectSSE
 - engine.py
 - cn
-- period.py
+- Collector
 - package.json
 - NetworkTrafficChart.tsx
 - validate-skill-bundle.py
-- queueTelemetry.ts
+- Condition-Based Waiting
 - @prisma/client
-- Tx
+- patterns.py
 - main.py
 - wins.py
 - routers/auth.ts
 - os
 - react
-- classify.py
-- Review Verification & Bulk Actions
-- MigrationBatchTable.tsx
+- parse_decision_rules
+- C. Panduan Linux Fresh Install (Ubuntu 22.04 / 24.04 LTS & Debian)
+- lib/trpc.ts
 - .build
 - server.cjs
 - request-groups.mjs
@@ -56,7 +56,7 @@
 - BM25
 - setLiveState
 - test_core_data_quality.py
-- format_ascii_box
+- Window
 - _normalize
 - Build
 - TessPageSegMode
@@ -81,7 +81,7 @@
 - Performance & Parallelization
 - Component Testing
 - Recommended activation setup
-- transcripts.py
+- build
 - Debugging and Managing Flaky Tests
 - Contents
 - BaseSchemaValidator
@@ -116,7 +116,7 @@
 - Responsive Design
 - modern-screenshot.umd.js
 - Test Tags
-- API Testing
+- Patterns
 - CCS Align — Worker Watch seat (Phases 0–2 shipped; Phase 3 = verify / sign-off)
 - Frontend UI Engineering
 - Patterns
@@ -173,7 +173,7 @@
 - Client Methods
 - Filter Conditions and Operators
 - Query Options
-- TestGeneratedCatalogContract
+- getPathProjectContext
 - Better Auth Integration Guide
 - Visual Companion Guide
 - createLiveBrowserDomHelpers
@@ -188,7 +188,7 @@
 - Design Systems from DESIGN.md
 - Creation Log: Systematic Debugging Skill
 - task-observer - One Skill to Rule Them All
-- DOCXSchemaValidator
+- Registry Authoring and Addresses
 - template.sh
 - 1. Analisis Masalah, Eksplorasi Arsitektural & Menjawab Pertanyaan Pengguna
 - Session diagnosis: <session-id>
@@ -204,7 +204,7 @@
 - prisma migrate dev
 - react-hook-form/AGENTS.md
 - The Design System Page
-- color-pair.tsx
+- B. Panduan Windows 10 / 11 Fresh Install
 - 5. Rencana Pembagian Tahapan Implementasi (Phased Plan)
 - scripts
 - compilerOptions
@@ -248,7 +248,7 @@
 - Writing Skills
 - 4. Pemecahan Subtask (Subtasks Breakdown)
 - 4. Matriks Skenario Pengujian Konkrit (Test Cases)
-- helpers/__init__.py
+- A. Panduan macOS Fresh Install (Apple Silicon M1/M2/M3/M4 & Intel)
 - Diagnosing Bugs
 - Finishing a Development Branch
 - Generate Report
@@ -260,7 +260,7 @@
 - subagent-driven-development/SKILL.md
 - CatalogRefreshTest
 - Using Git Worktrees
-- RedliningValidator
+- writeJsonFileAtomic
 - 4. Instruksi Teknis Rinci
 - Dispatching Parallel Agents
 - email-and-password-best-practices/SKILL.md
@@ -272,10 +272,10 @@
 - Smart Explore
 - Signals — what to watch for, in full
 - Task Observer — Continuous Skill Discovery & Improvement
-- docx.py
-- pptx_theme.py
+- 3. Panduan Setup Lengkap dari Awal (Sistem Operasi Fresh / Baru Di-Install)
+- standup — facilitate a group chat between branch-agents
 - bucket_rule
-- pptx_chart.py
+- cmdPRs
 - 2. Struktur Komponen Standar
 - contrast-check.py
 - Group 2: Purpose-Gate (technique allowed, purpose required)
@@ -315,7 +315,7 @@
 - React Hook Form Best Practices Skill
 - Tools
 - Defense-in-Depth Validation
-- _db.py
+- 3. Instruksi Teknis Rinci
 - TestThresholdGate
 - wayfinder/SKILL.md
 - Writing Plans
@@ -333,7 +333,7 @@
 - Generate Combined Critique Report
 - polish.md
 - quieter.md
-- Issue tracker: GitLab
+- Domain Docs
 - duplicate_matcher.rs
 - shadcn/ui
 - Timeline Report
@@ -371,7 +371,7 @@
 - Skill authoring best practices
 - Advanced: Skills with executable code
 - Skill Discovery Optimization (SDO)
-- apply_review
+- AuditLogTable.tsx
 - volumes
 - Cli
 - TranscriptEncoding
@@ -385,7 +385,7 @@
 - prisma mcp
 - Sections
 - Quick Reference
-- apply
+- setup-matt-pocock-skills/SKILL.md
 - ref_fs
 - <Questionnaire title>
 - Gemini CLI Tool Mapping
@@ -413,8 +413,8 @@
 - prisma debug
 - React Hook Form Best Practices by Community
 - Code Reviewer Prompt Template
-- providers.tsx
-- Impeccable Finish Reviewer
+- Issue tracker: GitLab
+- ReviewDetailDrawer.tsx
 - Subagent-Driven Development
 - marketplace.json
 - CONTRIBUTING.md
@@ -466,7 +466,7 @@
 - interface
 - interface
 - Chapter 4 - Errors Handling
-- handleRequest
+- dotenv
 - codex-tools.md
 - Chat & Messaging
 - using-superpowers/SKILL.md
@@ -492,13 +492,13 @@
 - loop-me/SKILL.md
 - React Hook Form
 - Screenpipe
-- antiFraudService.ts
+- 4. Menjalankan Aplikasi (*Run Application*)
 - Pressure Test 1: Emergency Production Fix
 - Pressure Test 2: Sunk Cost + Exhaustion
 - Pressure Test 3: Authority + Social Pressure
 - Enforcement Guidelines
 - Migrating a pre-3.0 single-file log
-- test_design_system_mode.py
+- _filter_anti_patterns_for_mode
 - TestStackFlagWithDesignSystem
 - Web Interface Guidelines
 - VERIFY GREEN: Pressure Testing
@@ -507,7 +507,7 @@
 - RED-GREEN-REFACTOR for Skills
 - colorContrastWcag.test.ts
 - AGENTS INSTRUCTIONS
-- MissingTimezoneData
+- datetime
 - Part 3: Liveliness Toolkit
 - interface
 - interface
@@ -543,7 +543,6 @@
 - Core principles
 - File Organization
 - Skill Types
-- _li_money
 - start-server.sh
 - Learn Codebase
 - prisma complete
@@ -600,7 +599,7 @@
 - skill-load.sh
 - GORO S2JB - Command Center Rating & Review PLN Mobile UID S2JB
 - verify-rbac-matrix.sh
-- split_values
+- read_rows
 - Muse Tool Mapping
 - 1.6 Comments: Context, not Clutter
 - Chapter 2 - Clippy and Linting Discipline
@@ -608,46 +607,19 @@
 - setup-linux.sh
 - start-linux.sh
 - resolveLiveInjectionAnchor
-- startServer
-- ref_child_process
 - TestMetricMath
 - Impeccable Documenter
 - Persuade and Experience
-- adminUserManagement.test.ts
-- kind
 - Read
 - TestFixtureValidation
 - integ-shadcn-form-import.md
 - sub-avoid-watch-in-render.md
 - sub-watch-specific-fields.md
 - seed.ts
-- Pricer
-- New visual work
-- migrate-log.py
-- Patterns
 - goro-engine
-- Merge
-- request
-- Step 4: Map Tokens to the Theme
-- Critical Rules
 - better-auth
-- db_path
-- companionUrl
-- render-graphs.js
-- renderBranding
-- Region map
-- Icons
-- TestLandingAndStackContract
-- Environment Provisioning
-- Middleware Testing
-- NextAuth.js Authentication
-- Dynamic Routes
-- Tips
 - fast-csv
-- @playwright/test
-- NativeEncoding
 - TestDiagnosticsContracts
-- triage/page.tsx
 
 ## God Nodes (most connected - your core abstractions)
 1. `react` - 90 edges
@@ -676,15 +648,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (671 total, 121 thin omitted)
+## Communities (643 total, 111 thin omitted)
 
 ### Community 0 - "server.rs"
 Cohesion: 0.09
 Nodes (18): main(), AppState, compare_hash_handler(), CompareHashRequest, CompareHashResponse, create_router(), health_handler(), HealthResponse (+10 more)
 
 ### Community 1 - "Evidence Lightbox & UI Viewer"
-Cohesion: 0.09
-Nodes (31): NotFound(), AVAILABLE_LOGS, LiveLogViewerProps, EvidenceLightbox(), EvidenceLightboxProps, LightboxReviewItem, OcrTextHighlighter(), OcrTextHighlighterProps (+23 more)
+Cohesion: 0.11
+Nodes (27): LoginPage(), metadata, NotFound(), LoginForm(), EvidenceLightbox(), EvidenceLightboxProps, LightboxReviewItem, OcrTextHighlighter() (+19 more)
 
 ### Community 2 - "tesseract_ffi.rs"
 Cohesion: 0.14
@@ -695,48 +667,48 @@ Cohesion: 0.12
 Nodes (21): comparable(), data_dir(), drop_aged_quotes(), drop_unverifiable_carried_quotes(), evidence_lines(), item_fields(), label(), main() (+13 more)
 
 ### Community 4 - "design_system.py"
-Cohesion: 0.05
-Nodes (18): _passes_threshold(), _query_coverage(), _detect_page_type(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides(), persist_design_system(), safe_slug() (+10 more)
+Cohesion: 0.04
+Nodes (28): _passes_threshold(), _query_coverage(), ansi_ljust(), _button_outline_text_color(), _detect_page_type(), format_ascii_box(), add_wrapped(), wrap_text() (+20 more)
 
 ### Community 5 - "behavior.py"
-Cohesion: 0.03
-Nodes (73): alex_minutes(), _blocks(), day_pt(), episode_id(), episode_windows(), failure_spans(), find_episodes(), human_messages() (+65 more)
+Cohesion: 0.05
+Nodes (39): alex_minutes(), _blocks(), day_pt(), episode_id(), episode_windows(), failure_spans(), find_episodes(), human_messages() (+31 more)
 
 ### Community 6 - "dependencies"
 Cohesion: 0.06
-Nodes (32): dependencies, bcryptjs@^3.0.3, bullmq@^5.41.0, clsx@^2.1.1, dotenv@^16.4.7, exceljs@^4.4.0, @hookform/resolvers@^7.0.1, ioredis@^5.6.0 (+24 more)
+Nodes (33): dependencies, bcryptjs@^3.0.3, bullmq@^5.41.0, clsx@^2.1.1, exceljs@^4.4.0, @hookform/resolvers@^7.0.1, ioredis@^5.6.0, jose@^6.2.13 (+25 more)
 
 ### Community 7 - "System Process & Port Connectivity"
-Cohesion: 0.09
-Nodes (45): 4.1 Modul Utilitas Proses Lokal (`src/lib/processManager.ts`), 4.2 Router API tRPC (`src/server/routers/systemProcesses.ts`), 4.3 Desain Antarmuka Pengguna (Apple Design & WCAG AAA), 4.4 Penambahan Navigasi Global Sidebar, 4. Rincian Teknis Implementasi, 1. Konteks Masalah & Kebutuhan Teknis, 2. Rincian Pekerjaan & Spesifikasi Implementasi, 3. Matriks Otorisasi & Hak Akses (RBAC: SUPER_ADMIN vs PEGAWAI) (+37 more)
+Cohesion: 0.07
+Nodes (48): 4.1 Modul Utilitas Proses Lokal (`src/lib/processManager.ts`), 4.2 Router API tRPC (`src/server/routers/systemProcesses.ts`), 4.3 Desain Antarmuka Pengguna (Apple Design & WCAG AAA), 4.4 Penambahan Navigasi Global Sidebar, 4. Rincian Teknis Implementasi, 1. Konteks Masalah & Kebutuhan Teknis, 2. Rincian Pekerjaan & Spesifikasi Implementasi, 3. Matriks Otorisasi & Hak Akses (RBAC: SUPER_ADMIN vs PEGAWAI) (+40 more)
 
-### Community 8 - "lucide-react"
-Cohesion: 0.15
-Nodes (17): MigrationMonitorPage(), AbortMigrationModal(), AbortMigrationModalProps, BatchErrorLogsModal(), BatchItem, BatchMonitorTable(), BatchMonitorTableProps, ActiveBatchProps (+9 more)
+### Community 8 - "serverLayoutGuards.test.ts"
+Cohesion: 0.18
+Nodes (13): AdminLayout, FieldLayout, ManagerLayout, OperatorLayout, HomePage(), HomePageClient(), createRoleLayout(), RoleLayout() (+5 more)
 
-### Community 9 - "PPTXSchemaValidator"
-Cohesion: 0.13
-Nodes (5): opc_target(), find_chart_problems(), fatal_slide_errors(), is_schema_verdict(), PPTXSchemaValidator
+### Community 9 - "helpers/__init__.py"
+Cohesion: 0.05
+Nodes (33): opc_target(), part_text(), rels_source_part(), rendered_text(), rezip(), safe_extract(), _canonical_ids(), _check_chart_axis_references() (+25 more)
 
 ### Community 10 - "live-browser.js"
 Cohesion: 0.02
 Nodes (159): addManualContextText(), applyGlobalBarLabelState(), applyLiveBarPreference(), applyParamDefaults(), applyParamValue(), applyPlaceholderSizingStyles(), applySavedParamValues(), averageRgb01() (+151 more)
 
 ### Community 11 - "vitest"
-Cohesion: 0.15
-Nodes (20): bullmq, @trpc/server, vitest, handler(), adapter, globalForPrisma, pool, prisma (+12 more)
+Cohesion: 0.09
+Nodes (36): bullmq, @trpc/server, vitest, GET(), execAsync, GET(), handler(), adapter (+28 more)
 
 ### Community 12 - "OCR Accuracy & CER/WER Evaluator"
 Cohesion: 0.08
-Nodes (32): 7.1 Latar Belakang & Analisis Inkonsistensi Saat Ini, 7.2 Matriks Standarisasi Komponen Global, 7.3 Cakupan Modul Audit & Refaktor Konsistensi, 7.4 Kriteria Keberterimaan Sub-Task 17.1 (*Acceptance Criteria*), 7.5 Rencana Eksekusi Bertahap Sub-Task 17.1, 7. Sub-Task 17.1: Harmonisasi & Standardisasi Konsistensi UI/UX Sistem Menyeluruh (*Cross-Module UI/UX Consistency & Aesthetic Polish*), 1. Konteks Masalah & Kebutuhan Teknis, 2. Rincian Pekerjaan & Spesifikasi Komponen (+24 more)
+Nodes (34): 7.1 Latar Belakang & Analisis Inkonsistensi Saat Ini, 7.2 Matriks Standarisasi Komponen Global, 7.3 Cakupan Modul Audit & Refaktor Konsistensi, 7.4 Kriteria Keberterimaan Sub-Task 17.1 (*Acceptance Criteria*), 7.5 Rencana Eksekusi Bertahap Sub-Task 17.1, 7. Sub-Task 17.1: Harmonisasi & Standardisasi Konsistensi UI/UX Sistem Menyeluruh (*Cross-Module UI/UX Consistency & Aesthetic Polish*), 1. Konteks Masalah & Kebutuhan Teknis, 2. Rincian Pekerjaan & Spesifikasi Komponen (+26 more)
 
 ### Community 13 - "evidenceDownloader.ts"
-Cohesion: 0.06
-Nodes (51): 1. Konteks Masalah & Kebutuhan Teknis, 2. Rincian Pekerjaan & Spesifikasi Implementasi, 3. Matriks Otorisasi & Hak Akses (RBAC: SUPER_ADMIN vs PEGAWAI), 4. Kriteria Keberhasilan & Skenario Pengujian (TDD), 5. Panduan Eksekusi Mandiri untuk Agent, Langkah 1: Membangun In-Memory Network Telemetry Recorder pada `evidenceDownloader.ts`, Langkah 2: Mengintegrasikan Metrik Jaringan ke `src/app/api/health/route.ts`, Langkah 3: Pengerasan Telemetri Loopback pada `src/server/services/ocrBridge.ts` (+43 more)
+Cohesion: 0.07
+Nodes (53): 1. Konteks Masalah & Kebutuhan Teknis, 2. Rincian Pekerjaan & Spesifikasi Implementasi, 3. Matriks Otorisasi & Hak Akses (RBAC: SUPER_ADMIN vs PEGAWAI), 4. Kriteria Keberhasilan & Skenario Pengujian (TDD), 5. Panduan Eksekusi Mandiri untuk Agent, Langkah 1: Membangun In-Memory Network Telemetry Recorder pada `evidenceDownloader.ts`, Langkah 2: Mengintegrasikan Metrik Jaringan ke `src/app/api/health/route.ts`, Langkah 3: Pengerasan Telemetri Loopback pada `src/server/services/ocrBridge.ts` (+45 more)
 
 ### Community 14 - "System Process & Port Connectivity"
-Cohesion: 0.10
-Nodes (27): 3.4 Task 8.4: Refaktorisasi Antarmuka Multi-Peran Terintegrasi Sidebar, LoginPage(), metadata, metadata, ReportsPage(), LoginForm(), CumulativePacingChart(), CumulativePacingChartProps (+19 more)
+Cohesion: 0.09
+Nodes (28): 3.4 Task 8.4: Refaktorisasi Antarmuka Multi-Peran Terintegrasi Sidebar, metadata, ReportsPage(), CumulativePacingChart(), CumulativePacingChartProps, PacingPoint, ExecutiveKpiCards(), ExecutiveKpiCardsProps (+20 more)
 
 ### Community 15 - "connectSSE"
 Cohesion: 0.06
@@ -747,80 +719,80 @@ Cohesion: 0.16
 Nodes (8): extract_text_from_image(), extract_text_with_auto_orientation(), denoise_screen_cracks(), detect_dark_mode(), enhance_for_screen_photo(), normalize_dimensions(), normalize_orientation(), preprocess_image()
 
 ### Community 17 - "cn"
-Cohesion: 0.06
-Nodes (54): metadata, OperatorReviewsPage(), BatchErrorLogsModalProps, BulkActionBar(), BulkActionBarProps, BulkDeleteReviewModal(), BulkDeleteReviewModalProps, PRESET_BULK_REJECT_REASONS (+46 more)
+Cohesion: 0.05
+Nodes (63): ColorPair(), contrast(), luminance(), toHex(), toRgb(), defaultStates, previewState(), StateMatrix() (+55 more)
 
-### Community 18 - "period.py"
-Cohesion: 0.07
-Nodes (7): epoch_ms(), parse_day(), resolve_window(), Window, DefaultWindow, DstBoundary, Collector
+### Community 18 - "Collector"
+Cohesion: 0.10
+Nodes (9): session_block(), collect(), collect_claude(), collect_codex(), host_label(), _project_dir(), ts(), SessionBlock (+1 more)
 
 ### Community 19 - "package.json"
-Cohesion: 0.09
-Nodes (29): devDependencies, @better-auth/cli@^1.4.22, postcss@^8.5.0, prisma@^7.10.1, tailwindcss@^4.0.0, @tailwindcss/postcss@^4.0.0, tsx@^4.19.0, @types/bcryptjs@^2.4.6 (+21 more)
+Cohesion: 0.08
+Nodes (31): devDependencies, @better-auth/cli@^1.4.22, @playwright/test@^1.64.1, postcss@^8.5.0, prisma@^7.10.1, tailwindcss@^4.0.0, @tailwindcss/postcss@^4.0.0, tsx@^4.19.0 (+23 more)
 
 ### Community 20 - "NetworkTrafficChart.tsx"
-Cohesion: 0.24
-Nodes (10): GoogleDriveTrafficCard(), GoogleDriveTrafficCardProps, GoogleDriveTrafficData, HourSubMode, MetricType, NetworkTrafficChart(), NetworkTrafficChartProps, NetworkTrafficPoint (+2 more)
+Cohesion: 0.23
+Nodes (11): GoogleDriveTrafficCard(), GoogleDriveTrafficCardProps, GoogleDriveTrafficData, HourSubMode, MetricType, NetworkTrafficChart(), NetworkTrafficChartProps, NetworkTrafficPoint (+3 more)
 
 ### Community 21 - "validate-skill-bundle.py"
 Cohesion: 0.05
 Nodes (48): blank_fenced_code(), check_bundle(), check_core_size(), check_dir(), check_frontmatter_shape(), check_markdown_shape(), check_plugin_manifest(), check_reference_indexes() (+40 more)
 
-### Community 22 - "queueTelemetry.ts"
-Cohesion: 0.23
-Nodes (12): CompletedJobRecord, completedJobsMap, detectStalledJobs(), FailedJobRecord, failedJobsMap, getQueueThroughputStats(), getQueueThroughputStatsSync(), lastCompletedAtMap (+4 more)
+### Community 22 - "Condition-Based Waiting"
+Cohesion: 0.15
+Nodes (12): Common Mistakes, Condition-Based Waiting, Core Pattern, waitForEvent(), waitForEventCount(), waitForEventMatch(), Implementation, Overview (+4 more)
 
 ### Community 23 - "@prisma/client"
-Cohesion: 0.07
-Nodes (49): nextConfig, jose, next, @prisma/client, AdminLayout, POST(), POST(), GET() (+41 more)
+Cohesion: 0.10
+Nodes (32): @prisma/client, POST(), GET(), GET(), GET(), POST(), GET(), metadata (+24 more)
 
-### Community 24 - "Tx"
-Cohesion: 0.22
-Nodes (6): Base, Detectors, Episodes, iso(), Tagger, Tx
+### Community 24 - "patterns.py"
+Cohesion: 0.06
+Nodes (33): price_turns(), user_facing(), api_equiv_x1e6(), Pricer, usable_rate(), detect_p1(), detect_p11(), detect_p3() (+25 more)
 
 ### Community 25 - "main.py"
 Cohesion: 0.14
 Nodes (11): calculate_phash(), hamming_distance(), is_visual_duplicate(), api_compare_hash(), api_process(), cli_main(), CompareHashRequest, CompareHashResponse (+3 more)
 
 ### Community 26 - "wins.py"
-Cohesion: 0.06
-Nodes (24): active_minutes(), classify(), _first(), review_entry(), attribute(), build(), project_repo(), classify_command() (+16 more)
+Cohesion: 0.08
+Nodes (19): attribute(), build(), project_repo(), classify_command(), detect_praise(), gh_list_candidates(), gh_merged_prs(), gh_pr_view() (+11 more)
 
 ### Community 27 - "routers/auth.ts"
-Cohesion: 0.08
-Nodes (37): 📌 Language Comparison, zod, hashPassword(), checkLoginRateLimit(), checkUploadRateLimit(), LoginFailureResult, rateLimit(), RateLimitResult (+29 more)
+Cohesion: 0.07
+Nodes (47): 📌 Language Comparison, zod, GET, POST, POST(), auth, getDefaultRedirectForRole(), hashPassword() (+39 more)
 
 ### Community 28 - "os"
-Cohesion: 0.08
-Nodes (9): day_pt(), load_sessions(), pt(), session_key(), _week_start(), pt_midnight(), _days(), write_outputs() (+1 more)
+Cohesion: 0.09
+Nodes (3): write(), build(), NativeEncoding
 
 ### Community 29 - "react"
 Cohesion: 0.16
-Nodes (14): react, AuditLogsPage(), AdminLoading(), FieldLoading(), ManagerLoading(), OperatorLoading(), AuditLogTable(), ModuleLoadingSkeleton() (+6 more)
+Nodes (15): react, AdminLoading(), IntakePage(), metadata, FieldLoading(), ManagerLoading(), OperatorLoading(), CascadingUnitSelect() (+7 more)
 
-### Community 30 - "classify.py"
-Cohesion: 0.14
-Nodes (8): ClassifierError, estimate_usd(), run(), usd(), _reconciled(), write(), Classifier, fake()
+### Community 30 - "parse_decision_rules"
+Cohesion: 0.19
+Nodes (5): apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), _validate_action(), _check_reasoning_contract()
 
-### Community 31 - "Review Verification & Bulk Actions"
-Cohesion: 0.18
-Nodes (12): IntakePage(), metadata, CascadingUnitSelect(), CascadingUnitSelectProps, getTodayString(), IntakeForm(), Label, LabelProps (+4 more)
+### Community 31 - "C. Panduan Linux Fresh Install (Ubuntu 22.04 / 24.04 LTS & Debian)"
+Cohesion: 0.17
+Nodes (12): 10. Jalankan Inisialisasi Otomatis (Setup), 11. Jalankan Seluruh Layanan Aplikasi, 1. Perbarui Indeks Paket Sistem, 2. Pasang Perkakas Kompilasi & Dependensi Pustaka, 3. Pasang Node.js v20+ LTS via NodeSource, 4. Pasang Rust & Cargo Compiler via rustup, 5. Pasang Database PostgreSQL & Redis, 6. Konfigurasi User Database PostgreSQL Lokal (+4 more)
 
-### Community 32 - "MigrationBatchTable.tsx"
-Cohesion: 0.16
-Nodes (17): @tanstack/react-table@^8.21.3, @tanstack/react-table, MigrationPage(), BulkDropzone(), InterruptedBatchRecoveryCard(), InterruptedBatchRecoveryCardProps, columnHelper, formatBytes() (+9 more)
+### Community 32 - "lib/trpc.ts"
+Cohesion: 0.08
+Nodes (34): metadata, RootLayout(), MigrationMonitorPage(), MigrationPage(), BulkDropzone(), InterruptedBatchRecoveryCard(), InterruptedBatchRecoveryCardProps, AbortMigrationModal() (+26 more)
 
 ### Community 33 - ".build"
-Cohesion: 0.14
-Nodes (6): Scope, OutsideWindow, fable_usd(), ms(), Rollup, row()
+Cohesion: 0.06
+Nodes (20): Scope, apply_review(), ReviewError, add_obs(), add_prompt(), add_session(), add_summary(), add_tool() (+12 more)
 
 ### Community 34 - "server.cjs"
-Cohesion: 0.08
-Nodes (24): clients, CONTENT_DIR, crypto, debounceTimers, frameTemplate, fs, helperScript, http (+16 more)
+Cohesion: 0.05
+Nodes (57): bootstrapPage(), brandMarkup(), broadcast(), browserLauncherForPlatform(), chmodOwnerOnly(), clients, companionUrl(), computeAcceptKey() (+49 more)
 
 ### Community 35 - "request-groups.mjs"
-Cohesion: 0.04
-Nodes (38): bandFor(), bareRepositoryProjectName(), bypassWrite(), classifySettingsDocument(), defaultSessionInitRequestTimeoutMs(), deriveSlugFromRemote(), detectWorktree(), emitDiagnostic() (+30 more)
+Cohesion: 0.05
+Nodes (28): applyPatch(), bandFor(), buildFocusAreas(), classifySettingsDocument(), defaultSessionInitRequestTimeoutMs(), envFilePath(), envFileSetsAnthropicBaseUrl(), getCredential() (+20 more)
 
 ### Community 36 - "Task 3: Mesin AI & Logika Probabilitas (Inti Eksekusi)"
 Cohesion: 0.18
@@ -835,28 +807,24 @@ Cohesion: 0.11
 Nodes (58): abortSvelteComponentInjection(), beginNewLiveConfiguration(), cancelEditing(), cancelEditingToPicking(), cancelInsertConfigure(), cleanup(), cleanupAcceptedSession(), clearAnnotations() (+50 more)
 
 ### Community 39 - "test_core_data_quality.py"
-Cohesion: 0.19
-Nodes (5): read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors
-
-### Community 40 - "format_ascii_box"
-Cohesion: 0.13
-Nodes (9): ansi_ljust(), format_ascii_box(), add_wrapped(), wrap_text(), format_markdown(), hex_to_ansi(), _mode_support_labels(), section_header() (+1 more)
+Cohesion: 0.15
+Nodes (7): read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, contrast_ratio(), _relative_luminance()
 
 ### Community 41 - "_normalize"
 Cohesion: 0.10
 Nodes (10): _contains_phrase(), _exact_match_diagnostic(), _legacy_successor_guidance(), _normalize(), _rewrite_query_for_domain(), _search_csv(), _search_csv_detailed(), _stack_query_requests_legacy() (+2 more)
 
 ### Community 42 - "Build"
-Cohesion: 0.23
-Nodes (6): Build, fake_gh(), iso(), tool_lines(), Transcripts, usage_row()
+Cohesion: 0.06
+Nodes (37): Build, missing(), fake_gh(), iso(), tool_lines(), Transcripts, usage_row(), Checks, in order (+29 more)
 
 ### Community 43 - "TessPageSegMode"
 Cohesion: 0.13
 Nodes (15): TessPageSegMode, Auto, AutoOnly, AutoOsd, CircleWord, OsdOnly, RawLine, SingleBlock (+7 more)
 
 ### Community 44 - "standup.mjs"
-Cohesion: 0.08
-Nodes (44): agentName(), appendTurn(), { cmd, opts }, cmdAgree(), cmdJoin(), cmdOpen(), cmdPost(), cmdPRs() (+36 more)
+Cohesion: 0.19
+Nodes (25): agentName(), appendTurn(), { cmd, opts }, cmdAgree(), cmdJoin(), cmdOpen(), cmdPost(), cmdRead() (+17 more)
 
 ### Community 46 - "3. Instruksi Teknis Rinci (Sub-Tasks)"
 Cohesion: 0.13
@@ -875,8 +843,8 @@ Cohesion: 0.08
 Nodes (35): applyEditing(), buildInsertPlaceholderSnapshotFromDom(), buildLocatorForLeaf(), buildPickedAnchorSnapshot(), captureAndEmit(), collectEditableTextRows(), visit(), copyEditContainerContext() (+27 more)
 
 ### Community 51 - "validate_data.py"
-Cohesion: 0.09
-Nodes (38): _catalog_date(), _check_app_interface_contract(), _check_catalog_contract(), _check_catalog_summary(), _check_chart_contract(), _check_color_contract(), _check_core_data_contract(), _check_file() (+30 more)
+Cohesion: 0.10
+Nodes (35): _catalog_date(), _check_app_interface_contract(), _check_catalog_contract(), _check_catalog_summary(), _check_chart_contract(), _check_color_contract(), _check_core_data_contract(), _check_file() (+27 more)
 
 ### Community 52 - "el"
 Cohesion: 0.07
@@ -887,8 +855,8 @@ Cohesion: 0.08
 Nodes (23): is_agent_written(), iso_to_epoch(), keep_out_of_git(), main(), normalize(), read_agent_authored_text(), read_owner_typed_prompts(), recent_files() (+15 more)
 
 ### Community 54 - "GlobalSidebar.tsx"
-Cohesion: 0.09
-Nodes (30): 1. Ringkasan & Tujuan Task, 2. Struktur Sub-Task Hierarkis, 3.1 Task 8.1: Fondasi Token Desain, Skala Tipografi Inter & Variabel CSS, 3.2 Task 8.2: Arsitektur Shell Aplikasi & Sidebar Global Responsif, 3.3 Task 8.3: Pustaka Komponen Primitif Sistem Desain, 3.5 Task 8.5: Penegakan Standar Mutu Anti-Slop & Aksesibilitas, 3.6 Task 8.6: Otomasi Pengujian Mutu Desain & Regresi Visual, 3. Instruksi Teknis Rinci (+22 more)
+Cohesion: 0.08
+Nodes (31): 1. Ringkasan & Tujuan Task, 2. Struktur Sub-Task Hierarkis, 3.1 Task 8.1: Fondasi Token Desain, Skala Tipografi Inter & Variabel CSS, 3.2 Task 8.2: Arsitektur Shell Aplikasi & Sidebar Global Responsif, 3.3 Task 8.3: Pustaka Komponen Primitif Sistem Desain, 3.5 Task 8.5: Penegakan Standar Mutu Anti-Slop & Aksesibilitas, 3.6 Task 8.6: Otomasi Pengujian Mutu Desain & Regresi Visual, 3. Instruksi Teknis Rinci (+23 more)
 
 ### Community 55 - "Tone & Voice"
 Cohesion: 0.05
@@ -904,15 +872,15 @@ Nodes (38): abandonForeignSession(), abandonSupersededGo(), clearStoredManualApp
 
 ### Community 58 - "DesignSystemGenerator"
 Cohesion: 0.11
-Nodes (5): DesignSystemGenerator, _resolve_dial(), TestReasoningMatch, read_rows(), TestReasoningContract
+Nodes (4): DesignSystemGenerator, _resolve_dial(), TestReasoningMatch, TestReasoningContract
 
 ### Community 59 - "Debugging & Troubleshooting"
 Cohesion: 0.05
 Nodes (37): By Symptom, Capture Browser Console, CI-Specific Configuration, Common Issues, Compare Visual State, Custom Test Attachments, Debug CI Environment, Debug in Code (+29 more)
 
 ### Community 60 - "Next.js Testing Patterns"
-Cohesion: 0.10
-Nodes (20): Anti-Patterns, API Routes, API Through UI, App Router Patterns, Configuration with webServer, Console Error Detection, Direct API Testing, Environment Variables (+12 more)
+Cohesion: 0.06
+Nodes (36): Anti-Patterns, API Routes, API Through UI, App Router Patterns, Auth Redirects, Auth Setup, Authenticated Tests, Catch-All Routes (+28 more)
 
 ### Community 61 - "The observation log — storage layout, scripts and rationale"
 Cohesion: 0.05
@@ -934,9 +902,9 @@ Nodes (34): Anti-Patterns to Avoid, Basic Mount, Component Testing, Configuratio
 Cohesion: 0.11
 Nodes (19): A delegated setup step is not done until you have observed it, A mode that forbids every write by design, A pre-tool hook — the only write path as a barrier, A session-start hook (Claude Code and similar harnesses), A skill-file write gate — the skill-authoring load as a harness event, A stop hook — the per-task backstop as a harness event, A third denial class: an automated content classifier, Activation config — late, intermittent, and why the guard cannot live inside it (+11 more)
 
-### Community 66 - "transcripts.py"
-Cohesion: 0.05
-Nodes (27): export(), load(), now_pt(), session_block(), input_path(), resolve_scope(), run_review(), run_rollup() (+19 more)
+### Community 66 - "build"
+Cohesion: 0.04
+Nodes (43): dominant_model(), extrapolation(), price_block(), price_rows(), _zero(), export(), load(), merge() (+35 more)
 
 ### Community 67 - "Debugging and Managing Flaky Tests"
 Cohesion: 0.06
@@ -945,6 +913,10 @@ Nodes (33): Annotation-Based Quarantine, Anti-Patterns to Avoid, Async/Timing Fl
 ### Community 68 - "Contents"
 Cohesion: 0.06
 Nodes (32): 10. Small actionable sets are presented inline AND saved to file, 11. Skills require pruning, not just growth, 12. Use canonical identifiers from source data, never reconstruct from derived fields, 13. Skills that read or write workspace files must maintain a reference index, 14. Scheduled tasks invoke skills; they do not reimplement them, 15. Scheduled task prompts are lightweight orchestrators — intelligence lives in skills, 16. Interrupted operations are partial operations — verify state before retrying, 17. Never suggest manual typing of technical content as a workaround (+24 more)
+
+### Community 69 - "BaseSchemaValidator"
+Cohesion: 0.09
+Nodes (3): BaseSchemaValidator, _load_schema(), DOCXSchemaValidator
 
 ### Community 70 - "Environments, Activation Setup, and Handoff-Doc Mode"
 Cohesion: 0.13
@@ -992,7 +964,7 @@ Nodes (28): args, backupStamp, bundledModesDir, conceptIds, dataDir, deepMerge()
 
 ### Community 81 - "runCli"
 Cohesion: 0.10
-Nodes (30): appendReading(), applyPatch(), boundedText(), buildFocusAreas(), focusBasis(), focusDue(), focusInput(), goalKindOf() (+22 more)
+Nodes (30): appendReading(), boundedText(), focusBasis(), focusDue(), focusInput(), goalKindOf(), groupDetails(), openDatabase() (+22 more)
 
 ### Community 82 - "createLiveBrowserSessionState"
 Cohesion: 0.14
@@ -1011,8 +983,8 @@ Cohesion: 0.07
 Nodes (25): Learning Record Format, Numbering, Optional sections, Supersession, Template, What does _not_ qualify, When to write a learning record, MISSION.md Format (+17 more)
 
 ### Community 86 - "render.py"
-Cohesion: 0.18
-Nodes (20): attention(), behavior_strip(), cat_sums(), day_chart(), day_label(), details(), donut(), hero() (+12 more)
+Cohesion: 0.14
+Nodes (24): attention(), behavior_strip(), cat_sums(), day_chart(), day_label(), details(), donut(), hero() (+16 more)
 
 ### Community 87 - "Test Annotations & Organization"
 Cohesion: 0.07
@@ -1070,9 +1042,9 @@ Nodes (23): Ce(), Ct(), dt(), Ee(), Et(), ft(), ht(), It() (+15 more)
 Cohesion: 0.08
 Nodes (26): Anti-Patterns to Avoid, Basic Tagging, By Feature Area, By Priority, By Test Type, Combine Group and Test Tags, Common Tag Categories, Complex Patterns (+18 more)
 
-### Community 101 - "API Testing"
-Cohesion: 0.22
-Nodes (9): "401 Unauthorized" when using `request` fixture, Anti-Patterns, API Testing, Decision Guide, "Request failed: connect ECONNREFUSED 127.0.0.1:3000", "response.json() failed — body is not valid JSON", Table of Contents, Tests pass locally but fail in CI (+1 more)
+### Community 101 - "Patterns"
+Cohesion: 0.09
+Nodes (26): Related, Common Parallel Pitfall, Parallel Execution Caveats, Understanding Global Setup Execution, When to Prefer Worker-Scoped Fixtures, Related, "401 Unauthorized" when using `request` fixture, Anti-Patterns (+18 more)
 
 ### Community 102 - "CCS Align — Worker Watch seat (Phases 0–2 shipped; Phase 3 = verify / sign-off)"
 Cohesion: 0.08
@@ -1115,8 +1087,8 @@ Cohesion: 0.08
 Nodes (23): Component translation rules, Narrative mapping, Pitfalls, Scan mode (approach C: auto-extract, then confirm descriptive language), Schema, Seed mode, Step 1: Find the design assets, Step 1: Route through new-work's workshop (+15 more)
 
 ### Community 112 - "readCandidates"
-Cohesion: 0.13
-Nodes (27): Start, The contract (read once), applyDecisions(), applyGroupDecisions(), contextReader(), conversationKey(), decideSuggestion(), groupingInput() (+19 more)
+Cohesion: 0.14
+Nodes (24): Start, The contract (read once), applyDecisions(), applyGroupDecisions(), contextReader(), conversationKey(), decideSuggestion(), groupingInput() (+16 more)
 
 ### Community 113 - "Mobile & Responsive Testing"
 Cohesion: 0.08
@@ -1139,8 +1111,8 @@ Cohesion: 0.08
 Nodes (24): Anti-Patterns, Artifact Collection Strategy, baseURL Not Working, CLI Quick Reference, Decision Guide, Environment-Specific Configuration, Environment Variables with .env, globalSetup / globalTeardown (+16 more)
 
 ### Community 118 - "Global Setup & Teardown"
-Cohesion: 0.10
-Nodes (20): Access Config in Global Setup, Anti-Patterns to Avoid, Basic Global Setup, Basic Global Teardown, Combining Both, Conditional Teardown, Configure Global Setup, Database Migration in Setup (+12 more)
+Cohesion: 0.08
+Nodes (24): Access Config in Global Setup, Anti-Patterns to Avoid, Basic Global Setup, Basic Global Teardown, Combining Both, Conditional Teardown, Configure Global Setup, Database Migration in Setup (+16 more)
 
 ### Community 119 - "4. Instruksi Teknis Rinci"
 Cohesion: 0.14
@@ -1175,8 +1147,8 @@ Cohesion: 0.09
 Nodes (22): dev(), AI Safety Checkpoint, Boundary: Platform and Compute, Bun Runtime, Client Generation, Command Categories, Current Command Behavior, Current Prisma CLI Setup (+14 more)
 
 ### Community 127 - "prices.py"
-Cohesion: 0.12
-Nodes (8): ensure(), fetch(), load(), PriceError, rate(), write(), Files, Rate
+Cohesion: 0.16
+Nodes (6): ensure(), fetch(), load(), PriceError, write(), Files
 
 ### Community 128 - "onboard.md"
 Cohesion: 0.09
@@ -1298,6 +1270,10 @@ Nodes (20): AND (explicit), AND (implicit), Array Field Filters, Combined, Compa
 Cohesion: 0.10
 Nodes (20): cursor, distinct, Filtered include, include, Include relation count, Multiple distinct fields, Negative take (reverse), Nested include (+12 more)
 
+### Community 158 - "getPathProjectContext"
+Cohesion: 0.22
+Nodes (10): bareRepositoryProjectName(), buildWorktreeProjectKey(), detectWorktree(), findMarkerProjectRoot(), getPathProjectContext(), isWithin(), markerWalkStops(), projectNameFromSource() (+2 more)
+
 ### Community 159 - "Better Auth Integration Guide"
 Cohesion: 0.10
 Nodes (19): Better Auth Integration Guide, CLI Commands, Client, Common Gotchas, Core Config Options, Database, Documentation Version, Email Flows (+11 more)
@@ -1339,12 +1315,12 @@ Cohesion: 0.10
 Nodes (19): Client Instantiation, Client Methods, Create records, Delete records, Filter Operators, Find records, How to Use, Model Query Methods (+11 more)
 
 ### Community 169 - "shadcn/SKILL.md"
-Cohesion: 0.15
-Nodes (9): Address Schemes, Build and Verify, GitHub Registries, Include, Item Definitions, Mental Model, Registry Authoring and Addresses, Registry Dependencies (+1 more)
+Cohesion: 0.20
+Nodes (4): Icons, Icons in Button use data-icon attribute, No sizing classes on icons inside components, Pass icons as component objects, not string keys
 
 ### Community 170 - "Design Systems from DESIGN.md"
-Cohesion: 0.17
-Nodes (12): Contents, Coverage check, Design Systems from DESIGN.md, Known traps, Picking a style, Report Back, Step 1: Scaffold, Step 2: Install Everything (+4 more)
+Cohesion: 0.10
+Nodes (20): Contents, Coverage check, Dark mode, Design Systems from DESIGN.md, Elevation, Focus, Fonts, Known traps (+12 more)
 
 ### Community 171 - "Creation Log: Systematic Debugging Skill"
 Cohesion: 0.10
@@ -1353,6 +1329,10 @@ Nodes (19): Bulletproofing Elements, Creation Log: Systematic Debugging Skill, E
 ### Community 172 - "task-observer - One Skill to Rule Them All"
 Cohesion: 0.10
 Nodes (20): Claude environment notes, Compatibility, Contributing, Further reading, How it works, How this differs from Claude's built-in features, Installation, License (+12 more)
+
+### Community 173 - "Registry Authoring and Addresses"
+Cohesion: 0.22
+Nodes (9): Address Schemes, Build and Verify, GitHub Registries, Include, Item Definitions, Mental Model, Registry Authoring and Addresses, Registry Dependencies (+1 more)
 
 ### Community 174 - "template.sh"
 Cohesion: 0.22
@@ -1387,7 +1367,7 @@ Cohesion: 0.11
 Nodes (19): Anti-Patterns, Component Testing (Experimental), CRA vs Vite Differences, Detecting Memory Leaks, E2E Config (Vite), Error Boundaries, Form Libraries (React Hook Form, Formik), Framework Tips (+11 more)
 
 ### Community 182 - "github-actions.md"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (15): Anti-Patterns, "browserType.launch: Executable doesn't exist", CI Container Jobs, Container-Based Testing, Custom Dockerfile, Decision Guide, Dev Container Setup, Docker Compose Stack (+7 more)
 
 ### Community 183 - "GitHub Actions for Playwright"
@@ -1414,9 +1394,9 @@ Nodes (8): Rule Title Here, Use Single useFieldArray Instance Per Field Name, Wi
 Cohesion: 0.11
 Nodes (19): Block anatomy, Checklist, Color roles, Components: Tiers and Block Anatomy, Contents, Do and Don't, Edge Cases, Elevation (+11 more)
 
-### Community 189 - "color-pair.tsx"
-Cohesion: 0.24
-Nodes (10): ColorPair(), contrast(), luminance(), toHex(), toRgb(), defaultStates, previewState(), StateMatrix() (+2 more)
+### Community 189 - "B. Panduan Windows 10 / 11 Fresh Install"
+Cohesion: 0.22
+Nodes (9): 1. Buka PowerShell sebagai Administrator, 2. Pasang Software Menggunakan `winget` (Package Manager Bawaan Windows), 3. Pasang Tesseract OCR untuk Windows, 4. Tutup & Buka Kembali Terminal PowerShell Biasa, 5. Clone Repositori Project & Masuk Direktori, 6. Periksa Kesiapan Sistem Windows, 7. Jalankan Inisialisasi Otomatis (Setup), 8. Jalankan Seluruh Sistem Aplikasi (+1 more)
 
 ### Community 190 - "5. Rencana Pembagian Tahapan Implementasi (Phased Plan)"
 Cohesion: 0.10
@@ -1459,8 +1439,8 @@ Cohesion: 0.11
 Nodes (17): Best Practices, Command, Common Patterns, Common seed commands, Conditional seeding, Configuration, Current Workflow, Development reset (+9 more)
 
 ### Community 200 - "getProjectContext"
-Cohesion: 0.12
-Nodes (24): buildWorktreeProjectKey(), expandHome(), findGitRepoRoot(), findMarkerProjectRoot(), getPathProjectContext(), getProjectContext(), getProjectName(), gitRemoteProjectSlug() (+16 more)
+Cohesion: 0.16
+Nodes (18): deriveSlugFromRemote(), expandHome(), findGitRepoRoot(), getProjectContext(), getProjectName(), gitRemoteProjectSlug(), globToRegex(), loadProjectEnvironments() (+10 more)
 
 ### Community 201 - "measure"
 Cohesion: 0.17
@@ -1547,16 +1527,16 @@ Cohesion: 0.13
 Nodes (14): Anti-Patterns, Authenticated GraphQL Fixture, Authorization Errors, Basic Query with Variables, "Cannot query field X on type Y", GraphQL Helper Function, GraphQL returns 200 but data is null, GraphQL Testing (+6 more)
 
 ### Community 222 - "sys"
-Cohesion: 0.20
-Nodes (14): add_period_args(), build_parser(), cmd_collect(), cmd_measure(), cmd_not_yet(), cmd_pdf(), cmd_prices(), cmd_render() (+6 more)
+Cohesion: 0.10
+Nodes (23): add_period_args(), build_parser(), cmd_collect(), cmd_measure(), cmd_not_yet(), cmd_pdf(), cmd_prices(), cmd_render() (+15 more)
 
 ### Community 223 - "sync.py"
 Cohesion: 0.17
 Nodes (8): compare(), copy_tree(), destinations(), run(), sha256(), shipped_files(), write_checksums(), Sync
 
 ### Community 224 - "Commands"
-Cohesion: 0.18
-Nodes (11): `add` — Add components, `build` — Build a custom registry, Commands, `diff` — Check for updates, `docs` — Get component documentation URLs, Dry-Run Mode, `info` — Project information, `init` — Initialize or create a project (+3 more)
+Cohesion: 0.12
+Nodes (16): `add` — Add components, `build` — Build a custom registry, Commands, Contents, `diff` — Check for updates, `docs` — Get component documentation URLs, Dry-Run Mode, `info` — Project information (+8 more)
 
 ### Community 225 - "Root Cause Tracing"
 Cohesion: 0.12
@@ -1590,9 +1570,9 @@ Nodes (15): 1.1 Keterbatasan Model OCR Statis di Lapangan, 1.2 Urgensi Sistem Tr
 Cohesion: 0.12
 Nodes (15): 1. Latar Belakang & Tujuan Pengujian, 2. Analisis Karakteristik Dataset Riil (`docs/testing/100baris.csv`), 3. Desain Arsitektur Dekopel Berjenjang (*Decoupled Two-Tier Architecture*), 4. Matriks Skenario Pengujian Konkrit (Test Cases), 5. Ringkasan Temuan Diagnostik & Optimasi Mesin OCR, 6. Prosedur Eksekusi Pengujian, Rancangan Pengujian Komprehensif: Arsitektur Dekopel Berjenjang (Two-Tier Zero-Blocking Migration) & Validasi OCR Triage dengan Dataset Riil 100 Baris, TC-01: CSV Stream Parsing & Filter Baris Residu Formula (+7 more)
 
-### Community 233 - "helpers/__init__.py"
+### Community 233 - "A. Panduan macOS Fresh Install (Apple Silicon M1/M2/M3/M4 & Intel)"
 Cohesion: 0.22
-Nodes (7): rels_source_part(), rendered_text(), rezip(), safe_extract(), _fail(), _has_tracked_changes(), main()
+Nodes (9): 1. Pasang Command Line Tools (Apple Developer Tools), 2. Pasang Homebrew (Package Manager macOS), 3. Pasang Seluruh Software Prasyarat via Homebrew, 4. Nyalakan Layanan Basis Data PostgreSQL & Redis, 5. Clone Repositori Project & Masuk Direktori, 6. Verifikasi Kesiapan Sistem, 7. Jalankan Inisialisasi Otomatis (Setup), 8. Jalankan Seluruh Sistem Aplikasi (+1 more)
 
 ### Community 234 - "Diagnosing Bugs"
 Cohesion: 0.13
@@ -1634,9 +1614,9 @@ Nodes (7): Implementer Subagent Prompt Template, Batching Small Same-Shape Work,
 Cohesion: 0.13
 Nodes (14): 1a. Native Worktree Tools (preferred), 1b. Git Worktree Fallback, Common Rationalizations, Create the Worktree, Directory Selection, Overview, Quick Reference, Report (+6 more)
 
-### Community 245 - "RedliningValidator"
-Cohesion: 0.25
-Nodes (3): RedliningValidator, group(), text_of()
+### Community 245 - "writeJsonFileAtomic"
+Cohesion: 0.29
+Nodes (8): bypassWrite(), emitDiagnostic(), ensureDirectoryExists(), physicalPathOf(), renameWithWindowsRetry(), resolveSymlinkWriteTarget(), sleepSync(), writeJsonFileAtomic()
 
 ### Community 246 - "4. Instruksi Teknis Rinci"
 Cohesion: 0.13
@@ -1682,13 +1662,21 @@ Nodes (13): A command's risk is what it does, not what it was reached for, An un
 Cohesion: 0.14
 Nodes (13): Acting on Observations, Archival on Write, Feedback on this skill, How to Log, Quick Reference, Reference files — load on demand, not up front, Referencing Observations, Session Start Protocol (+5 more)
 
-### Community 258 - "pptx_theme.py"
-Cohesion: 0.29
-Nodes (11): part_text(), find_shared_master_themes(), _is_inert(), live_shared_master_themes(), _masters(), _notes_master_share_is_inert(), _rels_path(), _resolve() (+3 more)
+### Community 257 - "3. Panduan Setup Lengkap dari Awal (Sistem Operasi Fresh / Baru Di-Install)"
+Cohesion: 0.25
+Nodes (8): 1. Prasyarat Host Ubuntu, 2. Jalankan Seluruh Sistem Sekaligus (1 Perintah), 3. Panduan Setup Lengkap dari Awal (Sistem Operasi Fresh / Baru Di-Install), 3. Perintah Manajemen Kontainer, Cara Kompilasi Manual Rust Native Engine, Cara Kontainerisasi Penuh: Deploy Server Ubuntu via Docker (Zero-Host Dirt), Cara Manual (Langkah demi Langkah), D. Jalur Pintas Tercepat untuk Semua OS Fresh: Docker Container (Zero-Host Dirt)
 
-### Community 260 - "pptx_chart.py"
-Cohesion: 0.36
-Nodes (7): _canonical_ids(), _check_chart_axis_references(), _check_stacked_label_positions(), _declared_axes(), _ext_lst_spans(), _strip_ext_lst(), _undeclared_axes()
+### Community 258 - "standup — facilitate a group chat between branch-agents"
+Cohesion: 0.29
+Nodes (6): 1. Fill the room, 2. Open the room, 3. Run it as rounds, 4. Brief the human in plain language, CLI, standup — facilitate a group chat between branch-agents
+
+### Community 259 - "bucket_rule"
+Cohesion: 0.22
+Nodes (7): apply(), bucket_rule(), Bucket, SessionScope, `apply` — Apply a preset to an existing project, Workflow, Environment mappings
+
+### Community 260 - "cmdPRs"
+Cohesion: 0.33
+Nodes (7): cmdPRs(), cmdWorktrees(), ghPRs(), gitWorktrees(), humanAge(), parseWindowMs(), worktreeActivityMs()
 
 ### Community 261 - "2. Struktur Komponen Standar"
 Cohesion: 0.14
@@ -1791,8 +1779,8 @@ Cohesion: 0.15
 Nodes (12): 1. Ringkasan & Tujuan Task, 2. Struktur Sub-Task Hierarkis, 3.1 Task 13.1: Pemindahan Rute Halaman Migrasi ke Direktori Operator, 3.2 Task 13.2: Pembaruan Matriks RBAC (`src/lib/rbac.ts`), 3.3 Task 13.3: Penyesuaian Guard Otorisasi `POST /api/upload`, 3.4 Task 13.4: Penyesuaian Prosedur Backend tRPC `migration.ts`, 3.5 Task 13.5: Penyelarasan Navigasi Antarmuka `GlobalSidebar.tsx` & `HomePageClient.tsx`, 3.6 Task 13.6: Pembaruan & Eksekusi Pengujian Otomatis Matriks RBAC (+4 more)
 
 ### Community 286 - "gh"
-Cohesion: 0.13
-Nodes (17): gh(), Gaps and gates, File, GitHub issues, Search, Conventions, Issue tracker: GitHub, Pull requests as a triage surface (+9 more)
+Cohesion: 0.21
+Nodes (11): gh(), Gaps and gates, File, GitHub issues, Search, Conventions, Issue tracker: GitHub, Pull requests as a triage surface (+3 more)
 
 ### Community 287 - "9.2 When to use pointers:"
 Cohesion: 0.11
@@ -1846,9 +1834,9 @@ Nodes (11): Configuring Registries, Setup, `shadcn:get_add_command_for_items`, `
 Cohesion: 0.17
 Nodes (11): Applying the Pattern, Defense-in-Depth Validation, Example from Session, Key Insight, Layer 1: Entry Point Validation, Layer 2: Business Logic Validation, Layer 3: Environment Guards, Layer 4: Debug Instrumentation (+3 more)
 
-### Community 300 - "_db.py"
-Cohesion: 0.17
-Nodes (9): add_obs(), add_prompt(), add_session(), add_summary(), add_tool(), make_db(), main(), Cli (+1 more)
+### Community 300 - "3. Instruksi Teknis Rinci"
+Cohesion: 0.29
+Nodes (7): 3.1 Task 9.1: Penegakan Navigasi Eksklusif Admin & Akses Migrasi Pegawai pada Sidebar Global, 3.2 Task 9.2: Refaktorisasi Tabel Pengguna (`UserManagementTable.tsx`), 3.3 Task 9.3: Refaktorisasi Modal Tambah Pengguna & Reset Sandi, 3.4 Task 9.4: Integrasi Prosedur Backend tRPC & Jejak Audit, 3.5 Task 9.5: Penegakan Kepatuhan Standar Anti-Slop, 3.6 Task 9.6: Otomasi Pengujian Unit, Integrasi & Keamanan RBAC, 3. Instruksi Teknis Rinci
 
 ### Community 302 - "wayfinder/SKILL.md"
 Cohesion: 0.17
@@ -1867,8 +1855,8 @@ Cohesion: 0.17
 Nodes (11): 1. Ringkasan & Tujuan Task, 2. Struktur Sub-Task Hierarkis, 3.1 Task 7.1: Pengujian Integrasi End-to-End (Playwright E2E Suite), 3.2 Task 7.2: Optimalisasi Pola App Router & Resiliensi (Next.js Best Practices), 3.3 Task 7.3: Observabilitas, Health-Check Terpadu & Structured Logging, 3.4 Task 7.4: Orkestrasi Lingkungan Produksi Lokal & Backup Terjadwal, 3. Instruksi Teknis Rinci, 4. Kriteria Penerimaan (Acceptance Criteria) (+3 more)
 
 ### Community 306 - "test_design_system_mode.py"
-Cohesion: 0.09
-Nodes (10): _button_outline_text_color(), _contrast_ratio(), _derive_dark_palette(), format_master_md(), _palette_is_dark(), _relative_luminance(), _select_palette_for_mode(), TestEndToEndCoherence (+2 more)
+Cohesion: 0.08
+Nodes (9): _contrast_ratio(), _derive_dark_palette(), _palette_is_dark(), _relative_luminance(), _select_palette_for_mode(), TestEndToEndCoherence, TestLightResultOutputCoherence, TestLuminance (+1 more)
 
 ### Community 307 - "Fixtures"
 Cohesion: 0.20
@@ -1914,17 +1902,17 @@ Nodes (10): 1. Establish the system, 2. Gather the evidence, 3. Triage, 4. Polis
 Cohesion: 0.18
 Nodes (10): Assess Current State, Color Refinement, Composition Refinement, Motion Reduction, Plan Refinement, Refine the Design, Simplification, Verify Quality (+2 more)
 
-### Community 319 - "Issue tracker: GitLab"
-Cohesion: 0.11
-Nodes (13): Before exploring, read these, Domain Docs, File structure, Flag ADR conflicts, Use the glossary's vocabulary, Conventions, Issue tracker: GitLab, Merge requests as a triage surface (+5 more)
+### Community 319 - "Domain Docs"
+Cohesion: 0.33
+Nodes (5): Before exploring, read these, Domain Docs, File structure, Flag ADR conflicts, Use the glossary's vocabulary
 
 ### Community 320 - "duplicate_matcher.rs"
 Cohesion: 0.15
 Nodes (17): BatchDuplicateRequest, BatchDuplicateResponse, best_reviewer_sim_update(), best_text_sim_update(), calculate_reviewer_similarity(), calculate_text_similarity(), calculate_visual_similarity(), CandidateReview (+9 more)
 
 ### Community 321 - "shadcn/ui"
-Cohesion: 0.18
-Nodes (11): Component Docs, Examples, and Usage, Component Selection, Current Project Context, Design Systems from DESIGN.md, Detailed References, Key Fields, Key Patterns, Principles (+3 more)
+Cohesion: 0.11
+Nodes (18): Chat & Messaging → [chat.md](./rules/chat.md), CLI, Component Docs, Examples, and Usage, Component Selection, Critical Rules, Current Project Context, Design Systems from DESIGN.md, Detailed References (+10 more)
 
 ### Community 322 - "Timeline Report"
 Cohesion: 0.18
@@ -2039,8 +2027,8 @@ Cohesion: 0.22
 Nodes (8): Check status, Command, Examples, Exit Codes, Options, prisma migrate status, What It Does, When to Use
 
 ### Community 350 - "deriveSessionProjects"
-Cohesion: 0.29
-Nodes (8): deriveSessionProjects(), folderNeedsProject(), isAgentScratchFolder(), pathsIn(), projectFromToolPaths(), repoRootOf(), safeAll(), "src/services/work-view/session-project.mjs"()
+Cohesion: 0.25
+Nodes (9): deriveSessionProjects(), folderNeedsProject(), isAgentScratchFolder(), pathsIn(), projectFromToolPaths(), repoRootOf(), safeAll(), "src/services/work-view/session-project.mjs"() (+1 more)
 
 ### Community 351 - "Scaffold Exercises"
 Cohesion: 0.22
@@ -2066,9 +2054,9 @@ Nodes (9): Advanced: Skills with executable code, Avoid assuming tools are insta
 Cohesion: 0.22
 Nodes (8): 1. Rich Description Field, 2. Keyword Coverage, 3. Descriptive Naming, 4. Token Efficiency (Critical), 5. Cross-Referencing Other Skills, Skill Discovery Optimization (SDO), SKILL.md Structure, Writing SKILL.md for Discovery
 
-### Community 357 - "apply_review"
-Cohesion: 0.31
-Nodes (3): apply_review(), ReviewError, Review
+### Community 357 - "AuditLogTable.tsx"
+Cohesion: 0.48
+Nodes (4): AuditLogsPage(), AuditLogTable(), Input, InputProps
 
 ### Community 358 - "volumes"
 Cohesion: 0.22
@@ -2114,13 +2102,9 @@ Nodes (8): 1. Form Configuration (formcfg), 2. Field Subscription (sub), 3. Cont
 Cohesion: 0.25
 Nodes (8): 1. Form Configuration (CRITICAL), 2. Field Subscription (CRITICAL), 3. Controlled Components (HIGH), 4. Validation Patterns (HIGH), 5. State Management (MEDIUM-HIGH), 6. Field Arrays (MEDIUM-HIGH), 7. Integration Patterns (MEDIUM), Quick Reference
 
-### Community 371 - "apply"
-Cohesion: 0.17
-Nodes (10): apply(), SessionScope, `apply` — Apply a preset to an existing project, Contents, Presets, shadcn CLI Reference, Switching Presets, Templates (+2 more)
-
 ### Community 372 - "ref_fs"
-Cohesion: 0.08
-Nodes (23): fs, CheckItem, checkPort(), results, runCmd(), runSystemDiagnostics(), log(), LOG_DIR (+15 more)
+Cohesion: 0.06
+Nodes (35): fs, combineGraphs(), extractDotBlocks(), extractGraphBody(), main(), renderToSvg(), CheckItem, checkPort() (+27 more)
 
 ### Community 373 - "<Questionnaire title>"
 Cohesion: 0.25
@@ -2226,13 +2210,13 @@ Nodes (7): Full Compiled Document, How to Use, React Hook Form Best Practices by
 Cohesion: 0.29
 Nodes (7): Assessment, Code Reviewer Prompt Template, Important, Issues, Minor, Recommendations, Strengths
 
-### Community 399 - "providers.tsx"
-Cohesion: 0.23
-Nodes (9): @tanstack/react-query@^5.66.0, @trpc/client@^11.0.0-rc.820, @tanstack/react-query, @trpc/client, metadata, RootLayout(), getBaseUrl(), Providers() (+1 more)
+### Community 399 - "Issue tracker: GitLab"
+Cohesion: 0.33
+Nodes (6): Conventions, Issue tracker: GitLab, Merge requests as a triage surface, Wayfinding operations, When a skill says "fetch the relevant ticket", When a skill says "publish to the issue tracker"
 
-### Community 400 - "Impeccable Finish Reviewer"
-Cohesion: 0.18
-Nodes (8): missing(), Checks, in order, Disposition, Impeccable Finish Reviewer, Input Contract, Output Contract, Verdict Pass, Comp-led: the comp is a measured contract
+### Community 400 - "ReviewDetailDrawer.tsx"
+Cohesion: 0.33
+Nodes (5): ReviewDetailDrawerProps, ReviewDetailFormData, reviewDetailSchema, UlpOption, Up3Option
 
 ### Community 401 - "Subagent-Driven Development"
 Cohesion: 0.29
@@ -2430,9 +2414,9 @@ Nodes (5): interface, display_name, short_description, policy, allow_implicit_in
 Cohesion: 0.14
 Nodes (13): 4.1 Prefer `Result`, avoid panic 🫨, 4.2 Avoid `unwrap`/`expect` in Production, 4.3 `thiserror` for Crate level errors, 4.4 Reserve `anyhow` for Binaries, 4.5 Use `?` to Bubble Errors, 4.6 Unit Test should exercise errors, 4.7 Important Topics, 🚨 Alternative ways of handling `unwrap`/`expect`: (+5 more)
 
-### Community 452 - "handleRequest"
-Cohesion: 0.22
-Nodes (11): bootstrapPage(), getNewestScreen(), handleRequest(), isAuthorized(), isFullDocument(), isRegularFileInsideContentDir(), parseCookies(), pathnameOf() (+3 more)
+### Community 452 - "dotenv"
+Cohesion: 0.40
+Nodes (4): dotenv@^16.4.7, @prisma/config@^7.10.1, dotenv, @prisma/config
 
 ### Community 453 - "codex-tools.md"
 Cohesion: 0.33
@@ -2534,9 +2518,9 @@ Nodes (5): Abstract, React Hook Form, References, Source Files, Table of Content
 Cohesion: 0.40
 Nodes (4): Failures, Save selected context, Screenpipe, Search
 
-### Community 478 - "antiFraudService.ts"
-Cohesion: 0.37
-Nodes (9): calculateHammingDistance(), calculateReviewerSimilarity(), calculateTextSimilarity(), calculateVisualSimilarity(), PLAYSTORE_STOPWORDS, tokenizeText(), AntiFraudCheckResult, checkImageDuplicate() (+1 more)
+### Community 478 - "4. Menjalankan Aplikasi (*Run Application*)"
+Cohesion: 0.40
+Nodes (5): 4. Menjalankan Aplikasi (*Run Application*), Menjalankan Secara Terpisah (Manual Terminal), Menjalankan Sekaligus (*All-in-One Launcher*), Opsi 1: Perintah Universal (Semua OS), Opsi 2: Perintah Khusus OS
 
 ### Community 479 - "Pressure Test 1: Emergency Production Fix"
 Cohesion: 0.40
@@ -2557,10 +2541,6 @@ Nodes (5): 1. Correction, 2. Warning, 3. Temporary Ban, 4. Permanent Ban, Enforc
 ### Community 483 - "Migrating a pre-3.0 single-file log"
 Cohesion: 0.40
 Nodes (4): Migrating a pre-3.0 single-file log, Procedure, Rollback, What the script does
-
-### Community 484 - "test_design_system_mode.py"
-Cohesion: 0.15
-Nodes (6): _filter_anti_patterns_for_mode(), _query_wants_dark(), _resolve_color_mode(), _style_is_dark_primary(), TestAntiPatternGating, TestModeResolution
 
 ### Community 486 - "Web Interface Guidelines"
 Cohesion: 0.40
@@ -2589,6 +2569,10 @@ Nodes (4): channelLuminance(), contrastRatio(), hexToRgb(), relativeLuminance()
 ### Community 493 - "AGENTS INSTRUCTIONS"
 Cohesion: 0.50
 Nodes (3): AGENTS INSTRUCTIONS, antislop, Mandatory Context Locations
+
+### Community 494 - "datetime"
+Cohesion: 0.07
+Nodes (14): _week_start(), parse_day(), pt_midnight(), resolve_window(), _day_ms(), effectiveness(), _ep_ms(), scan_rule_files() (+6 more)
 
 ### Community 495 - "Part 3: Liveliness Toolkit"
 Cohesion: 0.50
@@ -2722,13 +2706,9 @@ Nodes (4): File Organization, Self-Contained Skill, Skill with Heavy Reference, 
 Cohesion: 0.50
 Nodes (4): Pattern, Reference, Skill Types, Technique
 
-### Community 530 - "_li_money"
-Cohesion: 0.40
-Nodes (4): _li_basis(), _li_money(), _unmeasured(), Unmeasured
-
 ### Community 536 - "lucide-react"
-Cohesion: 0.11
-Nodes (22): 3.1 Task 9.1: Penegakan Navigasi Eksklusif Admin & Akses Migrasi Pegawai pada Sidebar Global, 3.2 Task 9.2: Refaktorisasi Tabel Pengguna (`UserManagementTable.tsx`), 3.3 Task 9.3: Refaktorisasi Modal Tambah Pengguna & Reset Sandi, 3.4 Task 9.4: Integrasi Prosedur Backend tRPC & Jejak Audit, 3.5 Task 9.5: Penegakan Kepatuhan Standar Anti-Slop, 3.6 Task 9.6: Otomasi Pengujian Unit, Integrasi & Keamanan RBAC, 3. Instruksi Teknis Rinci, lucide-react (+14 more)
+Cohesion: 0.15
+Nodes (15): lucide-react, AdminError(), AdminUsersPage(), UnauthorizedContent(), UnauthorizedPage(), FieldError(), ManagerError(), OperatorError() (+7 more)
 
 ### Community 539 - "Anti-patterns to avoid"
 Cohesion: 0.67
@@ -2751,12 +2731,12 @@ Cohesion: 0.33
 Nodes (6): 1. Accessibility (VoiceOver / TalkBack), 2. Performance, 3. Appearance & Theming, 4. Platform Conformance (CRITICAL), 5. Adaptivity, Diagnostic Scan
 
 ### Community 591 - "GORO S2JB - Command Center Rating & Review PLN Mobile UID S2JB"
-Cohesion: 0.08
-Nodes (23): 1. Pengecekan Kesiapan Sistem Lintas Platform (*System Readiness Check*), 1. Prasyarat Host Ubuntu, 2. Jalankan Seluruh Sistem Sekaligus (1 Perintah), 2. Prasyarat Sistem (*Prerequisites*), 3. Panduan Setup Pertama Kali (Setelah Clone dari GitHub), 3. Perintah Manajemen Kontainer, 4. Menjalankan Aplikasi (*Run Application*), 5. Kredensial Pengguna Awal (*Default Seed Accounts*) (+15 more)
+Cohesion: 0.29
+Nodes (6): 1. Pengecekan Kesiapan Sistem Lintas Platform (*System Readiness Check*), 2. Prasyarat Sistem (*Prerequisites*), 5. Kredensial Pengguna Awal (*Default Seed Accounts*), 6. Pemeriksaan Kesehatan & Pengujian, 7. Struktur Branch Git & Riwayat Migrasi, GORO S2JB - Command Center Rating & Review PLN Mobile UID S2JB
 
-### Community 619 - "split_values"
-Cohesion: 0.47
-Nodes (3): split_values(), style_identities(), TestStyleIdentityContract
+### Community 619 - "read_rows"
+Cohesion: 0.18
+Nodes (6): read_rows(), split_values(), style_identities(), TestGeneratedCatalogContract, TestLandingAndStackContract, TestStyleIdentityContract
 
 ### Community 620 - "Muse Tool Mapping"
 Cohesion: 0.33
@@ -2774,14 +2754,6 @@ Nodes (8): 2.1 Why care about linting?, 2.2 Always run `cargo clippy`, 2.3 Impor
 Cohesion: 0.62
 Nodes (7): elementMatchesOriginalMarkup(), findLiveElementForOriginalMarkup(), findLiveElementFromAnchorSnapshot(), isUsableInjectionAnchor(), normalizeElementClassName(), parseOriginalMarkupElement(), resolveLiveInjectionAnchor()
 
-### Community 627 - "startServer"
-Cohesion: 0.22
-Nodes (9): broadcast(), computeAcceptKey(), decodeFrame(), encodeFrame(), handleMessage(), handleUpgrade(), isAllowedWebSocketOrigin(), startServer() (+1 more)
-
-### Community 628 - "ref_child_process"
-Cohesion: 0.18
-Nodes (6): browserLauncherForPlatform(), maybeOpenBrowser(), path, { spawn }, path, { spawn }
-
 ### Community 631 - "Impeccable Documenter"
 Cohesion: 0.40
 Nodes (4): Impeccable Documenter, Input Contract, Output Contract, Workflow
@@ -2789,10 +2761,6 @@ Nodes (4): Impeccable Documenter, Input Contract, Output Contract, Workflow
 ### Community 632 - "Persuade and Experience"
 Cohesion: 0.50
 Nodes (3): Comps, Directions, Persuade and Experience
-
-### Community 634 - "kind"
-Cohesion: 0.22
-Nodes (10): 3. Choose the right amount of invention, Create a whole surface inside an established world, Create or replace the visual world, Extend an existing surface, 1. Group conversations into overall requests, 2. Review each due request from memory, 3. Sort each request into a focus area, 4. Write the build story (+2 more)
 
 ### Community 635 - "Read"
 Cohesion: 0.50
@@ -2802,101 +2770,33 @@ Nodes (3): Comps, Directions, Read
 Cohesion: 0.22
 Nodes (9): pg@^8.23.1, @prisma/adapter-pg@^7.10.1, adapter, hashPassword(), main(), pool, prisma, pg (+1 more)
 
-### Community 642 - "New visual work"
-Cohesion: 0.22
-Nodes (9): 1. Decide what is already true, 2. Ask what will change the work, 4. Commit the world, 5. Record the decision, 6. Build with full commitment, 7. Inspect and finish, Both paths, Code-led (+1 more)
-
-### Community 643 - "migrate-log.py"
-Cohesion: 0.19
-Nodes (9): id_floor_from(), main(), parse_entries(), parse_skill(), parse_status(), skills_in_text(), slugify(), split_top_level() (+1 more)
-
-### Community 644 - "Patterns"
-Cohesion: 0.22
-Nodes (9): API Data Seeding, Chained API Calls, CRUD Operations, Dedicated API Project Configuration, Error Response Testing, File Upload via API, Patterns, Response Assertions (+1 more)
-
-### Community 649 - "request"
-Cohesion: 0.29
-Nodes (8): Related, Common Parallel Pitfall, Parallel Execution Caveats, Understanding Global Setup Execution, When to Prefer Worker-Scoped Fixtures, Related, Request Fixtures for Authenticated Clients, request()
-
-### Community 651 - "Step 4: Map Tokens to the Theme"
-Cohesion: 0.25
-Nodes (8): Dark mode, Elevation, Focus, Fonts, Radius, Role mapping, Step 4: Map Tokens to the Theme, Type scale
-
-### Community 652 - "Critical Rules"
-Cohesion: 0.29
-Nodes (7): Chat & Messaging → [chat.md](./rules/chat.md), CLI, Critical Rules, Forms & Inputs → [forms.md](./rules/forms.md), Icons → [icons.md](./rules/icons.md), Styling & Tailwind → [styling.md](./rules/styling.md), Use Components, Not Custom Markup → [composition.md](./rules/composition.md)
-
 ### Community 653 - "better-auth"
-Cohesion: 0.29
-Nodes (5): better-auth@^1.7.14, better-auth, GET, POST, authClient
-
-### Community 654 - "db_path"
-Cohesion: 0.40
-Nodes (3): data_dir(), db_path(), DbPath
-
-### Community 655 - "companionUrl"
-Cohesion: 0.33
-Nodes (6): chmodOwnerOnly(), companionUrl(), generateToken(), initialToken(), onListen(), urlHostForHttp()
-
-### Community 656 - "render-graphs.js"
-Cohesion: 0.60
-Nodes (5): combineGraphs(), extractDotBlocks(), extractGraphBody(), main(), renderToSvg()
-
-### Community 657 - "renderBranding"
-Cohesion: 0.40
-Nodes (5): brandMarkup(), escapeHtmlText(), renderBranding(), waitingPage(), wrapInFrame()
-
-### Community 658 - "Region map"
-Cohesion: 0.40
-Nodes (4): Containment, Painted material, Region map, What varies independently
-
-### Community 659 - "Icons"
-Cohesion: 0.40
-Nodes (4): Icons, Icons in Button use data-icon attribute, No sizing classes on icons inside components, Pass icons as component objects, not string keys
-
-### Community 661 - "Environment Provisioning"
 Cohesion: 0.50
-Nodes (4): Docker Compose Setup, Environment Provisioning, Environment Variables Setup, Start Services in Setup
-
-### Community 662 - "Middleware Testing"
-Cohesion: 0.50
-Nodes (4): Auth Redirects, Locale Rewrites, Middleware Testing, Security Headers
-
-### Community 663 - "NextAuth.js Authentication"
-Cohesion: 0.50
-Nodes (4): Auth Setup, Authenticated Tests, NextAuth.js Authentication, Setup Project
-
-### Community 664 - "Dynamic Routes"
-Cohesion: 0.50
-Nodes (4): Catch-All Routes, Dynamic Routes, Query Parameters, Slug Parameters
-
-### Community 665 - "Tips"
-Cohesion: 0.50
-Nodes (4): Dev Server vs Production Build, Multiple webServer Entries, Tips, Turbopack
+Nodes (3): better-auth@^1.7.14, better-auth, authClient
 
 ### Community 666 - "fast-csv"
-Cohesion: 0.33
-Nodes (4): fast-csv@^5.0.8, @tanstack/react-virtual@^3.14.23, fast-csv, @tanstack/react-virtual
+Cohesion: 0.20
+Nodes (6): fast-csv@^5.0.8, tailwind-merge@^3.0.0, @tanstack/react-virtual@^3.14.23, fast-csv, tailwind-merge, @tanstack/react-virtual
 
 ## Knowledge Gaps
 - **19 isolated node(s):** `RFC-6455`, `goro-engine`, `OsdOnly`, `AutoOsd`, `AutoOnly` (+14 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 5285 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **121 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 5309 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **111 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `page()` connect `render.py` to `bucket_rule`, `pdf`, `request`, `_li_money`, `Fixtures`, `Organizing Reusable Test Code`, `date_pill`, `Fixtures & Hooks`, `Performance & Parallelization`?**
+- **Why does `page()` connect `render.py` to `bucket_rule`, `Patterns`, `pdf`, `Fixtures`, `Organizing Reusable Test Code`, `date_pill`, `Fixtures & Hooks`, `Performance & Parallelization`?**
   _High betweenness centrality (0.094) - this node is a cross-community bridge._
 - **What connects `RFC-6455`, `goro-engine`, `OsdOnly` to the rest of the system?**
   _19 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `server.rs` be split into smaller, more focused modules?**
   _Cohesion score 0.09047619047619047 - nodes in this community are weakly interconnected._
 - **Why does `init()` connect `setLiveState` to `Commands`, `impeccable/SKILL.md`, `Init flow`, `live-browser.js`, `Design Systems from DESIGN.md`, `init`, `onAnnotDown`, `Comprehensive Review (scheduled or fallback)`, `syncPageChatFocus`, `connectSSE`, `impeccable/SKILL.md`, `initGlobalBar`, `Prisma ORM 7 CLI reference`, `live.md`?**
-  _High betweenness centrality (0.091) - this node is a cross-community bridge._
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
 - **Should `Evidence Lightbox & UI Viewer` be split into smaller, more focused modules?**
-  _Cohesion score 0.09302325581395349 - nodes in this community are weakly interconnected._
-- **Why does `Badge()` connect `System Process & Port Connectivity` to `MigrationBatchTable.tsx`, `shadcn/ui`, `Evidence Lightbox & UI Viewer`, `Chat & Messaging`, `lucide-react`, `Design Systems from DESIGN.md`, `Critical Rules`, `OCR Accuracy & CER/WER Evaluator`, `cn`, `NetworkTrafficChart.tsx`, `GlobalSidebar.tsx`, `render`, `react`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
+  _Cohesion score 0.10931174089068826 - nodes in this community are weakly interconnected._
+- **Why does `Badge()` connect `System Process & Port Connectivity` to `lib/trpc.ts`, `shadcn/ui`, `Evidence Lightbox & UI Viewer`, `AuditLogTable.tsx`, `Chat & Messaging`, `serverLayoutGuards.test.ts`, `Design Systems from DESIGN.md`, `OCR Accuracy & CER/WER Evaluator`, `cn`, `NetworkTrafficChart.tsx`, `GlobalSidebar.tsx`, `render`?**
+  _High betweenness centrality (0.081) - this node is a cross-community bridge._
 - **Should `tesseract_ffi.rs` be split into smaller, more focused modules?**
   _Cohesion score 0.14022988505747128 - nodes in this community are weakly interconnected._

@@ -44,58 +44,241 @@ Sebelum menjalankan project untuk pertama kali, pastikan software berikut telah 
 
 ---
 
-## 3. Panduan Setup Pertama Kali (Setelah Clone dari GitHub)
+## 3. Panduan Setup Lengkap dari Awal (Sistem Operasi Fresh / Baru Di-Install)
 
-### Cara Cepat 1-Perintah (Universal Auto-Dispatcher)
+Bagian ini memandu Anda melakukan penyiapan dari **titik nol** pada sistem operasi yang baru diinstal (*fresh install*), di mana belum ada software pendukung apa pun yang terpasang.
 
-Project telah dilengkapi launcher setup cerdas yang otomatis mendeteksi platform sistem operasi Anda (macOS, Linux, atau Windows):
+Pilih sistem operasi yang Anda gunakan di bawah ini:
 
+---
+
+### A. Panduan macOS Fresh Install (Apple Silicon M1/M2/M3/M4 & Intel)
+
+Jika Mac Anda baru atau baru di-reinstall:
+
+#### 1. Pasang Command Line Tools (Apple Developer Tools)
+Buka aplikasi **Terminal** (bawaan macOS), lalu jalankan perintah berikut dan klik **Install** pada dialog pop-up yang muncul:
+```bash
+xcode-select --install
+```
+
+#### 2. Pasang Homebrew (Package Manager macOS)
+Salin dan jalankan perintah instalasi resmi Homebrew:
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+> *Catatan untuk Mac Apple Silicon*: Setelah instalasi selesai, ikuti 2 baris perintah `echo` dan `eval` yang dicetak di terminal untuk menambahkan Homebrew ke PATH (`/opt/homebrew/bin`).
+
+#### 3. Pasang Seluruh Software Prasyarat via Homebrew
+Cukup jalankan satu baris perintah berikut untuk memasang Git, Node.js v22 LTS, Rust & Cargo, PostgreSQL, Redis, dan Tesseract OCR beserta paket bahasanya:
+```bash
+brew install git node rust postgresql@16 redis tesseract tesseract-lang
+```
+
+#### 4. Nyalakan Layanan Basis Data PostgreSQL & Redis
+Nyalakan service agar otomatis berjalan di latar belakang:
+```bash
+brew services start postgresql@16
+brew services start redis
+```
+
+#### 5. Clone Repositori Project & Masuk Direktori
+```bash
+git clone https://github.com/DikhaAG/goro-s2jb.git
+cd goro-s2jb
+```
+
+#### 6. Verifikasi Kesiapan Sistem
+Jalankan skrip diagnosa otomatis untuk memastikan semua subsistem terdeteksi:
+```bash
+npm run check:system
+```
+
+#### 7. Jalankan Inisialisasi Otomatis (Setup)
+Jalankan setup cerdas lintas platform untuk memasang dependensi Node, mengompilasi Rust engine, migrasi database, dan seed data awal:
 ```bash
 npm run setup:all
 ```
 
-Perintah ini akan secara otomatis:
-1. Menginstal dependensi Node.js (`npm install`).
-2. Mengompilasi Rust Native Vision Engine (`npm run rust:build`).
-3. Menyiapkan berkas environment `.env` dari `.env.example`.
-4. Menjalankan migrasi basis data Prisma (`npx prisma migrate dev`).
-5. Melakukan seeding data awal kredensial pengguna (`npm run prisma:seed`).
+#### 8. Jalankan Seluruh Sistem Aplikasi
+```bash
+npm run start:all
+```
+Buka browser di `http://localhost:3000`. Login menggunakan akun default (misal username: `superadmin`, password: `password123`).
 
 ---
 
-### Cara Setup Spesifik per Sistem Operasi
+### B. Panduan Windows 10 / 11 Fresh Install
 
-#### A. macOS
-```bash
-# 1. Pastikan dependensi sistem terpasang via Homebrew:
-brew install node rust postgresql@16 redis tesseract tesseract-lang
+Jika komputer atau laptop Windows Anda baru diinstal:
 
-# 2. Jalankan skrip setup:
-npm run setup:mac
-# atau
-./scripts/setup-mac.sh
-```
+#### 1. Buka PowerShell sebagai Administrator
+Klik kanan tombol **Start (Ikon Windows)** di taskbar, pilih **Terminal (Admin)** atau **Windows PowerShell (Admin)**.
 
-#### B. Windows (PowerShell)
+#### 2. Pasang Software Menggunakan `winget` (Package Manager Bawaan Windows)
+Jalankan perintah-perintah berikut satu per satu:
+
+- **A. Pasang Git:**
+  ```powershell
+  winget install --id Git.Git -e --source winget
+  ```
+- **B. Pasang Node.js LTS (v20+ / v22+):**
+  ```powershell
+  winget install --id OpenJS.NodeJS.LTS -e --source winget
+  ```
+- **C. Pasang Rust & Cargo Compiler (Rustup):**
+  ```powershell
+  winget install --id Rustlang.Rustup -e --source winget
+  ```
+  *Setelah selesai, ketik `rustup-init.exe` di PowerShell dan tekan Enter untuk memilih opsi `1` (Proceed with installation default).*
+- **D. Pasang PostgreSQL:**
+  ```powershell
+  winget install --id PostgreSQL.PostgreSQL -e --source winget
+  ```
+  *Wizard instalasi akan muncul. Masukkan password user `postgres` (misal: `postgres` atau `password123`) dan biarkan port default `5432`.*
+- **E. Pasang Redis untuk Windows:**
+  Pilih salah satu opsi:
+  - Opsi Rekomendasi Native: Pasang Memurai (Redis Enterprise untuk Windows):
+    ```powershell
+    winget install --id Memurai.MemuraiDeveloper -e --source winget
+    ```
+  - Atau gunakan Redis via Docker Desktop (lihat panduan Docker di bawah).
+
+#### 3. Pasang Tesseract OCR untuk Windows
+1. Unduh installer resmi Windows dari UB-Mannheim:
+   👉 **https://github.com/UB-Mannheim/tesseract/wiki**
+2. Jalankan installer `.exe`. Pada jendela **Choose Components**:
+   - Klik tanda panah pada **Additional script data** dan **Additional language data**.
+   - Centang opsi bahasa **Indonesian (`ind`)** dan **English (`eng`)**.
+3. Selesaikan instalasi ke direktori default: `C:\Program Files\Tesseract-OCR`.
+4. Masukkan Tesseract ke PATH:
+   - Tekan tombol `Windows + R`, ketik `sysdm.cpl` lalu Enter.
+   - Buka tab **Advanced** -> klik **Environment Variables**.
+   - Pada bagian **System variables**, cari variabel bernama `Path`, klik **Edit**.
+   - Klik **New**, lalu tambahkan: `C:\Program Files\Tesseract-OCR`.
+   - Klik **OK** pada semua jendela.
+
+#### 4. Tutup & Buka Kembali Terminal PowerShell Biasa
+Tutup jendela PowerShell Admin sebelumnya, lalu buka jendela PowerShell biasa baru agar seluruh PATH yang baru terpasang aktif.
+
+#### 5. Clone Repositori Project & Masuk Direktori
 ```powershell
-# 1. Pastikan Node.js, Rust (rustup), PostgreSQL, dan Redis terpasang.
-# 2. Unduh installer Tesseract Windows (UB-Mannheim) dan centang 'Indonesian'.
-# 3. Jalankan skrip setup di PowerShell:
-npm run setup:win
-# atau klik dua kali:
-.\scripts\setup-windows.bat
+git clone https://github.com/DikhaAG/goro-s2jb.git
+cd goro-s2jb
 ```
 
-#### C. Linux (Ubuntu / Debian / Fedora / Arch)
+#### 6. Periksa Kesiapan Sistem Windows
+```powershell
+npm run check:system
+```
+
+#### 7. Jalankan Inisialisasi Otomatis (Setup)
+```powershell
+npm run setup:all
+# atau klik dua kali berkas: .\scripts\setup-windows.bat
+```
+*(Jika password PostgreSQL yang Anda masukkan pada langkah 2.D berbeda dari `postgres`, sesuaikan variabel `DATABASE_URL` di dalam file `.env` sebelum setup).*
+
+#### 8. Jalankan Seluruh Sistem Aplikasi
+```powershell
+npm run start:all
+# atau klik dua kali berkas: .\scripts\start-windows.bat
+```
+PowerShell akan membuka jendela-jendela terminal pendukung secara otomatis. Buka browser di `http://localhost:3000`.
+
+---
+
+### C. Panduan Linux Fresh Install (Ubuntu 22.04 / 24.04 LTS & Debian)
+
+Jika server atau komputer Linux Anda baru di-setup:
+
+#### 1. Perbarui Indeks Paket Sistem
 ```bash
-# 1. Pasang dependensi distro (contoh Ubuntu/Debian):
-sudo apt update && sudo apt install -y nodejs npm cargo rustc postgresql redis-server tesseract-ocr tesseract-ocr-ind libtesseract-dev clang pkg-config
-
-# 2. Jalankan skrip setup:
-npm run setup:linux
-# atau
-./scripts/setup-linux.sh
+sudo apt update && sudo apt upgrade -y
 ```
+
+#### 2. Pasang Perkakas Kompilasi & Dependensi Pustaka
+```bash
+sudo apt install -y git curl build-essential pkg-config libssl-dev libtesseract-dev clang
+```
+
+#### 3. Pasang Node.js v20+ LTS via NodeSource
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+#### 4. Pasang Rust & Cargo Compiler via rustup
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+```
+
+#### 5. Pasang Database PostgreSQL & Redis
+```bash
+sudo apt install -y postgresql postgresql-contrib redis-server
+sudo systemctl enable --now postgresql
+sudo systemctl enable --now redis-server
+```
+
+#### 6. Konfigurasi User Database PostgreSQL Lokal
+Jalankan perintah ini untuk menyetel kata sandi user `postgres` menjadi `postgres` dan membuat database `goro_s2jb`:
+```bash
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+sudo -u postgres createdb goro_s2jb 2>/dev/null || true
+```
+
+#### 7. Pasang Tesseract OCR & Paket Bahasa Indonesia
+```bash
+sudo apt install -y tesseract-ocr tesseract-ocr-ind
+```
+
+#### 8. Clone Repositori Project & Masuk Direktori
+```bash
+git clone https://github.com/DikhaAG/goro-s2jb.git
+cd goro-s2jb
+```
+
+#### 9. Verifikasi Kesiapan Sistem
+```bash
+npm run check:system
+```
+
+#### 10. Jalankan Inisialisasi Otomatis (Setup)
+```bash
+npm run setup:all
+# atau: npm run setup:linux
+```
+
+#### 11. Jalankan Seluruh Layanan Aplikasi
+```bash
+npm run start:all
+# atau: npm run start:linux
+```
+Buka browser di `http://localhost:3000`.
+
+---
+
+### D. Jalur Pintas Tercepat untuk Semua OS Fresh: Docker Container (Zero-Host Dirt)
+
+Jika komputer Anda masih benar-benar bersih dan Anda **tidak ingin menginstal** Node.js, Rust compiler, PostgreSQL, Redis, dan Tesseract satu per satu ke dalam sistem operasi host:
+
+1. **Cukup Pasang Docker Desktop atau Docker Engine:**
+   - **macOS**: Unduh Docker Desktop dari https://www.docker.com/products/docker-desktop atau `brew install --cask docker`
+   - **Windows**: Unduh Docker Desktop dari https://www.docker.com/products/docker-desktop atau `winget install Docker.DockerDesktop`
+   - **Linux Ubuntu**: `sudo apt install -y docker.io docker-compose-v2 && sudo usermod -aG docker $USER` (lalu re-login)
+
+2. **Clone Repositori & Nyalakan Seluruh Sistem Sekaligus:**
+   ```bash
+   git clone https://github.com/DikhaAG/goro-s2jb.git
+   cd goro-s2jb
+   cp .env.example .env
+   docker compose up -d --build
+   ```
+
+Seluruh 6 kontainer (PostgreSQL, Redis, Rust OCR Engine, Web Server Next.js, Worker OCR, Worker Import) akan dibangun, dihubungkan, dan dijalankan secara terisolasi penuh. Buka browser di `http://localhost:3000`.
+
+---
 
 ---
 
