@@ -1,5 +1,6 @@
 import { saveEvidenceFile } from "@/lib/storage";
 import fs from "fs";
+import { redis } from "@/lib/redis";
 
 // Cache for previously downloaded external file IDs (avoids repeated network calls)
 const gdriveCache = new Map<string, { relativePath: string; absolutePath: string }>();
@@ -71,6 +72,53 @@ function recordCandidateHit(candidateUrl: string) {
   } else {
     networkMetrics.candidateHits.directUrl++;
   }
+}
+
+export const REDIS_GDOWNLOADER_METRICS_KEY = "telemetry:gdrive_downloader";
+
+let syncTimeout: NodeJS.Timeout | null = null;
+
+/**
+ * Persists live Google Drive downloader telemetry to Redis hash/string.
+ * Enables zero-delay observability across different Node.js processes.
+ */
+export async function syncDownloaderMetricsToRedis(): Promise<void> {
+  try {
+    if (redis && (redis.status === "ready" || redis.status === "connect")) {
+      const data = getDownloaderNetworkMetrics();
+      await redis.set(REDIS_GDOWNLOADER_METRICS_KEY, JSON.stringify(data));
+    }
+  } catch {
+    // Non-critical telemetry persistence fallback
+  }
+}
+
+/**
+ * Schedules non-blocking debounced sync to Redis.
+ */
+export function scheduleDownloaderMetricsSync(): void {
+  if (syncTimeout) return;
+  syncTimeout = setTimeout(async () => {
+    syncTimeout = null;
+    await syncDownloaderMetricsToRedis();
+  }, 1000);
+}
+
+/**
+ * Retrieves latest downloader metrics from Redis, falling back to local memory.
+ */
+export async function fetchDownloaderNetworkMetricsFromRedis(): Promise<DownloaderNetworkMetrics> {
+  try {
+    if (redis && (redis.status === "ready" || redis.status === "connect")) {
+      const raw = await redis.get(REDIS_GDOWNLOADER_METRICS_KEY);
+      if (raw) {
+        return JSON.parse(raw) as DownloaderNetworkMetrics;
+      }
+    }
+  } catch {
+    // Fall back to local memory if Redis call fails
+  }
+  return getDownloaderNetworkMetrics();
 }
 
 export function getDownloaderNetworkMetrics(): DownloaderNetworkMetrics {
@@ -272,6 +320,8 @@ export async function streamEvidenceImageBuffer(
         totalLatencyAccumulator / (networkMetrics.successfulStreams + networkMetrics.failedStreams || 1)
       );
 
+      scheduleDownloaderMetricsSync();
+
       return {
         success: true,
         buffer,
@@ -300,6 +350,8 @@ export async function streamEvidenceImageBuffer(
     url: trimmed,
     error: errorMsg,
   };
+
+  scheduleDownloaderMetricsSync();
 
   return {
     success: false,
@@ -441,6 +493,7 @@ export async function downloadEvidenceImage(
       networkMetrics.cacheStats.cachedEntriesCount = gdriveCache.size;
       networkMetrics.totalBytesStreamed += buffer.length;
       recordCandidateHit(downloadUrl);
+      scheduleDownloaderMetricsSync();
 
       return {
         success: true,

@@ -95,19 +95,19 @@ export function WorkerDetailInspector({
                   {queue.displayName}
                 </h4>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[11px] font-mono text-[#64748b]">
+                  <span className="text-xs font-mono text-[#64748b]">
                     {queue.name}
                   </span>
                   {isPaused ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
-                      <PauseCircle className="w-3 h-3 text-[#f59e0b]" /> Dijeda
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
+                      <PauseCircle className="w-3.5 h-3.5 text-[#f59e0b]" /> Dijeda
                     </span>
                   ) : isWorking ? (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd] animate-pulse">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd] animate-pulse">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7]" /> Bekerja
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]">
                       Siap (Idle)
                     </span>
                   )}
@@ -148,7 +148,7 @@ export function WorkerDetailInspector({
           {/* Metric Counter Grid */}
           <div className="grid grid-cols-4 gap-2.5 my-4">
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 text-center shadow-2xs">
-              <div className="text-[10px] uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
+              <div className="text-xs uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7]" />
                 Aktif
               </div>
@@ -158,8 +158,8 @@ export function WorkerDetailInspector({
             </div>
 
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 text-center shadow-2xs">
-              <div className="text-[10px] uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
-                <Clock className="w-3 h-3 text-[#0284c7]" />
+              <div className="text-xs uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
+                <Clock className="w-3.5 h-3.5 text-[#0284c7]" />
                 Menunggu
               </div>
               <div className="text-base font-bold font-mono text-[#0f172a] mt-0.5">
@@ -168,8 +168,8 @@ export function WorkerDetailInspector({
             </div>
 
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 text-center shadow-2xs">
-              <div className="text-[10px] uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
-                <CheckCircle2 className="w-3 h-3 text-[#16a34a]" />
+              <div className="text-xs uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#16a34a]" />
                 Selesai
               </div>
               <div className="text-base font-bold font-mono text-[#15803d] mt-0.5">
@@ -178,8 +178,8 @@ export function WorkerDetailInspector({
             </div>
 
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 text-center shadow-2xs">
-              <div className="text-[10px] uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
-                <AlertTriangle className="w-3 h-3 text-[#dc2626]" />
+              <div className="text-xs uppercase font-bold text-[#64748b] flex items-center justify-center gap-1 tracking-wider">
+                <AlertTriangle className="w-3.5 h-3.5 text-[#dc2626]" />
                 Gagal
               </div>
               <div className="text-base font-bold font-mono text-[#b91c1c] mt-0.5">
@@ -193,7 +193,7 @@ export function WorkerDetailInspector({
         <div className="pt-3 border-t border-[#f1f5f9]">
           <div className="text-xs font-bold text-[#0f172a] mb-2 flex items-center justify-between">
             <span>Job Sedang Berjalan:</span>
-            <span className="text-[11px] font-mono text-[#64748b]">
+            <span className="text-xs font-mono text-[#64748b]">
               {queue.activeJobs.length} terdeteksi
             </span>
           </div>
@@ -219,7 +219,7 @@ export function WorkerDetailInspector({
                         : `Reviewer: ${job.expectedName || "Eviden"}`}
                     </span>
                   </div>
-                  <span className="text-[10px] text-[#0369a1] shrink-0 font-mono font-bold">
+                  <span className="text-xs text-[#0369a1] shrink-0 font-mono font-bold">
                     {job.processedOn
                       ? `${Math.round((Date.now() - job.processedOn) / 1000)} dtk`
                       : "Sedang berjalan"}
@@ -237,14 +237,14 @@ export function WorkerDetailInspector({
     <div className="space-y-5">
       {/* 2-Tier Pipeline Flow Diagram */}
       <div className="bg-[#0f172a] text-white rounded-2xl p-5 shadow-xs border border-[#334155]">
-        <div className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-wider mb-3">
+        <div className="text-xs font-bold text-[#94a3b8] uppercase tracking-wider mb-3">
           Arsitektur Alur Proses Latar Belakang (Dual-Tier Pipeline)
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
           <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-center">
-            <div className="text-[10px] uppercase font-bold tracking-wider text-[#94a3b8]">Tahap 1</div>
+            <div className="text-xs uppercase font-bold tracking-wider text-[#94a3b8]">Tahap 1</div>
             <div className="font-bold text-sm text-[#5eead4] mt-0.5">Unggah Berkas</div>
-            <div className="text-[11px] text-[#94a3b8] mt-0.5">Stream CSV / Excel</div>
+            <div className="text-xs text-[#94a3b8] mt-0.5">Stream CSV / Excel</div>
           </div>
 
           <div className="hidden md:flex justify-center text-[#64748b]">
@@ -252,15 +252,15 @@ export function WorkerDetailInspector({
           </div>
 
           <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-center">
-            <div className="text-[10px] uppercase font-bold tracking-wider text-[#94a3b8]">Tahap 2 (Worker 1)</div>
+            <div className="text-xs uppercase font-bold tracking-wider text-[#94a3b8]">Tahap 2 (Worker 1)</div>
             <div className="font-bold text-sm text-[#38bdf8] mt-0.5">Fast Ingesti DB</div>
-            <div className="text-[11px] text-[#94a3b8] mt-0.5">1.000+ baris/detik PostgreSQL</div>
+            <div className="text-xs text-[#94a3b8] mt-0.5">1.000+ baris/detik PostgreSQL</div>
           </div>
 
           <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-center">
-            <div className="text-[10px] uppercase font-bold tracking-wider text-[#94a3b8]">Tahap 3 (Worker 2)</div>
+            <div className="text-xs uppercase font-bold tracking-wider text-[#94a3b8]">Tahap 3 (Worker 2)</div>
             <div className="font-bold text-sm text-[#fcd34d] mt-0.5">OCR & Smart Proxy</div>
-            <div className="text-[11px] text-[#94a3b8] mt-0.5">On-demand CDN Stream</div>
+            <div className="text-xs text-[#94a3b8] mt-0.5">On-demand CDN Stream</div>
           </div>
         </div>
       </div>

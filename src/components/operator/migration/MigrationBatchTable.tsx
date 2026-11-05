@@ -521,7 +521,7 @@ export function MigrationBatchTable({
           const isProcessing = status === "PROCESSING";
 
           return (
-            <div className="flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center gap-1">
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border",
@@ -548,6 +548,12 @@ export function MigrationBatchTable({
                 />
                 {status}
               </span>
+              {isCompleted && (
+                <span className="text-xs text-[#006877] font-medium flex items-center gap-1">
+                  <Activity className="w-3 h-3 text-[#00a2b9]" />
+                  <span>DB Tersimpan</span>
+                </span>
+              )}
             </div>
           );
         },
@@ -1138,12 +1144,24 @@ export function MigrationBatchTable({
                     <span className="text-xs font-semibold">Ekstraksi OCR & AI</span>
                     <Activity className="w-3.5 h-3.5 text-sky-600" />
                   </div>
-                  <span className="text-base font-bold font-mono text-sky-900 block">
-                    {batchDetails?.timings.ocrCompletedCount ?? 0} Selesai
-                  </span>
-                  <span className="text-xs text-sky-700 block">
-                    Rata-rata: {batchDetails?.timings.avgOcrRowMs ? `${batchDetails.timings.avgOcrRowMs} ms/baris` : "Memproses..."}
-                  </span>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-base font-bold font-mono text-sky-900 block">
+                      {batchDetails?.timings.ocrCompletedCount ?? 0} Selesai
+                    </span>
+                    <span className="text-xs font-mono text-sky-700">
+                      {(batchDetails?.timings.ocrQueuedCount ?? 0) + (batchDetails?.timings.ocrProcessingCount ?? 0)} Antre
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-sky-700">
+                    <span>
+                      {batchDetails?.timings.avgOcrRowMs ? `${batchDetails.timings.avgOcrRowMs} ms/baris` : "Memproses..."}
+                    </span>
+                    {(batchDetails?.timings.ocrFailedCount ?? 0) > 0 && (
+                      <span className="text-rose-600 font-bold">
+                        {batchDetails?.timings.ocrFailedCount} Gagal
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Auto-Approval & Anti-Fraud */}

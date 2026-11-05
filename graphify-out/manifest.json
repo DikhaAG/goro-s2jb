@@ -1620,9 +1620,9 @@
     "semantic_hash": ""
   },
   "src/components/manager/ReportsDashboard.tsx": {
-    "mtime": 1793556657.388869,
-    "seen": 1793661150.067323,
-    "ast_hash": "0bd497c86b42af0e3081796bad004aa2",
+    "mtime": 1793851965.5778108,
+    "seen": 1793857161.3028622,
+    "ast_hash": "dd3a99bcdb1ee2ed5d9445f3a8c5449a",
     "semantic_hash": ""
   },
   "src/components/migration/AbortMigrationModal.tsx": {
@@ -1656,15 +1656,15 @@
     "semantic_hash": ""
   },
   "src/components/migration/SystemDiagnosticsCard.tsx": {
-    "mtime": 1793462592.4100301,
-    "seen": 1793661150.067332,
-    "ast_hash": "c3e47b650724e48432db03d7d09eea43",
+    "mtime": 1793856530.093972,
+    "seen": 1793857161.303221,
+    "ast_hash": "6b46d66ec4c00f1e2f2d54ced18aeffd",
     "semantic_hash": ""
   },
   "src/components/migration/WorkerDetailInspector.tsx": {
-    "mtime": 1793462592.6795847,
-    "seen": 1793661150.067334,
-    "ast_hash": "7a4fab9851483d8cb7848bba2fa25c1c",
+    "mtime": 1793856803.8794708,
+    "seen": 1793857161.303225,
+    "ast_hash": "456cb4b8d01dab680992b34593f20072",
     "semantic_hash": ""
   },
   "src/components/migration/WorkerMetricsCard.tsx": {
@@ -2004,15 +2004,15 @@
     "semantic_hash": ""
   },
   "src/server/routers/migration.ts": {
-    "mtime": 1793807825.926728,
-    "seen": 1793808380.630156,
-    "ast_hash": "5343059a6194939ede21707153c7ecf3",
+    "mtime": 1793856419.1138196,
+    "seen": 1793857161.307774,
+    "ast_hash": "dd623bf87c8864058c83a7329a8c7d32",
     "semantic_hash": ""
   },
   "src/server/routers/report.ts": {
-    "mtime": 1793161397.7789514,
-    "seen": 1793661150.06744,
-    "ast_hash": "ed5a02d60f8291adb7200499ca8e085b",
+    "mtime": 1793849958.0966184,
+    "seen": 1793850138.90123,
+    "ast_hash": "c72458181100dce26fb0d1be2824bce4",
     "semantic_hash": ""
   },
   "src/server/routers/reviews.ts": {
@@ -2052,9 +2052,9 @@
     "semantic_hash": ""
   },
   "src/server/services/evidenceDownloader.ts": {
-    "mtime": 1793772767.9374394,
-    "seen": 1793773116.8163798,
-    "ast_hash": "304badc60d5660e78f09438be0522f12",
+    "mtime": 1793856354.5367196,
+    "seen": 1793857161.308291,
+    "ast_hash": "f73c6cf78ef7dc71499f0d3ce049a767",
     "semantic_hash": ""
   },
   "src/server/services/ocrBridge.ts": {
@@ -2082,15 +2082,15 @@
     "semantic_hash": ""
   },
   "src/server/workers/importWorker.ts": {
-    "mtime": 1793776855.1163168,
-    "seen": 1793777293.8230479,
-    "ast_hash": "e32b2e03a846c9af0d9b32108a6363a7",
+    "mtime": 1793849932.9740036,
+    "seen": 1793850138.902143,
+    "ast_hash": "72167e8a1ea242aeb191f20d512c11e5",
     "semantic_hash": ""
   },
   "src/server/workers/ocrWorker.ts": {
-    "mtime": 1793777715.1511507,
-    "seen": 1793778681.286861,
-    "ast_hash": "af2141691b004daffc0ea50aacd4ad81",
+    "mtime": 1793849946.2973137,
+    "seen": 1793850138.902146,
+    "ast_hash": "096b4876e1e65c5779bac6ecf69fc42a",
     "semantic_hash": ""
   },
   "src/types/index.ts": {
@@ -5208,15 +5208,21 @@
     "semantic_hash": ""
   },
   "src/components/operator/migration/MigrationBatchTable.tsx": {
-    "mtime": 1793845112.8819811,
-    "seen": 1793845160.8165572,
-    "ast_hash": "e1d59c4c013ab693c7a916c99f1d1a1c",
+    "mtime": 1793856733.8227515,
+    "seen": 1793857161.304113,
+    "ast_hash": "b337544c53517e78ebf85160d1479072",
     "semantic_hash": ""
   },
   "src/app/api/migration/download/route.ts": {
     "mtime": 1793808416.4868114,
     "seen": 1793842386.20632,
     "ast_hash": "d2ae88e6479aa5388db9e3e171bf6735",
+    "semantic_hash": ""
+  },
+  "src/components/migration/GoogleDriveTrafficCard.tsx": {
+    "mtime": 1793857040.1616542,
+    "seen": 1793857161.303147,
+    "ast_hash": "b8e5401b6f18997992bfcfebca238049",
     "semantic_hash": ""
   },
   "package-lock.json": {

@@ -11,6 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { GoogleDriveTrafficCard, GoogleDriveTrafficData } from "./GoogleDriveTrafficCard";
 
 interface SystemDiagnosticsProps {
   telemetry: {
@@ -37,6 +38,7 @@ interface SystemDiagnosticsProps {
       approvedReviews: number;
       rejectedReviews: number;
     };
+    gdriveDownloader?: GoogleDriveTrafficData;
   };
 }
 
@@ -67,6 +69,9 @@ export function SystemDiagnosticsCard({ telemetry }: SystemDiagnosticsProps) {
 
   return (
     <div className="space-y-4">
+      {/* Google Drive Live Zero-Disk Streaming Telemetry */}
+      <GoogleDriveTrafficCard gdrive={telemetry.gdriveDownloader} />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 1. Redis Memory & Server Engine */}
         <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 shadow-xs">

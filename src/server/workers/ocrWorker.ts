@@ -148,6 +148,15 @@ export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OC
         reviewRemarks,
       },
     });
+    // Trigger laporan manajerial sinkronisasi jika status validasi disetujui
+    if (finalStatus === "APPROVED") {
+      try {
+        const redisClient = (await import("@/lib/redis")).default;
+        await redisClient.set("reports:last_update_timestamp", Date.now().toString());
+      } catch {
+        // Non-critical
+      }
+    }
   } catch (updateErr: any) {
     console.warn(`[OCR Worker] Failed to update review ${reviewId}:`, updateErr.message);
   }

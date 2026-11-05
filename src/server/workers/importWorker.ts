@@ -428,6 +428,23 @@ export function createImportWorker() {
           console.warn(`[Import Worker] Failed green-zone auto-approval sync:`, syncErr.message);
         }
 
+        // 5. Trigger sinkronisasi laporan manajerial agar /reports langsung ter-update secara real-time
+        try {
+          const syncTimestamp = Date.now().toString();
+          await redis.set("reports:last_update_timestamp", syncTimestamp);
+          await redis.set(
+            "reports:latest_completed_batch",
+            JSON.stringify({
+              id: importBatchId,
+              fileName: existingBatch.fileName,
+              completedAt: new Date().toISOString(),
+              processedRows: totalProcessedRows,
+            })
+          );
+        } catch (redisSyncErr: any) {
+          console.warn("[Import Worker] Failed to set reports sync flag in Redis:", redisSyncErr.message);
+        }
+
         console.log(
           `[Import Worker] Batch ${importBatchId} completed successfully! Processed: ${totalProcessedRows}, Errors: ${totalFailedRows}`
         );

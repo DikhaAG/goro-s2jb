@@ -86,4 +86,61 @@ export const reportRouter = router({
       const month = input?.month || now.getMonth() + 1;
       return getPacingData(year, month, input?.up3Id, input?.ulpId);
     }),
+
+  getSyncStatus: executiveProcedure.query(async ({ ctx }) => {
+    // 1. Ambil data batch migrasi terbaru untuk deteksi perubahan status impor
+    const latestBatch = await ctx.prisma.migrationBatch.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        fileName: true,
+        status: true,
+        completedAt: true,
+        updatedAt: true,
+        processedRows: true,
+        totalRows: true,
+      },
+    });
+
+    // 2. Ambil tanggal ulasan disetujui (APPROVED) terbaru dan total ulasan
+    const [latestApprovedReview, totalApprovedCount, totalReviewsCount] = await Promise.all([
+      ctx.prisma.ratingReview.findFirst({
+        where: { validationStatus: "APPROVED" },
+        orderBy: { entryDate: "desc" },
+        select: {
+          id: true,
+          entryDate: true,
+          updatedAt: true,
+        },
+      }),
+      ctx.prisma.ratingReview.count({
+        where: { validationStatus: "APPROVED" },
+      }),
+      ctx.prisma.ratingReview.count(),
+    ]);
+
+    let redisTimestamp: string | null = null;
+    try {
+      const redis = (await import("@/lib/redis")).default;
+      redisTimestamp = await redis.get("reports:last_update_timestamp");
+    } catch {
+      // Non-critical fallback
+    }
+
+    const lastDataUpdate = latestApprovedReview?.updatedAt
+      ? new Date(latestApprovedReview.updatedAt).getTime()
+      : latestBatch?.updatedAt
+      ? new Date(latestBatch.updatedAt).getTime()
+      : Date.now();
+
+    return {
+      lastSyncTimestamp: redisTimestamp || lastDataUpdate.toString(),
+      latestBatch,
+      latestApprovedReviewDate: latestApprovedReview?.entryDate
+        ? new Date(latestApprovedReview.entryDate).toISOString()
+        : null,
+      totalApprovedCount,
+      totalReviewsCount,
+    };
+  }),
 });
