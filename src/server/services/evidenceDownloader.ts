@@ -5,6 +5,14 @@ import { redis } from "@/lib/redis";
 // Cache for previously downloaded external file IDs (avoids repeated network calls)
 const gdriveCache = new Map<string, { relativePath: string; absolutePath: string }>();
 
+export interface NetworkTrafficPoint {
+  timestamp: number;
+  rateKbps: number;
+  bytesDelta: number;
+  latencyMs: number;
+  requestsCount: number;
+}
+
 export interface DownloaderNetworkMetrics {
   totalRequests: number;
   successfulStreams: number;
@@ -28,6 +36,7 @@ export interface DownloaderNetworkMetrics {
     misses: number;
     cachedEntriesCount: number;
   };
+  timeSeries?: NetworkTrafficPoint[];
   lastIncident?: {
     timestamp: string;
     url: string;
@@ -75,11 +84,15 @@ function recordCandidateHit(candidateUrl: string) {
 }
 
 export const REDIS_GDOWNLOADER_METRICS_KEY = "telemetry:gdrive_downloader";
+export const REDIS_GDOWNLOADER_SERIES_KEY = "telemetry:gdrive_downloader_series";
 
 let syncTimeout: NodeJS.Timeout | null = null;
+let lastSampleTimestamp = Date.now();
+let lastSampleBytes = 0;
+let lastSampleRequests = 0;
 
 /**
- * Persists live Google Drive downloader telemetry to Redis hash/string.
+ * Persists live Google Drive downloader telemetry and rolling time-series to Redis.
  * Enables zero-delay observability across different Node.js processes.
  */
 export async function syncDownloaderMetricsToRedis(): Promise<void> {
@@ -87,10 +100,48 @@ export async function syncDownloaderMetricsToRedis(): Promise<void> {
     if (redis && (redis.status === "ready" || redis.status === "connect")) {
       const data = getDownloaderNetworkMetrics();
       await redis.set(REDIS_GDOWNLOADER_METRICS_KEY, JSON.stringify(data));
+
+      const now = Date.now();
+      const deltaSec = Math.max(1, (now - lastSampleTimestamp) / 1000);
+      const deltaBytes = Math.max(0, data.totalBytesStreamed - lastSampleBytes);
+      const deltaRequests = Math.max(0, data.totalRequests - lastSampleRequests);
+      const rateKbps = Math.round(deltaBytes / 1024 / deltaSec);
+
+      lastSampleTimestamp = now;
+      lastSampleBytes = data.totalBytesStreamed;
+      lastSampleRequests = data.totalRequests;
+
+      const point: NetworkTrafficPoint = {
+        timestamp: now,
+        rateKbps,
+        bytesDelta: deltaBytes,
+        latencyMs: data.averageLatencyMs,
+        requestsCount: deltaRequests,
+      };
+
+      await redis.rpush(REDIS_GDOWNLOADER_SERIES_KEY, JSON.stringify(point));
+      await redis.ltrim(REDIS_GDOWNLOADER_SERIES_KEY, -30, -1);
     }
   } catch {
     // Non-critical telemetry persistence fallback
   }
+}
+
+/**
+ * Retrieves rolling time-series points from Redis.
+ */
+export async function fetchDownloaderTimeSeriesFromRedis(): Promise<NetworkTrafficPoint[]> {
+  try {
+    if (redis && (redis.status === "ready" || redis.status === "connect")) {
+      const items = await redis.lrange(REDIS_GDOWNLOADER_SERIES_KEY, 0, -1);
+      if (items && items.length > 0) {
+        return items.map((raw) => JSON.parse(raw) as NetworkTrafficPoint);
+      }
+    }
+  } catch {
+    // Fall back to empty array
+  }
+  return [];
 }
 
 /**
@@ -110,15 +161,28 @@ export function scheduleDownloaderMetricsSync(): void {
 export async function fetchDownloaderNetworkMetricsFromRedis(): Promise<DownloaderNetworkMetrics> {
   try {
     if (redis && (redis.status === "ready" || redis.status === "connect")) {
-      const raw = await redis.get(REDIS_GDOWNLOADER_METRICS_KEY);
+      const [raw, series] = await Promise.all([
+        redis.get(REDIS_GDOWNLOADER_METRICS_KEY),
+        fetchDownloaderTimeSeriesFromRedis(),
+      ]);
+
       if (raw) {
-        return JSON.parse(raw) as DownloaderNetworkMetrics;
+        const parsed = JSON.parse(raw) as DownloaderNetworkMetrics;
+        return {
+          ...parsed,
+          timeSeries: series,
+        };
       }
     }
   } catch {
     // Fall back to local memory if Redis call fails
   }
-  return getDownloaderNetworkMetrics();
+
+  const local = getDownloaderNetworkMetrics();
+  return {
+    ...local,
+    timeSeries: [],
+  };
 }
 
 export function getDownloaderNetworkMetrics(): DownloaderNetworkMetrics {

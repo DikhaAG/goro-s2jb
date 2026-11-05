@@ -1662,8 +1662,8 @@
     "semantic_hash": ""
   },
   "src/components/migration/WorkerDetailInspector.tsx": {
-    "mtime": 1793856803.8794708,
-    "seen": 1793857161.303225,
+    "mtime": 1793863002.691531,
+    "seen": 1793863325.355229,
     "ast_hash": "456cb4b8d01dab680992b34593f20072",
     "semantic_hash": ""
   },
@@ -2004,9 +2004,9 @@
     "semantic_hash": ""
   },
   "src/server/routers/migration.ts": {
-    "mtime": 1793856419.1138196,
-    "seen": 1793857161.307774,
-    "ast_hash": "dd623bf87c8864058c83a7329a8c7d32",
+    "mtime": 1793864887.9494622,
+    "seen": 1793865150.546411,
+    "ast_hash": "2c834e7e328bfb9f90a203c313ae6d14",
     "semantic_hash": ""
   },
   "src/server/routers/report.ts": {
@@ -2052,9 +2052,9 @@
     "semantic_hash": ""
   },
   "src/server/services/evidenceDownloader.ts": {
-    "mtime": 1793856354.5367196,
-    "seen": 1793857161.308291,
-    "ast_hash": "f73c6cf78ef7dc71499f0d3ce049a767",
+    "mtime": 1793864376.4996197,
+    "seen": 1793865150.5467432,
+    "ast_hash": "98046cc2e53826f3ef72e1fad9a16864",
     "semantic_hash": ""
   },
   "src/server/services/ocrBridge.ts": {
@@ -5208,8 +5208,8 @@
     "semantic_hash": ""
   },
   "src/components/operator/migration/MigrationBatchTable.tsx": {
-    "mtime": 1793856733.8227515,
-    "seen": 1793857161.304113,
+    "mtime": 1793862174.6404917,
+    "seen": 1793863325.355859,
     "ast_hash": "b337544c53517e78ebf85160d1479072",
     "semantic_hash": ""
   },
@@ -5220,9 +5220,21 @@
     "semantic_hash": ""
   },
   "src/components/migration/GoogleDriveTrafficCard.tsx": {
-    "mtime": 1793857040.1616542,
-    "seen": 1793857161.303147,
-    "ast_hash": "b8e5401b6f18997992bfcfebca238049",
+    "mtime": 1793864376.1020896,
+    "seen": 1793865150.5434759,
+    "ast_hash": "7bc2bd53d2a9d140bfa11c485ab2d06f",
+    "semantic_hash": ""
+  },
+  "src/components/migration/NetworkTrafficChart.tsx": {
+    "mtime": 1793866333.9907193,
+    "seen": 1793866446.149483,
+    "ast_hash": "36646acab0164455639d60e3033e0c34",
+    "semantic_hash": ""
+  },
+  "tests/unit/networkTrafficHistory.test.ts": {
+    "mtime": 1793866375.5518997,
+    "seen": 1793866446.17524,
+    "ast_hash": "21d901b0647792d7e9e78761fca317ca",
     "semantic_hash": ""
   },
   "package-lock.json": {

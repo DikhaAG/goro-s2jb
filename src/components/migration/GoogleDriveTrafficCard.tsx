@@ -16,6 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NetworkTrafficChart, NetworkTrafficPoint } from "./NetworkTrafficChart";
 
 export interface GoogleDriveTrafficData {
   totalRequests: number;
@@ -40,6 +41,7 @@ export interface GoogleDriveTrafficData {
     misses: number;
     cachedEntriesCount: number;
   };
+  timeSeries?: NetworkTrafficPoint[];
   lastIncident?: {
     timestamp: string;
     url: string;
@@ -206,7 +208,14 @@ export function GoogleDriveTrafficCard({ gdrive, className }: GoogleDriveTraffic
         </div>
       </div>
 
-      {/* 3. Endpoint Multi-Candidate CDN Routing Breakdown */}
+      {/* 3. Real-Time Network Traffic Vector Spline Chart */}
+      <NetworkTrafficChart
+        timeSeries={data.timeSeries || []}
+        averageLatencyMs={data.averageLatencyMs}
+        isStreaming={isStreamingActive}
+      />
+
+      {/* 4. Endpoint Multi-Candidate CDN Routing Breakdown */}
       <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between text-xs font-bold text-[#0f172a]">
           <span className="flex items-center gap-1.5">
