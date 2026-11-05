@@ -128,29 +128,71 @@ export async function GET() {
     };
   }
 
-  // 4. Check Python OCR Engine
+  // 4. Check OCR Engine (Rust Native Engine / Microservice on Port 8001, with Python fallback)
   try {
     const ocrStart = Date.now();
-    const venvPaths = [
-      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
-      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python"),
-      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python.exe"),
-      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python"),
-    ];
-    const foundVenv = venvPaths.find((p) => fs.existsSync(p));
-    const pythonExecutable = foundVenv || (process.platform === "win32" ? "python" : "python3");
+    const ocrUrl = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8001";
+    let isUp = false;
 
-    await execAsync(`"${pythonExecutable}" -c "import rapidfuzz, PIL; print('OK')"`, {
-      timeout: 3000,
-    });
-    services.python_ocr = {
-      status: "up",
-      latency_ms: Date.now() - ocrStart,
-    };
+    // Check HTTP endpoint first (covers active Rust or Python microservice)
+    try {
+      const res = await fetch(`${ocrUrl}/health`, { signal: AbortSignal.timeout(2000) });
+      if (res.ok) {
+        isUp = true;
+      }
+    } catch {
+      // HTTP not reachable, proceed to check binary directly
+    }
+
+    if (!isUp) {
+      // Check Rust Native binary directly
+      const isWindows = process.platform === "win32";
+      const rustBin = path.resolve(
+        process.cwd(),
+        "rust-services",
+        "goro-engine",
+        "target",
+        "release",
+        isWindows ? "goro-engine.exe" : "goro-engine"
+      );
+      if (fs.existsSync(rustBin)) {
+        await execAsync(`"${rustBin}" --version`, { timeout: 2000 });
+        isUp = true;
+      }
+    }
+
+    if (!isUp) {
+      // Fallback check to Python environment if available
+      const venvPaths = [
+        path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
+        path.resolve(process.cwd(), "python-services/ocr/venv/bin/python"),
+        path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python.exe"),
+        path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python"),
+      ];
+      const foundVenv = venvPaths.find((p) => fs.existsSync(p));
+      if (foundVenv) {
+        await execAsync(`"${foundVenv}" -c "import rapidfuzz, PIL; print('OK')"`, {
+          timeout: 3000,
+        });
+        isUp = true;
+      }
+    }
+
+    if (isUp) {
+      services.python_ocr = {
+        status: "up",
+        latency_ms: Date.now() - ocrStart,
+      };
+    } else {
+      services.python_ocr = {
+        status: "down",
+        error: "OCR engine is offline and no executable binary found",
+      };
+    }
   } catch (err: any) {
     services.python_ocr = {
       status: "down",
-      error: err.message || "Python OCR environment unresponsive",
+      error: err.message || "OCR engine unresponsive",
     };
   }
 

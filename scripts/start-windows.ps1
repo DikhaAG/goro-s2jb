@@ -10,17 +10,24 @@ Write-Host "==================================================================" 
 Write-Host "       ⚡ GORO S2JB - COMMAND CENTER LAUNCHER (WINDOWS)          " -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
-# 1. Menjalankan Microservice Python OCR (Port 8001)
-Write-Host "`n[1/4] Menjalankan Microservice Python OCR (Port 8001)..." -ForegroundColor Yellow
+# 1. Menjalankan Microservice OCR (Port 8001) - Prioritas: Rust Native Engine
+Write-Host "`n[1/4] Menjalankan Microservice OCR (Port 8001)..." -ForegroundColor Yellow
+$RustExe = Join-Path $ProjectDir "rust-services\goro-engine\target\release\goro-engine.exe"
 $OcrDir = Join-Path $ProjectDir "python-services\ocr"
 $PythonExe = Join-Path $OcrDir "venv\Scripts\python.exe"
 
-if (-not (Test-Path $PythonExe)) {
-    $PythonExe = "python"
+if (Test-Path $RustExe) {
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - Rust Native OCR Engine (Port 8001)'; Set-Location '$ProjectDir'; & '$RustExe' --host 127.0.0.1 --port 8001"
+    Write-Host "✓ Jendela Rust Native OCR Engine berhasil dibuka." -ForegroundColor Green
+} elseif (Test-Path $OcrDir) {
+    if (-not (Test-Path $PythonExe)) {
+        $PythonExe = "python"
+    }
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - Python OCR Microservice (Port 8001)'; Set-Location '$OcrDir'; & '$PythonExe' -m uvicorn main:app --host 127.0.0.1 --port 8001"
+    Write-Host "✓ Jendela Python OCR Microservice (Fallback) berhasil dibuka." -ForegroundColor Green
+} else {
+    Write-Host "⚠️ Binary Rust belum dikompilasi dan python-services tidak ditemukan. Jalankan: npm run rust:build" -ForegroundColor Red
 }
-
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - Python OCR Microservice (Port 8001)'; Set-Location '$OcrDir'; & '$PythonExe' -m uvicorn main:app --host 127.0.0.1 --port 8001"
-Write-Host "✓ Jendela Python OCR Microservice berhasil dibuka." -ForegroundColor Green
 
 # 2. Menjalankan BullMQ OCR Queue Worker
 Write-Host "`n[2/4] Menjalankan Background Worker BullMQ OCR..." -ForegroundColor Yellow

@@ -11,6 +11,7 @@ export type ServiceType =
   | "POSTGRES"
   | "REDIS"
   | "PYTHON_OCR"
+  | "RUST_OCR"
   | "IMPORT_WORKER"
   | "OCR_WORKER"
   | "WEB_SERVER"
@@ -169,10 +170,25 @@ export async function getPidForPort(port: number): Promise<number | null> {
  * Inspects all 5 core services to determine port binding, connectivity latency, and PID.
  */
 export async function detectServicePorts(): Promise<ServicePortInfo[]> {
+  const isWindows = process.platform === "win32";
+  const rustBin = path.resolve(
+    PROJECT_ROOT,
+    "rust-services",
+    "goro-engine",
+    "target",
+    "release",
+    isWindows ? "goro-engine.exe" : "goro-engine"
+  );
+  const defaultOcrIsRust = fs.existsSync(rustBin);
+
   const serviceDefs: Array<{ name: string; port: number; serviceType: ServiceType }> = [
     { name: "PostgreSQL Database", port: 5432, serviceType: "POSTGRES" },
     { name: "Redis In-Memory Broker", port: 6379, serviceType: "REDIS" },
-    { name: "Python OCR Microservice", port: 8001, serviceType: "PYTHON_OCR" },
+    {
+      name: defaultOcrIsRust ? "Rust Native Vision Engine" : "Vision & OCR Engine",
+      port: 8001,
+      serviceType: defaultOcrIsRust ? "RUST_OCR" : "PYTHON_OCR",
+    },
     { name: "Next.js Web Application", port: 3000, serviceType: "WEB_SERVER" },
   ];
 
@@ -196,19 +212,31 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
       }
 
       let processCommand: string | undefined;
+      let finalName = svc.name;
+      let finalType = svc.serviceType;
+
       if (pid) {
         try {
           const { stdout } = await execAsync(`ps -p ${pid} -o command= 2>/dev/null`);
           processCommand = stdout.trim() || undefined;
+          if (svc.port === 8001) {
+            if (processCommand?.toLowerCase().includes("goro-engine")) {
+              finalName = "Rust Native Vision Engine (goro-engine)";
+              finalType = "RUST_OCR";
+            } else if (processCommand?.toLowerCase().includes("uvicorn") || processCommand?.toLowerCase().includes("python")) {
+              finalName = "Python OCR Microservice (Fallback)";
+              finalType = "PYTHON_OCR";
+            }
+          }
         } catch {
           // ignore error fetching command
         }
       }
 
       return {
-        name: svc.name,
+        name: finalName,
         port: svc.port,
-        serviceType: svc.serviceType,
+        serviceType: finalType,
         status,
         latencyMs: conn.isReachable ? conn.latencyMs : undefined,
         recentLatencies,
@@ -233,6 +261,9 @@ export function classifyServiceType(command: string): { serviceType: ServiceType
   }
   if (lower.includes("ocrworker.ts") || lower.includes("worker:ocr")) {
     return { serviceType: "OCR_WORKER", isSafeToKill: true };
+  }
+  if (lower.includes("goro-engine")) {
+    return { serviceType: "RUST_OCR", isSafeToKill: true };
   }
   if (lower.includes("uvicorn") && lower.includes("main:app")) {
     return { serviceType: "PYTHON_OCR", isSafeToKill: true };
@@ -291,6 +322,7 @@ export async function listAppProcesses(): Promise<ManagedProcess[]> {
       // Whitelist filter: only include processes tied to this project or related services
       const isRelated =
         command.includes("goro-s2jb") ||
+        command.includes("goro-engine") ||
         command.includes("importWorker.ts") ||
         command.includes("ocrWorker.ts") ||
         command.includes("worker:import") ||
@@ -454,7 +486,7 @@ export async function terminateProcess(
  * Restarts or launches an application worker in background.
  */
 export async function restartWorker(
-  workerType: "import" | "ocr" | "python"
+  workerType: "import" | "ocr" | "python" | "rust"
 ): Promise<{ success: boolean; message: string; newPid?: number }> {
   const currentProcs = await listAppProcesses();
 
@@ -462,7 +494,12 @@ export async function restartWorker(
   const targets = currentProcs.filter((p) => {
     if (workerType === "import" && p.serviceType === "IMPORT_WORKER") return true;
     if (workerType === "ocr" && p.serviceType === "OCR_WORKER") return true;
-    if (workerType === "python" && p.serviceType === "PYTHON_OCR") return true;
+    if (
+      (workerType === "python" || workerType === "rust") &&
+      (p.serviceType === "PYTHON_OCR" || p.serviceType === "RUST_OCR")
+    ) {
+      return true;
+    }
     return false;
   });
 
@@ -514,8 +551,37 @@ export async function restartWorker(
     };
   }
 
-  if (workerType === "python") {
+  if (workerType === "python" || workerType === "rust") {
     const logFd = fs.openSync(path.join(LOGS_DIR, "ocr_service.log"), "a");
+    const rustBin = path.join(
+      PROJECT_ROOT,
+      "rust-services",
+      "goro-engine",
+      "target",
+      "release",
+      isWindows ? "goro-engine.exe" : "goro-engine"
+    );
+
+    // Prioritize high-performance Rust Native Engine if compiled
+    if (fs.existsSync(rustBin)) {
+      const child = spawn(
+        rustBin,
+        ["--host", "127.0.0.1", "--port", "8001"],
+        {
+          cwd: PROJECT_ROOT,
+          detached: true,
+          stdio: ["ignore", logFd, logFd],
+          shell: isWindows,
+        }
+      );
+      child.unref();
+      return {
+        success: true,
+        message: `Rust Native Vision Engine berhasil dimulai ulang (PID baru: ${child.pid}).`,
+        newPid: child.pid,
+      };
+    }
+
     const ocrDir = path.join(PROJECT_ROOT, "python-services", "ocr");
     const pythonCandidates = [
       path.join(ocrDir, "venv", "Scripts", "python.exe"),
@@ -538,7 +604,7 @@ export async function restartWorker(
     child.unref();
     return {
       success: true,
-      message: `Microservice Python OCR berhasil dimulai ulang (PID baru: ${child.pid}).`,
+      message: `Microservice Python OCR (Fallback) berhasil dimulai ulang (PID baru: ${child.pid}).`,
       newPid: child.pid,
     };
   }

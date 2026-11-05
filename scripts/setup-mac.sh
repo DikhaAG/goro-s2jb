@@ -37,10 +37,19 @@ check_command() {
 MISSING_DEPS=0
 check_command "node" "Silakan pasang Node.js v20+ via: brew install node" || MISSING_DEPS=1
 check_command "npm" "Disertakan bersama instalasi Node.js." || MISSING_DEPS=1
-check_command "python3" "Silakan pasang Python 3.10+ via: brew install python@3.11" || MISSING_DEPS=1
 check_command "psql" "Silakan pasang PostgreSQL via: brew install postgresql@16" || MISSING_DEPS=1
 check_command "redis-cli" "Silakan pasang Redis via: brew install redis" || MISSING_DEPS=1
 check_command "tesseract" "Silakan pasang Tesseract OCR via: brew install tesseract tesseract-lang" || MISSING_DEPS=1
+
+# Cargo (Rust) is primary; Python is optional fallback
+if command -v cargo &> /dev/null; then
+    echo -e "${GREEN}✓ cargo terdeteksi (Rust Engine Siap):${NC} $(command -v cargo)"
+elif command -v python3 &> /dev/null; then
+    echo -e "${GREEN}✓ python3 terdeteksi (Fallback OCR):${NC} $(command -v python3)"
+else
+    echo -e "${RED}❌ Baik cargo maupun python3 tidak terdeteksi.${NC} Pasang Rust via https://rustup.rs atau Python 3.11+"
+    MISSING_DEPS=1
+fi
 
 if [ $MISSING_DEPS -ne 0 ]; then
     echo -e "\n${RED}⚠️ Ada dependensi sistem yang belum terpasang.${NC}"
@@ -89,21 +98,29 @@ fi
 echo -e "\n${BLUE}[4/7] Memasang Dependensi Node.js (npm install)...${NC}"
 npm install
 
-# 4. Setup Python Virtual Environment untuk OCR
-echo -e "\n${BLUE}[5/7] Menyiapkan Python Virtual Environment (Microservice OCR)...${NC}"
-OCR_DIR="python-services/ocr"
-if [ ! -d "$OCR_DIR/venv" ]; then
-    echo "Membuat virtual environment di $OCR_DIR/venv..."
-    python3 -m venv "$OCR_DIR/venv"
+# 4. Kompilasi Engine Rust Native (Prioritas Utama)
+if command -v cargo &> /dev/null; then
+    echo -e "\n${BLUE}[5/8] Mengompilasi Rust Native Vision Engine (goro-engine)...${NC}"
+    npm run rust:build || echo -e "${YELLOW}⚠️ Kompilasi Rust gagal.${NC}"
+    echo -e "${GREEN}✓ Engine Rust Native berhasil dikompilasi.${NC}"
 fi
 
-echo "Memasang dependensi Python (Pillow, RapidFuzz, Pytesseract, FastAPI, Uvicorn)..."
-"$OCR_DIR/venv/bin/pip" install --upgrade pip
-"$OCR_DIR/venv/bin/pip" install -r "$OCR_DIR/requirements.txt"
-echo -e "${GREEN}✓ Virtual environment Python OCR siap digunakan.${NC}"
+# 5. Setup Python Virtual Environment (Hanya jika folder python-services masih ada)
+OCR_DIR="python-services/ocr"
+if [ -d "$OCR_DIR" ]; then
+    echo -e "\n${BLUE}[6/8] Menyiapkan Python Virtual Environment (Fallback Microservice OCR)...${NC}"
+    if [ ! -d "$OCR_DIR/venv" ]; then
+        echo "Membuat virtual environment di $OCR_DIR/venv..."
+        python3 -m venv "$OCR_DIR/venv"
+    fi
+    echo "Memasang dependensi Python (Pillow, RapidFuzz, Pytesseract, FastAPI, Uvicorn)..."
+    "$OCR_DIR/venv/bin/pip" install --upgrade pip
+    "$OCR_DIR/venv/bin/pip" install -r "$OCR_DIR/requirements.txt"
+    echo -e "${GREEN}✓ Virtual environment Python OCR siap digunakan.${NC}"
+fi
 
-# 5. Inisialisasi Database (Prisma Generate, Migrate, Seed)
-echo -e "\n${BLUE}[6/7] Menyiapkan Skema Database & Data Seed...${NC}"
+# 6. Inisialisasi Database (Prisma Generate, Migrate, Seed)
+echo -e "\n${BLUE}[7/8] Menyiapkan Skema Database & Data Seed...${NC}"
 mkdir -p uploads logs
 
 npx prisma generate

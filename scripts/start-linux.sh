@@ -56,23 +56,34 @@ trap cleanup SIGINT SIGTERM EXIT
 
 mkdir -p "$PROJECT_DIR/logs"
 
-# 2. Menjalankan Python OCR Microservice (Port 8001)
-echo -e "${BLUE}[1/4] Menjalankan Microservice Python OCR (Port 8001)...${NC}"
-OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python"
-if [ ! -f "$OCR_PYTHON" ]; then
-    OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python3"
-fi
-if [ ! -f "$OCR_PYTHON" ]; then
-    OCR_PYTHON="python3"
-fi
+# 2. Menjalankan Microservice OCR (Port 8001) - Prioritas: Rust Native Engine
+RUST_ENGINE="$PROJECT_DIR/rust-services/goro-engine/target/release/goro-engine"
+if [ -f "$RUST_ENGINE" ]; then
+    echo -e "${BLUE}[1/4] Menjalankan Rust Native Vision & OCR Engine (Port 8001)...${NC}"
+    "$RUST_ENGINE" --host 127.0.0.1 --port 8001 >> "$PROJECT_DIR/logs/ocr_service.log" 2>&1 &
+    OCR_PID=$!
+    CHILD_PIDS+=($OCR_PID)
+    echo -e "${GREEN}✓ Rust Native OCR Engine berjalan di latar belakang (PID: $OCR_PID, log: logs/ocr_service.log)${NC}"
+elif [ -d "$PROJECT_DIR/python-services/ocr" ]; then
+    echo -e "${BLUE}[1/4] Menjalankan Microservice Python OCR (Port 8001)...${NC}"
+    OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python"
+    if [ ! -f "$OCR_PYTHON" ]; then
+        OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python3"
+    fi
+    if [ ! -f "$OCR_PYTHON" ]; then
+        OCR_PYTHON="python3"
+    fi
 
-(
-    cd python-services/ocr
-    "$OCR_PYTHON" -m uvicorn main:app --host 127.0.0.1 --port 8001 --log-level info >> "$PROJECT_DIR/logs/ocr_service.log" 2>&1
-) &
-OCR_PID=$!
-CHILD_PIDS+=($OCR_PID)
-echo -e "${GREEN}✓ Microservice OCR berjalan di latar belakang (PID: $OCR_PID, log: logs/ocr_service.log)${NC}"
+    (
+        cd python-services/ocr
+        "$OCR_PYTHON" -m uvicorn main:app --host 127.0.0.1 --port 8001 --log-level info >> "$PROJECT_DIR/logs/ocr_service.log" 2>&1
+    ) &
+    OCR_PID=$!
+    CHILD_PIDS+=($OCR_PID)
+    echo -e "${GREEN}✓ Microservice Python OCR (Fallback) berjalan di latar belakang (PID: $OCR_PID, log: logs/ocr_service.log)${NC}"
+else
+    echo -e "${YELLOW}⚠️ Binary Rust belum dikompilasi dan python-services tidak ditemukan. Jalankan: npm run rust:build${NC}"
+fi
 
 # 3. Menjalankan Background Worker BullMQ OCR
 echo -e "${BLUE}[2/4] Menjalankan Background Worker BullMQ OCR...${NC}"

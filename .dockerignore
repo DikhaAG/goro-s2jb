@@ -1,0 +1,45 @@
+# Version control and editor
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+*.swp
+*.swo
+
+# Dependencies and caches
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Rust build target
+rust-services/goro-engine/target/
+**/target/
+
+# Local Python environments
+python-services/ocr/venv/
+**/__pycache__/
+*.pyc
+
+# Local runtime data and secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+uploads/
+logs/
+*.log
+
+# Documentation and temporary files
+docs/
+graphify-out/
+tests/
+

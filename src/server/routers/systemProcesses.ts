@@ -146,7 +146,7 @@ export const systemProcessesRouter = router({
   restartWorker: adminProcedure
     .input(
       z.object({
-        workerType: z.enum(["import", "ocr", "python"]),
+        workerType: z.enum(["import", "ocr", "python", "rust"]),
         reason: z.string().optional(),
       })
     )

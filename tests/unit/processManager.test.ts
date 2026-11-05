@@ -27,6 +27,12 @@ describe("processManager Utility Suite", () => {
       expect(res.isSafeToKill).toBe(true);
     });
 
+    it("should classify rust goro-engine as safe to kill", () => {
+      const res = classifyServiceType("./rust-services/goro-engine/target/release/goro-engine --host 127.0.0.1 --port 8001");
+      expect(res.serviceType).toBe("RUST_OCR");
+      expect(res.isSafeToKill).toBe(true);
+    });
+
     it("should classify python uvicorn as safe to kill", () => {
       const res = classifyServiceType("python -m uvicorn main:app --port 8001");
       expect(res.serviceType).toBe("PYTHON_OCR");

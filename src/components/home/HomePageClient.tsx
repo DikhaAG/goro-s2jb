@@ -268,7 +268,7 @@ export function HomePageClient() {
             </div>
           </div>
 
-          {/* Service 4: Python OCR & pHash */}
+          {/* Service 4: Rust Vision Core & pHash */}
           <div className="rounded-2xl bg-white border border-[#e2e8f0] p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
@@ -280,15 +280,15 @@ export function HomePageClient() {
             </div>
             <div className="my-3">
               <div className="text-lg font-bold text-[#0f172a]">
-                OCR + pHash 64-bit
+                Rust OCR + pHash 64-bit
               </div>
               <div className="text-xs text-[#64748b] mt-0.5">
-                Tesseract + RapidFuzz
+                goro-engine (C-API + Rust Matcher)
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-[#006877] font-medium pt-2 border-t border-[#f1f5f9]">
               <Radio className="w-4 h-4 text-[#00a2b9]" />
-              <span>Subproses Adaptif Aktif</span>
+              <span>Rust Native Core Aktif</span>
             </div>
           </div>
         </div>

@@ -20,7 +20,7 @@ interface LiveLogViewerProps {
 const AVAILABLE_LOGS = [
   { fileName: "worker_import.log", label: "Worker Impor" },
   { fileName: "worker_ocr.log", label: "Worker OCR" },
-  { fileName: "ocr_service.log", label: "Python OCR Service" },
+  { fileName: "ocr_service.log", label: "Rust Vision Core (goro-engine)" },
   { fileName: "system_runtime.log", label: "Runtime Sistem" },
 ];
 

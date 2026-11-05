@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -38,18 +36,19 @@ services:
     networks:
       - goro-network
 
-  ocr-service:
+  ocr-engine:
     build:
-      context: ./python-services/ocr
+      context: ./rust-services/goro-engine
       dockerfile: Dockerfile
-    container_name: goro-ocr-service
+    container_name: goro-ocr-engine
     restart: always
-    environment:
-      PYTHONUNBUFFERED: "1"
-    volumes:
-      - uploads_data:/app/uploads
     ports:
-      - "8000:8000"
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - goro-network
 
@@ -63,7 +62,12 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-goro_admin}:${POSTGRES_PASSWORD:-goro_secret_2026}@postgres:5432/${POSTGRES_DB:-goro_s2jb}?schema=public
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-goro-s2jb-command-center-secret-key-pln-2026-production-secured}
+      OCR_SERVICE_URL: http://ocr-engine:8001
+      STORAGE_PATH: /app/uploads
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-goro-s2jb-secret-key-2026-production-ready}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-goro-s2jb-command-center-secret-key-pln-2026-production-secured-32chars}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       PORT: 3000
     volumes:
       - uploads_data:/app/uploads
@@ -74,6 +78,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      ocr-engine:
         condition: service_healthy
     networks:
       - goro-network
@@ -89,6 +95,8 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-goro_admin}:${POSTGRES_PASSWORD:-goro_secret_2026}@postgres:5432/${POSTGRES_DB:-goro_s2jb}?schema=public
       REDIS_URL: redis://redis:6379
+      OCR_SERVICE_URL: http://ocr-engine:8001
+      STORAGE_PATH: /app/uploads
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
@@ -96,6 +104,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      ocr-engine:
         condition: service_healthy
     networks:
       - goro-network
@@ -111,6 +121,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-goro_admin}:${POSTGRES_PASSWORD:-goro_secret_2026}@postgres:5432/${POSTGRES_DB:-goro_s2jb}?schema=public
       REDIS_URL: redis://redis:6379
+      STORAGE_PATH: /app/uploads
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs

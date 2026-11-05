@@ -433,6 +433,12 @@
       "skillPath": "skills/engineering/retro/SKILL.md",
       "computedHash": "b8d55851a2909e26c2dbb2e8563719c87b3b700559f604e4df344f8c27e21047"
     },
+    "rust-best-practices": {
+      "source": "apollographql/skills",
+      "sourceType": "github",
+      "skillPath": "skills/rust-best-practices/SKILL.md",
+      "computedHash": "a3db351ec552ed9d36b59e547d6c1d94077867eb5bcb98b3f802dfebb0a8a248"
+    },
     "scaffold-exercises": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -528,6 +534,12 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/tdd/SKILL.md",
       "computedHash": "daf55026f456af104a72fa43247f7bcec89e5127316dc5b1b8d675d6a9d8ce94"
+    },
+    "tdd-rust": {
+      "source": "rtk-ai/rtk",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/tdd-rust/SKILL.md",
+      "computedHash": "df7ae018939077fda6ea6058feb2300a871a6b14aa41d0e5f1d7d6b1f85c6289"
     },
     "teach": {
       "source": "mattpocock/skills",

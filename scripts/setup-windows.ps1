@@ -31,7 +31,20 @@ function Test-CommandAvailable {
 $MissingDeps = $false
 if (-not (Test-CommandAvailable "node" "Unduh Node.js v20+ LTS dari https://nodejs.org")) { $MissingDeps = $true }
 if (-not (Test-CommandAvailable "npm" "Disertakan bersama instalasi Node.js")) { $MissingDeps = $true }
-if (-not (Test-CommandAvailable "python" "Unduh Python 3.10+ dari https://www.python.org/downloads/ (centang 'Add Python to PATH')")) { $MissingDeps = $true }
+
+# Rust Cargo is primary; Python is optional fallback
+$CargoFound = (Get-Command "cargo" -ErrorAction SilentlyContinue) -ne $null
+$PythonFound = (Get-Command "python" -ErrorAction SilentlyContinue) -ne $null
+
+if ($CargoFound) {
+    Write-Host "✓ cargo terdeteksi (Rust Native Vision Engine Siap)." -ForegroundColor Green
+} elseif ($PythonFound) {
+    Write-Host "✓ python terdeteksi (Fallback OCR)." -ForegroundColor Green
+} else {
+    Write-Host "❌ Baik cargo maupun python tidak terdeteksi." -ForegroundColor Red
+    Write-Host "   Tips: Pasang Rust dari https://rustup.rs atau Python 3.10+ dari https://www.python.org" -ForegroundColor DarkGray
+    $MissingDeps = $true
+}
 
 # Pengecekan Tesseract OCR di Windows
 $TesseractFound = $false
@@ -78,22 +91,30 @@ NEXTAUTH_URL="http://localhost:3000"
 Write-Host "`n[3/7] Memasang Dependensi Node.js (npm install)..." -ForegroundColor Yellow
 npm install
 
-# 4. Setup Python Virtual Environment untuk OCR
-Write-Host "`n[4/7] Menyiapkan Python Virtual Environment (Microservice OCR)..." -ForegroundColor Yellow
-$OcrDir = Join-Path $ProjectDir "python-services\ocr"
-$VenvDir = Join-Path $OcrDir "venv"
-$PipExe = Join-Path $VenvDir "Scripts\pip.exe"
-$PythonExe = Join-Path $VenvDir "Scripts\python.exe"
-
-if (-not (Test-Path $VenvDir)) {
-    Write-Host "Membuat venv di $VenvDir..."
-    python -m venv $VenvDir
+# 4. Kompilasi Engine Rust Native (Prioritas Utama)
+if (Get-Command cargo -ErrorAction SilentlyContinue) {
+    Write-Host "`n[4/8] Mengompilasi Rust Native Vision Engine (goro-engine)..." -ForegroundColor Yellow
+    npm run rust:build
+    Write-Host "✓ Engine Rust Native berhasil dikompilasi." -ForegroundColor Green
 }
 
-Write-Host "Memasang paket Python (Pillow, RapidFuzz, Pytesseract, FastAPI, Uvicorn)..."
-& $PipExe install --upgrade pip
-& $PipExe install -r (Join-Path $OcrDir "requirements.txt")
-Write-Host "✓ Virtual environment Python OCR siap." -ForegroundColor Green
+# 5. Setup Python Virtual Environment (Hanya jika folder python-services masih ada)
+$OcrDir = Join-Path $ProjectDir "python-services\ocr"
+if (Test-Path $OcrDir) {
+    Write-Host "`n[5/8] Menyiapkan Python Virtual Environment (Fallback Microservice OCR)..." -ForegroundColor Yellow
+    $VenvDir = Join-Path $OcrDir "venv"
+    $PipExe = Join-Path $VenvDir "Scripts\pip.exe"
+
+    if (-not (Test-Path $VenvDir)) {
+        Write-Host "Membuat venv di $VenvDir..."
+        python -m venv $VenvDir
+    }
+
+    Write-Host "Memasang paket Python (Pillow, RapidFuzz, Pytesseract, FastAPI, Uvicorn)..."
+    & $PipExe install --upgrade pip
+    & $PipExe install -r (Join-Path $OcrDir "requirements.txt")
+    Write-Host "✓ Virtual environment Python OCR siap." -ForegroundColor Green
+}
 
 # 5. Persiapan Direktori Penyimpanan
 Write-Host "`n[5/7] Memastikan Direktori Upload & Log Tersedia..." -ForegroundColor Yellow

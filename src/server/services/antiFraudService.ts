@@ -64,9 +64,53 @@ export async function checkImageDuplicate(
       evidenceImagePath: true,
       createdAt: true,
     },
-    take: 1000,
+    take: 50000,
     orderBy: { createdAt: "asc" },
   });
+
+  // Attempt high-performance batch duplicate calculation via Rust Native Engine (Port 8001)
+  const ocrServiceUrl = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8001";
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+
+    const rustRes = await fetch(`${ocrServiceUrl}/api/v1/batch-duplicate-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        target_hash: imageHash,
+        threshold,
+        evidence_image_path: options?.evidenceImagePath || null,
+        extracted_text: options?.extractedText || null,
+        reviewer_name: options?.reviewerName || null,
+        candidates: candidates.map((c) => ({
+          id: c.id,
+          evidence_image_hash: c.evidenceImageHash,
+          duplicate_of_id: c.duplicateOfId,
+          extracted_ocr_text: c.extractedOcrText,
+          playstore_reviewer_name: c.playstoreReviewerName,
+          evidence_image_path: c.evidenceImagePath,
+        })),
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (rustRes.ok) {
+      const data = await rustRes.json();
+      return {
+        isDuplicate: Boolean(data.is_duplicate),
+        duplicateOfId: data.duplicate_of_id || null,
+        minDistance: Number(data.min_distance),
+        visualSimilarity: Number(data.visual_similarity),
+        textSimilarity: Number(data.text_similarity),
+        reviewerSimilarity: Number(data.reviewer_similarity),
+        matchReason: data.match_reason || undefined,
+      };
+    }
+  } catch {
+    // Engine endpoint not running Rust microservice (e.g. running Python or offline); fall back seamlessly to local JS
+  }
 
   let closestMatchId: string | null = null;
   let minDistance = 64;

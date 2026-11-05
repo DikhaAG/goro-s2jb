@@ -47,8 +47,10 @@ export function RunningProcessTable({
         return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#f0f9ff] text-[#0369a1] border border-[#bae6fd]">Worker Impor</span>;
       case "OCR_WORKER":
         return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#faf5ff] text-[#7e22ce] border border-[#e9d5ff]">Worker OCR</span>;
+      case "RUST_OCR":
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">Rust Vision Core</span>;
       case "PYTHON_OCR":
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">Python OCR</span>;
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#fefce8] text-[#854d0e] border border-[#fef08a]">Python OCR (Fallback)</span>;
       case "WEB_SERVER":
         return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#f0fdfa] text-[#006877] border border-[#99f6e4]">Web Next.js</span>;
       case "REDIS":
@@ -71,7 +73,8 @@ export function RunningProcessTable({
     const matchesType =
       selectedType === "ALL" ||
       (selectedType === "WORKER" && (p.serviceType === "IMPORT_WORKER" || p.serviceType === "OCR_WORKER")) ||
-      (selectedType === "PYTHON" && p.serviceType === "PYTHON_OCR") ||
+      (selectedType === "VISION" && (p.serviceType === "RUST_OCR" || p.serviceType === "PYTHON_OCR")) ||
+      (selectedType === "PYTHON" && (p.serviceType === "RUST_OCR" || p.serviceType === "PYTHON_OCR")) ||
       (selectedType === "DATABASE" && (p.serviceType === "POSTGRES" || p.serviceType === "REDIS")) ||
       (selectedType === "WEB" && p.serviceType === "WEB_SERVER");
 
@@ -101,7 +104,7 @@ export function RunningProcessTable({
           >
             <option value="ALL">Semua Layanan</option>
             <option value="WORKER">Worker BullMQ</option>
-            <option value="PYTHON">Python OCR</option>
+            <option value="VISION">Rust Vision Engine</option>
             <option value="WEB">Server Web</option>
             <option value="DATABASE">Database &amp; Redis</option>
           </select>

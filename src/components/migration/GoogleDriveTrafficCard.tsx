@@ -291,7 +291,7 @@ export function GoogleDriveTrafficCard({ gdrive, className }: GoogleDriveTraffic
           <strong className="font-bold text-[#0369a1]">Arsitektur Zero-Disk Storage: </strong>
           Sistem sengaja tidak menyimpan berkas citra bukti ke hard disk fisik server untuk mencegah
           lonjakan beban penyimpanan hingga sekitar 85 GB (untuk 42.867 ulasan). Setiap citra dialirkan secara
-          langsung ke memori RAM Node.js, diproses ekstraksi OCR dan pHash anti-fraud oleh Python bridge, lalu
+          langsung ke memori RAM Node.js, diproses ekstraksi OCR dan pHash anti-fraud oleh Rust Native Vision Engine (goro-engine), lalu
           memori segera dibebaskan kembali.
         </div>
       </div>

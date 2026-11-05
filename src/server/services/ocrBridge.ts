@@ -101,22 +101,42 @@ export async function executeOcrBridge(
   // 2. Subprocess fallback execution
   // In-memory buffer streams directly via stdin (--base64 -) for true zero-disk execution
   return new Promise((resolve) => {
-    const venvPaths = [
-      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
-      path.resolve(process.cwd(), "python-services/ocr/venv/bin/python"),
-      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python.exe"),
-      path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python"),
-    ];
-    const foundVenv = venvPaths.find((p) => fs.existsSync(p));
-    const pythonExecutable = foundVenv || (process.platform === "win32" ? "python" : "python3");
-    const scriptPath = path.resolve(process.cwd(), "python-services/ocr/main.py");
+    const isWindows = process.platform === "win32";
+    const rustBin = path.resolve(
+      process.cwd(),
+      "rust-services",
+      "goro-engine",
+      "target",
+      "release",
+      isWindows ? "goro-engine.exe" : "goro-engine"
+    );
 
-    const cliArgs = isBuffer
-      ? [scriptPath, "--base64", "-", "--expected-name", targetReviewerName]
-      : [scriptPath, "--image", imageInput as string, "--expected-name", targetReviewerName];
+    let executable: string;
+    let cliArgs: string[];
+
+    if (fs.existsSync(rustBin)) {
+      executable = rustBin;
+      cliArgs = isBuffer
+        ? ["--base64", "-", "--expected-name", targetReviewerName]
+        : ["--image", imageInput as string, "--expected-name", targetReviewerName];
+    } else {
+      const venvPaths = [
+        path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
+        path.resolve(process.cwd(), "python-services/ocr/venv/bin/python"),
+        path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python.exe"),
+        path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python"),
+      ];
+      const foundVenv = venvPaths.find((p) => fs.existsSync(p));
+      executable = foundVenv || (isWindows ? "python" : "python3");
+      const scriptPath = path.resolve(process.cwd(), "python-services/ocr/main.py");
+
+      cliArgs = isBuffer
+        ? [scriptPath, "--base64", "-", "--expected-name", targetReviewerName]
+        : [scriptPath, "--image", imageInput as string, "--expected-name", targetReviewerName];
+    }
 
     const proc = spawn(
-      pythonExecutable,
+      executable,
       cliArgs,
       {
         timeout: 30000,

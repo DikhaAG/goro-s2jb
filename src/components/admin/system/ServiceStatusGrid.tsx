@@ -18,7 +18,7 @@ export interface ServiceItem {
 
 interface ServiceStatusGridProps {
   services: ServiceItem[];
-  onRestartWorker: (workerType: "import" | "ocr" | "python") => void;
+  onRestartWorker: (workerType: "import" | "ocr" | "python" | "rust") => void;
   onViewLogs: (logFileName: string) => void;
   isRestarting?: boolean;
 }
@@ -35,6 +35,7 @@ export function ServiceStatusGrid({
         return <Database className="w-5 h-5 text-indigo-600" />;
       case "REDIS":
         return <Cpu className="w-5 h-5 text-rose-500" />;
+      case "RUST_OCR":
       case "PYTHON_OCR":
         return <Eye className="w-5 h-5 text-emerald-600" />;
       case "WEB_SERVER":
@@ -73,13 +74,13 @@ export function ServiceStatusGrid({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {services.map((svc) => {
-        const canRestart = svc.serviceType === "PYTHON_OCR";
-        const associatedLog =
-          svc.serviceType === "PYTHON_OCR"
-            ? "ocr_service.log"
-            : svc.serviceType === "WEB_SERVER"
-            ? "system_runtime.log"
-            : null;
+        const isVisionEngine = svc.serviceType === "RUST_OCR" || svc.serviceType === "PYTHON_OCR";
+        const canRestart = isVisionEngine;
+        const associatedLog = isVisionEngine
+          ? "ocr_service.log"
+          : svc.serviceType === "WEB_SERVER"
+          ? "system_runtime.log"
+          : null;
 
         const recent = svc.recentLatencies && svc.recentLatencies.length > 0 ? svc.recentLatencies : [];
         const avgLatency = svc.averageLatencyMs ?? svc.latencyMs;
@@ -169,11 +170,12 @@ export function ServiceStatusGrid({
                 <button
                   type="button"
                   disabled={isRestarting}
-                  onClick={() => onRestartWorker("python")}
+                  onClick={() => onRestartWorker(svc.serviceType === "RUST_OCR" ? "rust" : "python")}
                   className="min-h-[36px] text-xs px-3 py-1.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#334155] font-bold transition-all focus-utility-ring flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Mulai ulang layanan vision engine (Rust native / fallback)"
                 >
                   <RotateCw className={`w-3.5 h-3.5 ${isRestarting ? "animate-spin text-[#006877]" : "text-[#64748b]"}`} />
-                  <span>Restart</span>
+                  <span>Restart Engine</span>
                 </button>
               )}
             </div>
