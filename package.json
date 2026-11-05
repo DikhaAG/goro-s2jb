@@ -20,7 +20,7 @@
     "rust:dev": "cargo run --manifest-path rust-services/goro-engine/Cargo.toml -- --port 8001",
     "worker:ocr": "tsx watch src/server/workers/ocrWorker.ts",
     "worker:import": "tsx watch src/server/workers/importWorker.ts",
-    "check:system": "tsx scripts/check-system.ts",
+    "check:system": "node scripts/check-system.js",
     "setup:all": "node scripts/setup-all.js",
     "start:all": "node scripts/start-all.js",
     "setup:mac": "bash scripts/setup-mac.sh",

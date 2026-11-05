@@ -1,8 +1,15 @@
-import { execSync } from "child_process";
-import net from "net";
-import fs from "fs";
-import path from "path";
-import os from "os";
+#!/usr/bin/env node
+/**
+ * GORO S2JB - Diagnostik Kesiapan Sistem Lintas Platform (Zero-Dependency)
+ * Menggunakan modul bawaan Node.js (child_process, net, fs, path, os).
+ * Dapat dijalankan langsung bahkan sebelum 'npm install' selesai.
+ */
+
+const { execSync } = require("child_process");
+const net = require("net");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 
 // ANSI Terminal Colors
 const RESET = "\x1b[0m";
@@ -14,18 +21,9 @@ const CYAN = "\x1b[36m";
 const BLUE = "\x1b[34m";
 const GRAY = "\x1b[90m";
 
-interface CheckItem {
-  name: string;
-  category: "Runtime" | "Compiler" | "Database" | "Vision" | "Environment";
-  status: "PASS" | "WARN" | "FAIL";
-  details: string;
-  recommendation?: string;
-  isMandatory: boolean;
-}
+const results = [];
 
-const results: CheckItem[] = [];
-
-function checkPort(port: number, host = "127.0.0.1", timeout = 600): Promise<boolean> {
+function checkPort(port, host = "127.0.0.1", timeout = 600) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
     socket.setTimeout(timeout);
@@ -44,7 +42,7 @@ function checkPort(port: number, host = "127.0.0.1", timeout = 600): Promise<boo
   });
 }
 
-function runCmd(cmd: string): { success: boolean; stdout: string } {
+function runCmd(cmd) {
   try {
     const stdout = execSync(cmd, { stdio: ["pipe", "pipe", "ignore"], encoding: "utf8" });
     return { success: true, stdout: stdout.trim() };
@@ -108,7 +106,28 @@ async function runSystemDiagnostics() {
     });
   }
 
-  // 3. Rust & Cargo (Primary Native Engine)
+  // 3. Node Modules Installation Check
+  const nodeModulesPath = path.resolve(projectRoot, "node_modules");
+  if (fs.existsSync(nodeModulesPath)) {
+    results.push({
+      name: "Dependensi Node.js",
+      category: "Runtime",
+      status: "PASS",
+      details: "Folder node_modules tersedia",
+      isMandatory: true,
+    });
+  } else {
+    results.push({
+      name: "Dependensi Node.js",
+      category: "Runtime",
+      status: "WARN",
+      details: "Folder node_modules belum dipasang",
+      recommendation: "Jalankan: npm run setup:all atau npm install",
+      isMandatory: false,
+    });
+  }
+
+  // 4. Rust & Cargo (Primary Native Engine)
   const cargoCheck = runCmd("cargo --version");
   const rustcCheck = runCmd("rustc --version");
   if (cargoCheck.success && rustcCheck.success) {
@@ -134,7 +153,7 @@ async function runSystemDiagnostics() {
     });
   }
 
-  // 4. Compiled Rust Engine Binary
+  // 5. Compiled Rust Engine Binary
   const isWindows = platform === "win32";
   const rustBinPath = path.resolve(
     projectRoot,
@@ -159,12 +178,12 @@ async function runSystemDiagnostics() {
       category: "Vision",
       status: "WARN",
       details: "Binary target/release/goro-engine belum dikompilasi",
-      recommendation: "Jalankan perintah: npm run rust:build",
+      recommendation: "Jalankan perintah: npm run rust:build atau npm run setup:all",
       isMandatory: false,
     });
   }
 
-  // 5. Tesseract OCR Engine
+  // 6. Tesseract OCR Engine
   const tessCheck = runCmd("tesseract --version");
   if (tessCheck.success) {
     const firstLine = tessCheck.stdout.split("\n")[0];
@@ -209,7 +228,7 @@ async function runSystemDiagnostics() {
     });
   }
 
-  // 6. Local Tessdata Assets in rust-services
+  // 7. Local Tessdata Assets in rust-services
   const localTessdata = path.resolve(projectRoot, "rust-services", "goro-engine", "tessdata");
   const hasLocalInd = fs.existsSync(path.join(localTessdata, "ind.traineddata"));
   const hasLocalEng = fs.existsSync(path.join(localTessdata, "eng.traineddata"));
@@ -232,7 +251,7 @@ async function runSystemDiagnostics() {
     });
   }
 
-  // 7. PostgreSQL Database Service
+  // 8. PostgreSQL Database Service
   const isPostgresUp = await checkPort(5432);
   if (isPostgresUp) {
     results.push({
@@ -257,7 +276,7 @@ async function runSystemDiagnostics() {
     });
   }
 
-  // 8. Redis In-Memory Service
+  // 9. Redis In-Memory Service
   const isRedisUp = await checkPort(6379);
   if (isRedisUp) {
     results.push({
@@ -282,7 +301,7 @@ async function runSystemDiagnostics() {
     });
   }
 
-  // 9. Environment Configuration (.env)
+  // 10. Environment Configuration (.env)
   const envPath = path.resolve(projectRoot, ".env");
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, "utf8");
@@ -317,7 +336,7 @@ async function runSystemDiagnostics() {
     });
   }
 
-  // 10. Docker & Docker Compose (Optional Containerization)
+  // 11. Docker & Docker Compose (Optional Containerization)
   const dockerCheck = runCmd("docker --version");
   const dockerComposeCheck = runCmd("docker compose version");
   if (dockerCheck.success && dockerComposeCheck.success) {
@@ -385,4 +404,3 @@ runSystemDiagnostics().catch((err) => {
   console.error("Kesalahan saat menjalankan diagnostik:", err);
   process.exit(1);
 });
-
