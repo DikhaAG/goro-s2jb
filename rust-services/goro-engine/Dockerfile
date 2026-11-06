@@ -4,7 +4,7 @@
 # ==============================================================================
 
 # Stage 1: Build binary with Rust & C libraries
-FROM rust:1.85-bookworm AS builder
+FROM rust:bookworm AS builder
 
 WORKDIR /usr/src/goro-engine
 
@@ -17,11 +17,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy build manifests and source code
-COPY Cargo.toml Cargo.lock* build.rs ./
+COPY Cargo.toml Cargo.lock build.rs ./
 COPY src/ ./src/
 
-# Compile release binary with full optimizations
-RUN cargo build --release
+# Compile release binary with full optimizations using locked dependency tree
+RUN cargo build --release --locked
 
 # Stage 2: Minimal runtime image
 FROM debian:bookworm-slim AS runner

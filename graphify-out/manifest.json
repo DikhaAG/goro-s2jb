@@ -5238,9 +5238,9 @@
     "semantic_hash": ""
   },
   "rust-services/goro-engine/Cargo.toml": {
-    "mtime": 1793893429.4696798,
-    "seen": 1793893574.464751,
-    "ast_hash": "65b26d659b6fdb008c9deb7e878b893e",
+    "mtime": 1793934729.6258106,
+    "seen": 1793934788.6385221,
+    "ast_hash": "5cf452404aaa7c99e9594b53a0515f80",
     "semantic_hash": ""
   },
   "rust-services/goro-engine/build.rs": {
