@@ -17,6 +17,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL="postgresql://postgres:postgres@postgres:5432/goro_s2jb?schema=public"
 RUN npx prisma generate
 RUN npm run build
 
