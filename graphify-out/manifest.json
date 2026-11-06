@@ -1122,8 +1122,8 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1793902456.2950501,
-    "seen": 1793902504.914212,
+    "mtime": 1793902686.0154045,
+    "seen": 1793929806.851806,
     "ast_hash": "ed7018a1b8d413aa4aea5853b37470d7",
     "semantic_hash": ""
   },
@@ -4890,9 +4890,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793901703.5842335,
-    "seen": 1793902136.1611168,
-    "ast_hash": "bb3d3b1ea4cbb598eb35e76ea69bc529",
+    "mtime": 1793929779.8736358,
+    "seen": 1793929806.871768,
+    "ast_hash": "49eabdc7ae596196acc68a7bc842b5eb",
     "semantic_hash": ""
   },
   "ai_context_guide.md": {
@@ -5388,9 +5388,9 @@
     "semantic_hash": ""
   },
   "scripts/check-system.js": {
-    "mtime": 1793902441.7722406,
-    "seen": 1793902504.915416,
-    "ast_hash": "1b3f8469fe229c8f3856b91f61818204",
+    "mtime": 1793902576.0221133,
+    "seen": 1793929806.85236,
+    "ast_hash": "8f67dde94a63cdb371099aa4f82434a0",
     "semantic_hash": ""
   },
   "package-lock.json": {

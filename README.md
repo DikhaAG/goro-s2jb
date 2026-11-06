@@ -268,11 +268,20 @@ Jika komputer Anda masih benar-benar bersih dan Anda **tidak ingin menginstal** 
    - **Windows**: Unduh Docker Desktop dari https://www.docker.com/products/docker-desktop atau `winget install Docker.DockerDesktop`
    - **Linux Ubuntu**: `sudo apt install -y docker.io docker-compose-v2 && sudo usermod -aG docker $USER` (lalu re-login)
 
-2. **Clone Repositori & Nyalakan Seluruh Sistem Sekaligus:**
+2. **Clone Repositori & Siapkan Berkas Konfigurasi `.env`:**
    ```bash
    git clone https://github.com/DikhaAG/goro-s2jb.git
    cd goro-s2jb
    cp .env.example .env
+   ```
+
+   > **Bagaimana Cara Konfigurasi `.env` untuk Docker?**
+   > - **Untuk Penggunaan Default / Lokal:** Anda **tidak perlu mengubah apa pun**. Cukup salin `cp .env.example .env`. Docker Compose secara otomatis mengonfigurasi jaringan internal (`@postgres:5432`, `redis:6379`, `http://ocr-engine:8001`) tanpa perlu mengubah `localhost` secara manual.
+   > - **Jika Ingin Mengubah Kredensial Database:** Anda cukup mengubah variabel `POSTGRES_USER` dan `POSTGRES_PASSWORD` di `.env`. Docker Compose akan otomatis menerapkannya ke kontainer database maupun koneksi web app.
+   > - **Jika Dideploy ke Server Publik / IP VPS:** Ganti variabel `NEXTAUTH_URL` dan `BETTER_AUTH_URL` dengan alamat IP atau domain server Anda (contoh: `http://192.168.1.100:3000` atau `https://goro.uid-s2jb.pln.co.id`).
+
+3. **Nyalakan Seluruh Sistem Sekaligus (1 Perintah):**
+   ```bash
    docker compose up -d --build
    ```
 
