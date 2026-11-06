@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 import * as crypto from 'crypto';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://a69@localhost:5432/goro_s2jb?schema=public',
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/goro_s2jb?schema=public',
 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
