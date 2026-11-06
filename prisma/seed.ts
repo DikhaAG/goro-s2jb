@@ -15,9 +15,20 @@ function hashPassword(password: string): string {
 }
 
 async function main() {
+  console.log('🌱 Memeriksa status basis data GORO S2JB...');
+
+  // Periksa apakah database sudah memiliki pengguna
+  const userCount = await prisma.user.count().catch(() => 0);
+  const forceSeed = process.env.FORCE_SEED === 'true';
+
+  if (userCount > 0 && !forceSeed) {
+    console.log(`ℹ️ Basis data sudah memiliki ${userCount} pengguna aktif. Seeding awal otomatis dilewati demi keamanan data.`);
+    return;
+  }
+
   console.log('🌱 Memulai proses seeding data master GORO S2JB...');
 
-  // 1. Bersihkan data lama jika ada (idempotent)
+  // 1. Bersihkan data lama jika fresh database atau FORCE_SEED=true
   await prisma.ratingReview.deleteMany();
   await prisma.targetMaster.deleteMany();
   await prisma.session.deleteMany();

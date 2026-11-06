@@ -1122,9 +1122,9 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1793902686.0154045,
-    "seen": 1793929806.851806,
-    "ast_hash": "ed7018a1b8d413aa4aea5853b37470d7",
+    "mtime": 1793944917.8439322,
+    "seen": 1793944958.7757251,
+    "ast_hash": "75a585d9e26946812540d96a1b7849c3",
     "semantic_hash": ""
   },
   "playwright.config.ts": {
@@ -1146,9 +1146,9 @@
     "semantic_hash": ""
   },
   "prisma/seed.ts": {
-    "mtime": 1793944359.164592,
-    "seen": 1793944419.755965,
-    "ast_hash": "3e58816cc745bbee909e9f8281ed7b84",
+    "mtime": 1793944859.2129211,
+    "seen": 1793944958.775799,
+    "ast_hash": "d3a53d54a6bf705be056f4085e6bc2f6",
     "semantic_hash": ""
   },
   "python-services/ocr/engine.py": {
@@ -5370,9 +5370,9 @@
     "semantic_hash": ""
   },
   "docker-entrypoint.sh": {
-    "mtime": 1793935946.5749123,
-    "seen": 1793936069.996518,
-    "ast_hash": "859baffc80adc2edfd30d2268a520744",
+    "mtime": 1793944868.7253778,
+    "seen": 1793944958.775697,
+    "ast_hash": "e3acc7a8715e75be583ec1cbf9fa8a34",
     "semantic_hash": ""
   },
   "scripts/setup-all.js": {

@@ -28,7 +28,10 @@
     "setup:linux": "bash scripts/setup-linux.sh",
     "start:linux": "bash scripts/start-linux.sh",
     "setup:win": "powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1",
-    "start:win": "powershell -ExecutionPolicy Bypass -File scripts/start-windows.ps1"
+    "start:win": "powershell -ExecutionPolicy Bypass -File scripts/start-windows.ps1",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.1",
