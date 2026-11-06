@@ -97,9 +97,12 @@ services:
       REDIS_URL: redis://redis:6379
       OCR_SERVICE_URL: http://ocr-engine:8001
       STORAGE_PATH: /app/uploads
+      SKIP_DB_INIT: "true"
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
+    healthcheck:
+      disable: true
     depends_on:
       postgres:
         condition: service_healthy
@@ -122,9 +125,12 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-goro_admin}:${POSTGRES_PASSWORD:-goro_secret_2026}@postgres:5432/${POSTGRES_DB:-goro_s2jb}?schema=public
       REDIS_URL: redis://redis:6379
       STORAGE_PATH: /app/uploads
+      SKIP_DB_INIT: "true"
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
+    healthcheck:
+      disable: true
     depends_on:
       postgres:
         condition: service_healthy

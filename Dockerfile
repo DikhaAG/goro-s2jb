@@ -16,6 +16,7 @@ RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p /app/public
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://postgres:postgres@postgres:5432/goro_s2jb?schema=public"
 RUN npx prisma generate
@@ -32,16 +33,21 @@ ENV HOSTNAME="0.0.0.0"
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Create required persistent storage and log directories
-RUN mkdir -p /app/uploads/evidence /app/logs && chown -R nextjs:nodejs /app/uploads /app/logs
+# Create required persistent storage, log, and static directories
+RUN mkdir -p /app/public /app/uploads/evidence /app/logs
 
-# Copy production artifacts
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src ./src
+# Copy configuration files and production artifacts with appropriate ownership
+COPY --chown=nextjs:nodejs --from=builder /app/public ./public
+COPY --chown=nextjs:nodejs --from=builder /app/.next ./.next
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/package.json ./package.json
+COPY --chown=nextjs:nodejs --from=builder /app/prisma ./prisma
+COPY --chown=nextjs:nodejs --from=builder /app/src ./src
+COPY --chown=nextjs:nodejs --from=builder /app/next.config.ts ./next.config.ts
+COPY --chown=nextjs:nodejs --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --chown=nextjs:nodejs --from=builder /app/prisma.config.ts ./prisma.config.ts
+
+RUN chown -R nextjs:nodejs /app
 
 # Copy entrypoint script for automatic database migration and seed
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
