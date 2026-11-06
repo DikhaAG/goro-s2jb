@@ -351,6 +351,83 @@ docker compose logs -f web-app
 docker compose down
 ```
 
+#### 4. Menghubungkan ke Domain Publik dengan Nginx Reverse Proxy & SSL (Let's Encrypt)
+
+Jika Anda biasanya menggunakan **PM2** di Ubuntu Server, perlu diketahui bahwa **PM2 tidak lagi dibutuhkan** saat menggunakan Docker. Docker Compose telah bertindak sebagai *process manager* otomatis yang menjaga kontainer tetap menyala di latar belakang (*daemon mode* `-d`), memulihkan proses saat *crash* (`restart: always`), dan mengisolasi memori.
+
+Namun, untuk mengarahkan domain (misal `goro.instansi-anda.com`) ke kontainer Docker di port 3000 dengan sertifikat HTTPS (SSL), Anda membutuhkan **Nginx** sebagai *Reverse Proxy* di server host Ubuntu:
+
+##### Langkah 1: Pasang Nginx & Certbot di Server Host Ubuntu
+```bash
+sudo apt update
+sudo apt install -y nginx certbot python3-certbot-nginx
+```
+
+##### Langkah 2: Buka Port Firewall (UFW)
+```bash
+sudo ufw allow 'Nginx Full'
+sudo ufw allow OpenSSH
+sudo ufw enable
+```
+
+##### Langkah 3: Buat Berkas Konfigurasi Nginx Reverse Proxy
+Buat berkas konfigurasi baru, misalnya `/etc/nginx/sites-available/goro.conf`:
+```bash
+sudo nano /etc/nginx/sites-available/goro.conf
+```
+
+Isi konfigurasi berikut (ganti `goro.instansi-anda.com` dengan nama domain server Anda):
+```nginx
+server {
+    listen 80;
+    server_name goro.instansi-anda.com;
+
+    # Batas ukuran upload file bukti ulasan (50 MB)
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+##### Langkah 4: Aktifkan Konfigurasi & Muat Ulang Nginx
+```bash
+sudo ln -s /etc/nginx/sites-available/goro.conf /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+##### Langkah 5: Pasang Sertifikat SSL Gratis (HTTPS) via Certbot
+```bash
+sudo certbot --nginx -d goro.instansi-anda.com
+```
+*Certbot akan otomatis memperbarui konfigurasi Nginx untuk mengalihkan seluruh lalu lintas HTTP (port 80) ke HTTPS (port 443).*
+
+##### Langkah 6: Sesuaikan Variabel URL di Berkas `.env`
+Buka berkas `.env` di folder project `goro-s2jb` dan sesuaikan domain HTTPS Anda:
+```dotenv
+NEXTAUTH_URL="https://goro.instansi-anda.com"
+BETTER_AUTH_URL="https://goro.instansi-anda.com"
+```
+
+Muat ulang kontainer web app agar konfigurasi URL baru aktif:
+```bash
+docker compose up -d web-app
+```
+
+Aplikasi kini dapat diakses secara publik dan aman di `https://goro.instansi-anda.com`.
+
+---
+
 ---
 
 ### Cara Manual (Langkah demi Langkah)
