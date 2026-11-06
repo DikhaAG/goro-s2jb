@@ -14,6 +14,8 @@ Sistem ini mendukung penuh lintas platform (*cross-platform*) untuk **macOS**, *
    - [2.3 Konfigurasi Berkas .env untuk Docker](#23-konfigurasi-berkas-env-untuk-docker)
    - [2.4 Manajemen Kontainer](#24-manajemen-kontainer)
    - [2.5 Menghubungkan ke Domain Publik dengan Nginx Reverse Proxy & SSL](#25-menghubungkan-ke-domain-publik-dengan-nginx-reverse-proxy--ssl)
+   - [2.6 Otomasi Deployment Produksi (Single Command Update)](#26-otomasi-deployment-produksi-single-command-update)
+   - [2.7 Pencadangan & Pemulihan Basis Data (Backup & Restore)](#27-pencadangan--pemulihan-basis-data-backup--restore)
 3. [Metode B: Instalasi Native Lokal (Bagi Pengembang)](#3-metode-b-instalasi-native-lokal-bagi-pengembang)
    - [3.1 Diagnostik Kesiapan Sistem](#31-diagnostik-kesiapan-sistem)
    - [3.2 Prasyarat Software Native](#32-prasyarat-software-native)
@@ -25,6 +27,7 @@ Sistem ini mendukung penuh lintas platform (*cross-platform*) untuk **macOS**, *
 4. [Kredensial Pengguna Awal (Default Accounts)](#4-kredensial-pengguna-awal-default-accounts)
 5. [Pemeriksaan Kesehatan & Pengujian](#5-pemeriksaan-kesehatan--pengujian)
 6. [Struktur Branch Git & Riwayat Migrasi](#6-struktur-branch-git--riwayat-migrasi)
+7. [Pipeline CI/CD (GitHub Actions)](#7-pipeline-cicd-github-actions)
 
 ---
 
@@ -65,19 +68,30 @@ Komputer host **hanya memerlukan Docker Engine & Docker Compose** (tidak perlu m
    ```
 
 Arsitektur 6 kontainer yang otomatis dibuat dan dihubungkan pada jaringan internal `goro_network`:
-- `goro-postgres`: Basis data PostgreSQL 16 Alpine (Port 5432)
-- `goro-redis`: In-memory message broker Redis 7 Alpine (Port 6379)
-- `goro-ocr-engine`: Rust Native Vision Engine dengan libtesseract & model `ind`/`eng` (Port 8001)
-- `goro-web-app`: Next.js 15 Web Server dengan auto-migration Prisma & auto-seed akun awal (Port 3000)
-- `goro-worker-ocr`: BullMQ Background Worker untuk pemrosesan OCR citra bukti & pHash
-- `goro-worker-import`: BullMQ Background Worker untuk impor massal CSV/Excel puluhan ribu baris
+- `goro-postgres`: Basis data PostgreSQL 16 Alpine (Port internal 5432, Host Port default `${POSTGRES_PORT:-5432}`, disarankan `5433` jika di server port 5432 sudah terpakai)
+- `goro-redis`: In-memory message broker Redis 7 Alpine (Port internal 6379, Host Port `${REDIS_PORT:-6379}`)
+- `goro-ocr-engine`: Rust Native Vision Engine dengan libtesseract & model `ind`/`eng` (Port internal 8001, Host Port `${OCR_PORT:-8001}`)
+- `goro-web-app`: Next.js 15 Web Server dengan inisialisasi basis data otomatis (Port internal 3000, Host Port `${PORT:-3000}`, disarankan `3020` jika di server port 3000/3010 sudah terpakai)
+- `goro-worker-ocr`: BullMQ Background Worker untuk pemrosesan OCR citra bukti & pHash (`SKIP_DB_INIT=true`)
+- `goro-worker-import`: BullMQ Background Worker untuk impor massal CSV/Excel puluhan ribu baris (`SKIP_DB_INIT=true`)
 
-Akses web langsung di: `http://localhost:3000`
+**Inisialisasi Otomatis (Zero-Touch Initialization):**
+Saat kontainer `goro-web-app` pertama kali menyala, kontainer secara otomatis:
+1. Menjalankan migrasi skema basis data (`npx prisma migrate deploy`), termasuk pembaruan skema Better Auth dan kolom `displayUsername`.
+2. Menjalankan seed data master dan akun pengguna awal (`npm run prisma:seed`), jika tabel pengguna masih kosong.
+Seluruh sistem siap digunakan tanpa memerlukan perintah CLI manual sekunder di dalam kontainer.
+
+Akses web langsung di: `http://localhost:3000` (atau sesuaikan port host di `.env`, misalnya `http://localhost:3020`).
 
 ### 2.3 Konfigurasi Berkas `.env` untuk Docker
 - **Penggunaan Lokal:** Anda **tidak perlu mengubah apa pun** di dalam `.env`. Docker Compose otomatis menghubungkan kontainer menggunakan DNS internal (`@postgres:5432`, `redis:6379`, `http://ocr-engine:8001`).
+- **Penyesuaian Port Host (Mencegah Tabrakan Port di Server):** Jika di server Ubuntu port 3000 atau 5432 sudah digunakan oleh aplikasi lain (misal port 3010 untuk aplikasi absensi dan 5432 untuk Postgres server):
+  ```dotenv
+  PORT="3020"
+  POSTGRES_PORT="5433"
+  ```
 - **Kredensial Database Kustom:** Jika ingin mengubah password PostgreSQL, ubah variabel `POSTGRES_USER` dan `POSTGRES_PASSWORD` di `.env`. Docker Compose otomatis menerapkannya ke kontainer basis data maupun koneksi web app.
-- **Akses dari IP / Domain Server:** Ganti variabel `NEXTAUTH_URL` dan `BETTER_AUTH_URL` sesuai domain atau IP server Anda:
+- **Akses dari IP / Domain Server:** Ganti variabel `NEXTAUTH_URL` dan `BETTER_AUTH_URL` sesuai domain atau subdomain server Anda:
   ```dotenv
   NEXTAUTH_URL="https://goro.domain-anda.com"
   BETTER_AUTH_URL="https://goro.domain-anda.com"
@@ -103,7 +117,7 @@ docker compose down
 
 Jika Anda mendeploy di server Ubuntu, **PM2 tidak lagi dibutuhkan** karena Docker Compose sudah bertindak sebagai supervisor proses yang tangguh (`restart: always`).
 
-Gunakan Nginx di server host untuk meneruskan traffic domain ke port Docker (3000):
+Gunakan Nginx di server host untuk meneruskan traffic domain publik (port 80/443) ke port host Docker (misalnya `3020`):
 
 #### Langkah 1: Pasang Nginx & Certbot di Host
 ```bash
@@ -115,17 +129,17 @@ sudo ufw enable
 ```
 
 #### Langkah 2: Buat Konfigurasi Nginx Reverse Proxy
-Buat berkas `/etc/nginx/sites-available/goro.conf`:
+Buat berkas konfigurasi di `/etc/nginx/sites-available/goro.conf` (sesuaikan `server_name` dan port `proxy_pass`):
 ```nginx
 server {
-    listen 80;
     server_name goro.domain-anda.com;
 
-    # Batas upload file bukti ulasan (50 MB)
+    # Batas upload file bukti ulasan dan berkas impor (50 MB)
     client_max_body_size 50M;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        # Arahkan ke port host Docker yang dikonfigurasi di .env (misalnya 3020)
+        proxy_pass http://127.0.0.1:3020;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -135,31 +149,72 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
+
+    # Konfigurasi SSL Let's Encrypt (dihasilkan otomatis oleh Certbot)
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/goro.domain-anda.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/goro.domain-anda.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+    if ($host = goro.domain-anda.com) {
+        return 301 https://$host$request_uri;
+    }
+
+    listen 80;
+    server_name goro.domain-anda.com;
+    return 404;
 }
 ```
 
 Aktifkan konfigurasi:
 ```bash
-sudo ln -s /etc/nginx/sites-available/goro.conf /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/goro.conf /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-#### Langkah 3: Pasang SSL Gratis (HTTPS)
+#### Langkah 3: Pasang Sertifikat SSL Gratis (Certbot)
 ```bash
 sudo certbot --nginx -d goro.domain-anda.com
 ```
 
-#### Langkah 4: Sesuaikan `.env` dan Muat Ulang Web App
-Di dalam file `.env` project, pastikan URL menggunakan `https`:
-```dotenv
-NEXTAUTH_URL="https://goro.domain-anda.com"
-BETTER_AUTH_URL="https://goro.domain-anda.com"
-```
-Muat ulang kontainer web app:
+#### Langkah 4: Panduan Domain & Proteksi IP Publik
+- **Menggunakan Subdomain dari Domain yang Sudah Ada:** Jika Anda belum mendaftarkan nama domain baru, Anda dapat memanfaatkan domain utama yang sudah Anda miliki (misalnya `tarunagroup.co.id`). Buat sebuah DNS Record tipe **A** dengan nama host `goro` yang diarahkan ke IP publik server Anda (`goro.tarunagroup.co.id`). Setelah propagasi DNS selesai, Certbot dapat langsung menerbitkan SSL tanpa kendala NXDOMAIN.
+- **Mencegah Akses Langsung via IP Publik:** Agar pengguna hanya dapat mengakses aplikasi melalui domain resmi dan koneksi terenkripsi HTTPS (bukan langsung via `http://IP_PUBLIK:3020`), pastikan firewall server hanya mengizinkan port `80` dan `443` ke publik. Port `3020` dan `5433` cukup dapat diakses oleh localhost (`127.0.0.1`).
+
+### 2.6 Otomasi Deployment Produksi (Single Command Update)
+
+Untuk memperbarui sistem di server produksi ke versi terbaru, repositori ini menyediakan skrip deployment terintegrasi:
+
 ```bash
-docker compose up -d web-app
+cd /var/www/goro-s2jb
+bash scripts/deploy.sh
+# atau via npm shortcut:
+npm run deploy
 ```
+
+Skrip [`scripts/deploy.sh`](scripts/deploy.sh) secara otomatis mengeksekusi 5 tahapan berurutan:
+1. **Pre-Deploy Database Backup:** Menjalankan [`scripts/backup-db.sh`](scripts/backup-db.sh) untuk mengamankan data PostgreSQL sebelum kode diperbarui.
+2. **Git Pull:** Menarik kode sumber terbaru dari cabang `main`.
+3. **Zero-Downtime Rebuild:** Menjalankan `docker compose up -d --build` untuk memperbarui image dan menerapkan migrasi basis data.
+4. **Automated Healthcheck Polling:** Menguji endpoint `http://127.0.0.1:${PORT}/api/health` secara berulang hingga aplikasi terverifikasi siap melayani trafik.
+5. **Dangling Image Cleanup:** Membersihkan sisa-sisa image Docker lama yang tidak lagi digunakan (`docker image prune -f`).
+
+### 2.7 Pencadangan & Pemulihan Basis Data (Backup & Restore)
+
+- **Mencadangkan Basis Data (Backup):**
+  ```bash
+  bash scripts/backup-db.sh
+  ```
+  Salinan basis data akan disimpan dalam format terkompresi di folder `backups/` dengan penamaan timestamp (contoh: `backups/backup_goro_s2jb_20261106_120000.sql.gz`).
+
+- **Memulihkan Basis Data (Restore):**
+  ```bash
+  bash scripts/restore-db.sh backups/backup_goro_s2jb_20261106_120000.sql.gz
+  ```
 
 ---
 
@@ -334,3 +389,38 @@ Repositori ini mengelola dua cabang utama:
 2. **`legacy-python-services` (Cabang Arsip)**
    - Mengarsipkan kondisi commit terakhir sebelum migrasi (`dc5010c`).
    - Menyimpan implementasi microservice Python (FastAPI, Uvicorn, Pillow, RapidFuzz, Pytesseract) untuk keperluan audit, perbandingan benchmark historis, atau verifikasi backward-compatibility.
+
+---
+
+## 7. Pipeline CI/CD (GitHub Actions)
+
+Repositori ini telah dikonfigurasi dengan pipeline CI/CD otomatis untuk menjamin integritas kode sebelum rilis dan memfasilitasi deployment otomatis:
+
+### 7.1 Continuous Integration (`.github/workflows/ci.yml`)
+Workflow CI berjalan otomatis pada setiap `push` dan `pull request` ke cabang `main`, mencakup 3 pengujian paralel:
+1. **Next.js Quality Gate:**
+   - Instalasi dependensi dengan `npm ci --legacy-peer-deps`.
+   - Diagnostik sistem *zero-dependency* (`scripts/check-system.js`).
+   - Validasi skema Prisma (`npx prisma validate`) & `npx prisma generate`.
+   - Typechecking TypeScript (`npm run typecheck`).
+   - Linting ESLint (`npm run lint`).
+   - Pengujian unit Vitest (`npm test`).
+   - Verifikasi RBAC Access Matrix (`scripts/verify-rbac-matrix.sh`).
+   - Verifikasi kompilasi produksi Next.js (`npm run build`).
+2. **Rust Native Engine Verification:**
+   - Instalasi C-FFI Leptonica dan Tesseract OCR di runner Linux.
+   - Pengecekan formatting (`cargo fmt --check`).
+   - Kompilasi dengan dependency lock (`cargo check --locked`).
+   - Pengujian unit & integrasi native engine (22/22 unit tests) via `cargo test --locked`.
+   - Analisis statis linter `cargo clippy --locked`.
+3. **Docker Multi-Stage Buildx:**
+   - Verifikasi kompilasi Dockerfile `goro-ocr-engine` (Rust native).
+   - Verifikasi kompilasi Dockerfile `goro-web-app` (Next.js multi-stage).
+
+### 7.2 Continuous Deployment (`.github/workflows/cd.yml`)
+Workflow CD otomatis melakukan deployment via SSH ke server Ubuntu produksi ketika terjadi `push` ke cabang `main`.
+- **GitHub Secrets yang Diperlukan:**
+  - `SERVER_HOST`: Alamat IP atau hostname server produksi.
+  - `SERVER_USER`: Pengguna SSH server (contoh: `tam`).
+  - `SSH_PRIVATE_KEY`: Kunci privat SSH untuk autentikasi tanpa kata sandi.
+  - `SERVER_SSH_PORT`: Port SSH server (default: `22`).
