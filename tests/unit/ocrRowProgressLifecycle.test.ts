@@ -43,6 +43,15 @@ describe("Row-Level Background OCR Worker & Image Proxy Progress Tracking", () =
         where: { id: { in: createdReviewIds } },
       });
     }
+    await prisma.uLP.deleteMany({
+      where: { code: "ULP_TEST_OCR_PROGRESS" },
+    });
+    await prisma.uP3.deleteMany({
+      where: { code: "UP3_TEST_OCR_PROGRESS" },
+    });
+    await prisma.appVersion.deleteMany({
+      where: { version: "v5.1.0-test" },
+    });
   });
 
   it("should initialize newly inserted review row with QUEUED ocrStatus", async () => {
