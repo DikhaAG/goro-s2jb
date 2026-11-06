@@ -1,0 +1,138 @@
+name: CI - Test, Lint & Build Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nextjs-lint-test-build:
+    name: Next.js (Lint, Typecheck, Test, Build)
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/goro_s2jb?schema=public"
+      REDIS_URL: "redis://localhost:6379"
+      NEXTAUTH_SECRET: "ci-testing-secret-key-at-least-32-chars-long"
+      BETTER_AUTH_SECRET: "ci-testing-secret-key-at-least-32-chars-long"
+      JWT_SECRET: "ci-testing-secret-key-at-least-32-chars-long"
+      NODE_ENV: "test"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Node.js Dependencies (Legacy Peer Deps)
+        run: npm ci --legacy-peer-deps
+
+      - name: Verify Zero-Dependency System Diagnostics Script
+        run: node scripts/check-system.js || true
+
+      - name: Validate Prisma Schema
+        run: npx prisma validate
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Check TypeScript Types
+        run: npm run typecheck
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Vitest Unit Tests
+        run: npm run test
+
+      - name: Run RBAC Access Matrix Verification
+        run: bash scripts/verify-rbac-matrix.sh
+
+      - name: Verify Next.js Production Build
+        run: npm run build
+
+  rust-engine-verification:
+    name: Rust Native OCR Engine (Check, Test, Clippy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System C-FFI Dependencies (Leptonica & Tesseract)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libtesseract-dev \
+            libleptonica-dev \
+            tesseract-ocr \
+            tesseract-ocr-ind \
+            tesseract-ocr-eng \
+            clang
+
+      - name: Setup Stable Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cargo Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            rust-services/goro-engine/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust-services/goro-engine/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Verify Rust Formatting
+        run: cargo fmt --manifest-path rust-services/goro-engine/Cargo.toml -- --check
+
+      - name: Compile and Check with Locked Dependencies
+        run: cargo check --locked --manifest-path rust-services/goro-engine/Cargo.toml
+
+      - name: Run Rust Unit and Integration Tests (22 Tests)
+        run: cargo test --locked --manifest-path rust-services/goro-engine/Cargo.toml
+
+      - name: Run Cargo Clippy Linter
+        run: cargo clippy --locked --manifest-path rust-services/goro-engine/Cargo.toml -- -D warnings
+
+  docker-build-verification:
+    name: Docker Multi-Stage Build Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify OCR Engine Dockerfile Build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./rust-services/goro-engine
+          file: ./rust-services/goro-engine/Dockerfile
+          push: false
+          tags: goro-ocr-engine:ci-test
+
+      - name: Verify Web App & Worker Dockerfile Build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: goro-web-app:ci-test

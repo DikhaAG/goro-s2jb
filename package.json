@@ -31,7 +31,8 @@
     "start:win": "powershell -ExecutionPolicy Bypass -File scripts/start-windows.ps1",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.1",
