@@ -1140,8 +1140,8 @@
     "semantic_hash": ""
   },
   "prisma.config.ts": {
-    "mtime": 1793930993.9629095,
-    "seen": 1793931115.49898,
+    "mtime": 1793931411.4487562,
+    "seen": 1793933047.335339,
     "ast_hash": "26d5d6bafa274798f80ec5a51ed4c8ca",
     "semantic_hash": ""
   },
@@ -4890,9 +4890,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793930218.3820016,
-    "seen": 1793930258.850515,
-    "ast_hash": "3ff999b63dd3611c464d99c09cd0933b",
+    "mtime": 1793933020.8060818,
+    "seen": 1793933047.355446,
+    "ast_hash": "c623ff48228d2081e413f736391d11fb",
     "semantic_hash": ""
   },
   "ai_context_guide.md": {
