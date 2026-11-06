@@ -64,6 +64,7 @@ services:
       REDIS_URL: redis://redis:6379
       OCR_SERVICE_URL: http://ocr-engine:8001
       STORAGE_PATH: /app/uploads
+      JWT_SECRET: ${JWT_SECRET:-goro-s2jb-command-center-secret-key-pln-2026-production-secured}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-goro-s2jb-secret-key-2026-production-ready}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-goro-s2jb-command-center-secret-key-pln-2026-production-secured-32chars}
@@ -73,7 +74,7 @@ services:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,6 +98,7 @@ services:
       REDIS_URL: redis://redis:6379
       OCR_SERVICE_URL: http://ocr-engine:8001
       STORAGE_PATH: /app/uploads
+      JWT_SECRET: ${JWT_SECRET:-goro-s2jb-command-center-secret-key-pln-2026-production-secured}
       SKIP_DB_INIT: "true"
     volumes:
       - uploads_data:/app/uploads
@@ -125,6 +127,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-goro_admin}:${POSTGRES_PASSWORD:-goro_secret_2026}@postgres:5432/${POSTGRES_DB:-goro_s2jb}?schema=public
       REDIS_URL: redis://redis:6379
       STORAGE_PATH: /app/uploads
+      JWT_SECRET: ${JWT_SECRET:-goro-s2jb-command-center-secret-key-pln-2026-production-secured}
       SKIP_DB_INIT: "true"
     volumes:
       - uploads_data:/app/uploads
