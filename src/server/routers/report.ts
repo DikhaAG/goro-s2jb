@@ -2,13 +2,43 @@ import { router, executiveProcedure } from "../trpc";
 import { z } from "zod";
 import {
   getDailyReport,
-  getH1Report,
   getMonthlyReport,
   getExecutiveKpis,
   getPacingData,
+  getTargetConfig,
+  saveTargetConfig,
 } from "../services/reportService";
 
 export const reportRouter = router({
+  getTargetSettings: executiveProcedure.query(async () => {
+    return getTargetConfig();
+  }),
+
+  updateTargetSettings: executiveProcedure
+    .input(
+      z.object({
+        weekdayTarget: z.number().min(0).max(10000),
+        weekendTarget: z.number().min(0).max(10000),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const updated = await saveTargetConfig(input);
+      if (ctx.user?.id) {
+        await ctx.prisma.auditLog.create({
+          data: {
+            userId: ctx.user.id,
+            action: "UPDATE_REPORT_TARGET_SETTINGS",
+            entityType: "REPORT_TARGET",
+            metadata: {
+              weekdayTarget: updated.weekdayTarget,
+              weekendTarget: updated.weekendTarget,
+            },
+          },
+        });
+      }
+      return updated;
+    }),
+
   getDaily: executiveProcedure
     .input(
       z
@@ -21,20 +51,6 @@ export const reportRouter = router({
     .query(async ({ input }) => {
       const targetDate = input?.date ? new Date(input.date) : new Date();
       return getDailyReport(targetDate, input?.up3Id);
-    }),
-
-  getH1: executiveProcedure
-    .input(
-      z
-        .object({
-          date: z.string().optional(),
-          up3Id: z.string().optional(),
-        })
-        .optional()
-    )
-    .query(async ({ input }) => {
-      const targetDate = input?.date ? new Date(input.date) : new Date();
-      return getH1Report(targetDate, input?.up3Id);
     }),
 
   getMonthly: executiveProcedure

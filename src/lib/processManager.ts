@@ -217,8 +217,17 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
 
       if (pid) {
         try {
-          const { stdout } = await execAsync(`ps -p ${pid} -o command= 2>/dev/null`);
-          processCommand = stdout.trim() || undefined;
+          let processCommandText = "";
+          if (process.platform === "win32") {
+            const { stdout } = await execAsync(
+              `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"ProcessId = ${pid}\\").CommandLine"`
+            );
+            processCommandText = stdout.trim();
+          } else {
+            const { stdout } = await execAsync(`ps -p ${pid} -o command= 2>/dev/null`);
+            processCommandText = stdout.trim();
+          }
+          processCommand = processCommandText || undefined;
           if (svc.port === 8001) {
             if (processCommand?.toLowerCase().includes("goro-engine")) {
               finalName = "Rust Native Vision Engine (goro-engine)";
@@ -293,6 +302,60 @@ export function classifyServiceType(command: string): { serviceType: ServiceType
  */
 export async function listAppProcesses(): Promise<ManagedProcess[]> {
   try {
+    if (process.platform === "win32") {
+      try {
+        const psCmd = `powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and ($_.CommandLine -like '*goro*' -or $_.CommandLine -like '*node*' -or $_.CommandLine -like '*python*' -or $_.CommandLine -like '*redis*' -or $_.CommandLine -like '*postgres*') } | Select-Object ProcessId, ParentProcessId, CommandLine | ConvertTo-Json -Compress"`;
+        const { stdout } = await execAsync(psCmd);
+        if (!stdout.trim()) return [];
+
+        const parsed = JSON.parse(stdout.trim());
+        const rawList = Array.isArray(parsed) ? parsed : [parsed];
+        const processes: ManagedProcess[] = [];
+        const currentPid = process.pid;
+
+        for (const item of rawList) {
+          const pid = Number(item.ProcessId);
+          const ppid = Number(item.ParentProcessId) || 0;
+          const command = String(item.CommandLine || "");
+          if (!command || isNaN(pid) || pid <= 0) continue;
+
+          const isRelated =
+            command.includes("goro-s2jb") ||
+            command.includes("goro-engine") ||
+            command.includes("importWorker.ts") ||
+            command.includes("ocrWorker.ts") ||
+            command.includes("worker:import") ||
+            command.includes("worker:ocr") ||
+            (command.includes("uvicorn") && command.includes("main:app")) ||
+            command.includes("redis-server") ||
+            command.includes("postgres");
+
+          if (!isRelated) continue;
+
+          const { serviceType, isSafeToKill } = classifyServiceType(command);
+          const safe = isSafeToKill && pid !== currentPid && pid > 100;
+
+          processes.push({
+            pid,
+            ppid,
+            cpuPercent: 0,
+            memPercent: 0,
+            rssKb: 0,
+            status: "RUNNING",
+            elapsedTime: "N/A",
+            command,
+            serviceType,
+            isSafeToKill: safe,
+          });
+        }
+
+        return processes;
+      } catch (winErr) {
+        console.error("Error querying Windows processes:", winErr);
+        return [];
+      }
+    }
+
     // Format: PID, PPID, %CPU, %MEM, RSS (KB), STAT, ETIME, COMMAND
     const { stdout } = await execAsync("ps -axo pid,ppid,pcpu,pmem,rss,stat,etime,command 2>/dev/null");
     const lines = stdout.trim().split("\n");
@@ -468,6 +531,15 @@ export async function terminateProcess(
     throw new Error(`Proses ${target.serviceType} (PID ${pid}) dilindungi dan tidak diizinkan untuk dihentikan.`);
   }
 
+  if (process.platform === "win32") {
+    try {
+      await execAsync(`taskkill /PID ${pid} /T /F`);
+      return { success: true, pid, signal: "TASKKILL_F" };
+    } catch (err: any) {
+      return { success: true, pid, signal: "ALREADY_EXITED" };
+    }
+  }
+
   const signal = force ? "SIGKILL" : "SIGTERM";
 
   try {
@@ -637,7 +709,11 @@ export async function cleanOrphanProcesses(
 
     if (isDetachedCli || isDefunct || isOrphanWorker) {
       try {
-        process.kill(proc.pid, "SIGTERM");
+        if (process.platform === "win32") {
+          await execAsync(`taskkill /PID ${proc.pid} /T /F`);
+        } else {
+          process.kill(proc.pid, "SIGTERM");
+        }
         killedPids.push(proc.pid);
       } catch (err: any) {
         if (err.code !== "ESRCH") {

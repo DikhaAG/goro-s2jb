@@ -3,6 +3,9 @@ import {
   calculateDailyMetrics,
   calculateCumulativeMetrics,
   determineStatus,
+  calculateDailyTargetForDate,
+  calculateCumulativeTargetForMonth,
+  DEFAULT_TARGET_CONFIG,
 } from "@/server/services/reportService";
 
 describe("Task 5: Report Service Metrics & Aggregation Calculation", () => {
@@ -60,5 +63,52 @@ describe("Task 5: Report Service Metrics & Aggregation Calculation", () => {
     expect(determineStatus(99.99)).toBe("TIDAK TERCAPAI");
     expect(determineStatus(150.0)).toBe("TERCAPAI");
     expect(determineStatus(0.0)).toBe("TIDAK TERCAPAI");
+  });
+
+  it("should determine daily target by day of week: 50 on weekdays and 20 on weekends", () => {
+    // 2026-08-03 is Monday (weekday)
+    const monday = new Date("2026-08-03T00:00:00Z");
+    expect(monday.getDay()).toBe(1);
+    expect(calculateDailyTargetForDate(monday)).toBe(50);
+
+    // 2026-08-07 is Friday (weekday)
+    const friday = new Date("2026-08-07T00:00:00Z");
+    expect(friday.getDay()).toBe(5);
+    expect(calculateDailyTargetForDate(friday)).toBe(50);
+
+    // 2026-08-08 is Saturday (weekend)
+    const saturday = new Date("2026-08-08T00:00:00Z");
+    expect(saturday.getDay()).toBe(6);
+    expect(calculateDailyTargetForDate(saturday)).toBe(20);
+
+    // 2026-08-09 is Sunday (weekend)
+    const sunday = new Date("2026-08-09T00:00:00Z");
+    expect(sunday.getDay()).toBe(0);
+    expect(calculateDailyTargetForDate(sunday)).toBe(20);
+  });
+
+  it("should support custom target configuration", () => {
+    const customConfig = { weekdayTarget: 75, weekendTarget: 30 };
+    const monday = new Date("2026-08-03T00:00:00Z");
+    const sunday = new Date("2026-08-09T00:00:00Z");
+
+    expect(calculateDailyTargetForDate(monday, customConfig)).toBe(75);
+    expect(calculateDailyTargetForDate(sunday, customConfig)).toBe(30);
+  });
+
+  it("should calculate cumulative monthly targets accurately with dynamic weekday/weekend steps", () => {
+    // In August 2026:
+    // Aug 1 is Saturday (20), Aug 2 is Sunday (20), Aug 3 is Monday (50)
+    // Day 1: 20
+    const day1Cum = calculateCumulativeTargetForMonth(2026, 8, 1);
+    expect(day1Cum).toBe(20);
+
+    // Day 2: 20 + 20 = 40
+    const day2Cum = calculateCumulativeTargetForMonth(2026, 8, 2);
+    expect(day2Cum).toBe(40);
+
+    // Day 3: 40 + 50 = 90
+    const day3Cum = calculateCumulativeTargetForMonth(2026, 8, 3);
+    expect(day3Cum).toBe(90);
   });
 });

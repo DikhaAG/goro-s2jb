@@ -1,6 +1,101 @@
 import prisma from "@/lib/prisma";
 import { ValidationStatus } from "@prisma/client";
 
+export interface TargetConfig {
+  weekdayTarget: number;
+  weekendTarget: number;
+}
+
+export const DEFAULT_TARGET_CONFIG: TargetConfig = {
+  weekdayTarget: 50,
+  weekendTarget: 20,
+};
+
+/**
+ * Retrieves the current target settings (weekday: Mon-Fri, weekend: Sat-Sun)
+ * Stored in Redis with resilient in-memory fallback.
+ */
+export async function getTargetConfig(): Promise<TargetConfig> {
+  try {
+    const redis = (await import("@/lib/redis")).default;
+    const raw = await redis.get("config:report:targets");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        weekdayTarget:
+          typeof parsed.weekdayTarget === "number" && parsed.weekdayTarget >= 0
+            ? parsed.weekdayTarget
+            : DEFAULT_TARGET_CONFIG.weekdayTarget,
+        weekendTarget:
+          typeof parsed.weekendTarget === "number" && parsed.weekendTarget >= 0
+            ? parsed.weekendTarget
+            : DEFAULT_TARGET_CONFIG.weekendTarget,
+      };
+    }
+  } catch {
+    // Non-critical fallback
+  }
+  return DEFAULT_TARGET_CONFIG;
+}
+
+/**
+ * Updates target settings and triggers dashboard real-time invalidation.
+ */
+export async function saveTargetConfig(
+  config: Partial<TargetConfig>
+): Promise<TargetConfig> {
+  const current = await getTargetConfig();
+  const updated: TargetConfig = {
+    weekdayTarget:
+      typeof config.weekdayTarget === "number" && config.weekdayTarget >= 0
+        ? config.weekdayTarget
+        : current.weekdayTarget,
+    weekendTarget:
+      typeof config.weekendTarget === "number" && config.weekendTarget >= 0
+        ? config.weekendTarget
+        : current.weekendTarget,
+  };
+  try {
+    const redis = (await import("@/lib/redis")).default;
+    await redis.set("config:report:targets", JSON.stringify(updated));
+    await redis.set("reports:last_update_timestamp", Date.now().toString());
+  } catch {
+    // Non-critical fallback
+  }
+  return updated;
+}
+
+/**
+ * Computes daily target for a given date based on weekday (1..5) or weekend (0, 6).
+ */
+export function calculateDailyTargetForDate(
+  date: Date,
+  config: TargetConfig = DEFAULT_TARGET_CONFIG
+): number {
+  const day = date.getDay(); // 0 is Sunday, 6 is Saturday
+  if (day === 0 || day === 6) {
+    return config.weekendTarget;
+  }
+  return config.weekdayTarget;
+}
+
+/**
+ * Computes cumulative target from day 1 of the month up to upToDay.
+ */
+export function calculateCumulativeTargetForMonth(
+  year: number,
+  month: number, // 1 - 12
+  upToDay: number,
+  config: TargetConfig = DEFAULT_TARGET_CONFIG
+): number {
+  let sum = 0;
+  for (let d = 1; d <= upToDay; d++) {
+    const dt = new Date(year, month - 1, d);
+    sum += calculateDailyTargetForDate(dt, config);
+  }
+  return sum;
+}
+
 export function determineStatus(percentage: number): "TERCAPAI" | "TIDAK TERCAPAI" {
   return percentage >= 100.0 ? "TERCAPAI" : "TIDAK TERCAPAI";
 }
@@ -95,6 +190,9 @@ export async function getDailyReport(targetDate: Date, up3IdFilter?: string) {
   const endOfDay = new Date(targetDate);
   endOfDay.setHours(23, 59, 59, 999);
 
+  const targetConfig = await getTargetConfig();
+  const defaultDailyTarget = calculateDailyTargetForDate(targetDate, targetConfig);
+
   // 1. Fetch UP3s and ULPs
   const up3s = await prisma.uP3.findMany({
     where: up3IdFilter ? { id: up3IdFilter } : undefined,
@@ -157,9 +255,13 @@ export async function getDailyReport(targetDate: Date, up3IdFilter?: string) {
     let subtotalRealization = 0;
 
     for (const ulp of up3.ulps) {
-      const targetObj = targetMap.get(ulp.id) || { dailyTarget: 50.0, cumulativeTarget: 1100.0 };
+      const explicitTarget = targetMap.get(ulp.id)?.dailyTarget;
+      const dailyTargetVal =
+        typeof explicitTarget === "number" && explicitTarget > 0
+          ? explicitTarget
+          : defaultDailyTarget;
       const realization = realizationMap.get(ulp.id) || 0;
-      const metrics = calculateDailyMetrics(realization, targetObj.dailyTarget);
+      const metrics = calculateDailyMetrics(realization, dailyTargetVal);
 
       ulpRows.push({
         ulpId: ulp.id,
@@ -167,13 +269,13 @@ export async function getDailyReport(targetDate: Date, up3IdFilter?: string) {
         ulpName: ulp.name,
         up3Id: up3.id,
         up3Name: up3.name,
-        dailyTarget: targetObj.dailyTarget,
+        dailyTarget: dailyTargetVal,
         dailyRealization: realization,
         dailyPercentage: metrics.dailyPercentage,
         status: metrics.status,
       });
 
-      subtotalTarget += targetObj.dailyTarget;
+      subtotalTarget += dailyTargetVal;
       subtotalRealization += realization;
     }
 
@@ -211,15 +313,6 @@ export async function getDailyReport(targetDate: Date, up3IdFilter?: string) {
 }
 
 /**
- * Generates H-1 Report (replicates LAPORAN HARIAN H-1)
- */
-export async function getH1Report(currentDate: Date, up3IdFilter?: string) {
-  const h1Date = new Date(currentDate);
-  h1Date.setDate(h1Date.getDate() - 1);
-  return getDailyReport(h1Date, up3IdFilter);
-}
-
-/**
  * Generates Monthly Report (replicates LAPORAN BULANAN)
  */
 export async function getMonthlyReport(
@@ -230,6 +323,16 @@ export async function getMonthlyReport(
 ) {
   const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
   const endOfMonth = asOfDate || new Date(year, month, 0, 23, 59, 59, 999);
+  const targetDay = endOfMonth.getDate();
+
+  const targetConfig = await getTargetConfig();
+  const defaultDailyTarget = calculateDailyTargetForDate(endOfMonth, targetConfig);
+  const defaultCumulativeTarget = calculateCumulativeTargetForMonth(
+    year,
+    month,
+    targetDay,
+    targetConfig
+  );
 
   // Single day bounds for daily realization on asOfDate
   const dayStart = new Date(endOfMonth);
@@ -323,10 +426,19 @@ export async function getMonthlyReport(
     let subCumulativeRealization = 0;
 
     for (const ulp of up3.ulps) {
-      const targetObj = targetMap.get(ulp.id) || { dailyTarget: 50.0, cumulativeTarget: 1100.0 };
+      const explicitTarget = targetMap.get(ulp.id);
+      const dTarget =
+        explicitTarget && explicitTarget.dailyTarget > 0
+          ? explicitTarget.dailyTarget
+          : defaultDailyTarget;
+      const cTarget =
+        explicitTarget && explicitTarget.cumulativeTarget > 0
+          ? explicitTarget.cumulativeTarget
+          : defaultCumulativeTarget;
+
       const dRealization = dailyMap.get(ulp.id) || 0;
       const cRealization = cumulativeMap.get(ulp.id) || 0;
-      const metrics = calculateCumulativeMetrics(cRealization, targetObj.cumulativeTarget);
+      const metrics = calculateCumulativeMetrics(cRealization, cTarget);
 
       ulpRows.push({
         ulpId: ulp.id,
@@ -334,16 +446,16 @@ export async function getMonthlyReport(
         ulpName: ulp.name,
         up3Id: up3.id,
         up3Name: up3.name,
-        dailyTarget: targetObj.dailyTarget,
-        cumulativeTarget: targetObj.cumulativeTarget,
+        dailyTarget: dTarget,
+        cumulativeTarget: cTarget,
         dailyRealization: dRealization,
         cumulativeRealization: cRealization,
         cumulativePercentage: metrics.cumulativePercentage,
         status: metrics.status,
       });
 
-      subDailyTarget += targetObj.dailyTarget;
-      subCumulativeTarget += targetObj.cumulativeTarget;
+      subDailyTarget += dTarget;
+      subCumulativeTarget += cTarget;
       subDailyRealization += dRealization;
       subCumulativeRealization += cRealization;
     }
@@ -431,7 +543,7 @@ export async function getExecutiveKpis(asOfDate: Date = new Date()) {
 }
 
 /**
- * Returns Pacing Curve Data (Actual Cumulative vs Linear Target Cumulative across days)
+ * Returns Pacing Curve Data (Actual Cumulative vs Configurable Step Target Cumulative across days)
  */
 export async function getPacingData(
   year: number,
@@ -447,31 +559,21 @@ export async function getPacingData(
   const isCurrentMonth = now.getFullYear() === year && now.getMonth() + 1 === month;
   const currentDayLimit = isCurrentMonth ? now.getDate() : totalDaysInMonth;
 
-  // Fetch cumulative target for the unit(s)
-  const targetRecords = await prisma.targetMaster.findMany({
+  const targetConfig = await getTargetConfig();
+
+  // Count relevant ULPs
+  const ulpCount = await prisma.uLP.count({
     where: {
-      ulpId: ulpIdFilter ? ulpIdFilter : undefined,
-    },
-    orderBy: { targetDate: "desc" },
-    include: {
-      ulp: true,
+      id: ulpIdFilter ? ulpIdFilter : undefined,
+      up3Id: up3IdFilter ? up3IdFilter : undefined,
     },
   });
+  const effectiveUlpCount = Math.max(ulpCount, 1);
 
-  let totalCumulativeTarget = 0;
-  const countedUlps = new Set<string>();
-
-  for (const t of targetRecords) {
-    if (up3IdFilter && t.ulp.up3Id !== up3IdFilter) continue;
-    if (!countedUlps.has(t.ulpId)) {
-      totalCumulativeTarget += t.cumulativeTarget;
-      countedUlps.add(t.ulpId);
-    }
-  }
-
-  if (totalCumulativeTarget === 0) {
-    totalCumulativeTarget = 24 * 1100; // Default fallback for 24 ULPs
-  }
+  // Total cumulative target for the entire month
+  const totalCumulativeTarget =
+    calculateCumulativeTargetForMonth(year, month, totalDaysInMonth, targetConfig) *
+    effectiveUlpCount;
 
   // Fetch all approved reviews in this month for selected filter
   const reviews = await prisma.ratingReview.findMany({
@@ -505,16 +607,21 @@ export async function getPacingData(
   }> = [];
 
   let runningActual = 0;
+  let runningTargetCumulative = 0;
 
   for (let day = 1; day <= totalDaysInMonth; day++) {
-    const targetLinear = Math.round((totalCumulativeTarget / totalDaysInMonth) * day);
+    const dayDate = new Date(year, month - 1, day);
+    const dayTarget =
+      calculateDailyTargetForDate(dayDate, targetConfig) * effectiveUlpCount;
+    runningTargetCumulative += dayTarget;
+
     const dayRealization = dayRealizationMap.get(day) || 0;
     runningActual += dayRealization;
 
     points.push({
       day,
-      dateLabel: `${day} ${new Date(year, month - 1, day).toLocaleString("id-ID", { month: "short" })}`,
-      targetCumulative: targetLinear,
+      dateLabel: `${day} ${dayDate.toLocaleString("id-ID", { month: "short" })}`,
+      targetCumulative: runningTargetCumulative,
       actualCumulative: day <= currentDayLimit ? runningActual : null,
     });
   }

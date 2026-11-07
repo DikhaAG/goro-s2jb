@@ -5,10 +5,10 @@ import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { ExecutiveKpiCards } from "./ExecutiveKpiCards";
 import { ReportTableDaily } from "./ReportTableDaily";
-import { ReportTableH1 } from "./ReportTableH1";
 import { ReportTableMonthly } from "./ReportTableMonthly";
 import { PerformanceChart } from "./PerformanceChart";
 import { CumulativePacingChart } from "./CumulativePacingChart";
+import { TargetSettingsModal } from "./TargetSettingsModal";
 import { Button } from "@/components/ui/button";
 import {
   FileSpreadsheet,
@@ -28,10 +28,11 @@ import {
   Database,
   Clock,
   ArrowRight,
+  Sliders,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ReportTab = "DAILY" | "H1" | "MONTHLY" | "CHARTS";
+type ReportTab = "MONTHLY" | "DAILY" | "CHARTS";
 
 export function ReportsDashboard() {
   const utils = trpc.useUtils();
@@ -46,6 +47,7 @@ export function ReportsDashboard() {
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [selectedUp3Id, setSelectedUp3Id] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ReportTab>("MONTHLY");
+  const [isTargetSettingsOpen, setIsTargetSettingsOpen] = useState<boolean>(false);
 
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(now);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -68,7 +70,6 @@ export function ReportsDashboard() {
     if (prevSyncTimestampRef.current && prevSyncTimestampRef.current !== currentSync) {
       utils.report.getKpis.invalidate();
       utils.report.getDaily.invalidate();
-      utils.report.getH1.invalidate();
       utils.report.getMonthly.invalidate();
       utils.report.getPacing.invalidate();
       setLastRefreshedAt(new Date());
@@ -85,11 +86,6 @@ export function ReportsDashboard() {
   const dailyQuery = trpc.report.getDaily.useQuery(
     { date: selectedDate, up3Id: selectedUp3Id || undefined },
     { enabled: isAuthorized && (activeTab === "DAILY" || activeTab === "CHARTS"), refetchInterval: 10000 }
-  );
-
-  const h1Query = trpc.report.getH1.useQuery(
-    { date: selectedDate, up3Id: selectedUp3Id || undefined },
-    { enabled: isAuthorized && activeTab === "H1", refetchInterval: 10000 }
   );
 
   const monthlyQuery = trpc.report.getMonthly.useQuery(
@@ -116,7 +112,6 @@ export function ReportsDashboard() {
     await Promise.all([
       kpiQuery.refetch(),
       dailyQuery.refetch(),
-      h1Query.refetch(),
       monthlyQuery.refetch(),
       pacingQuery.refetch(),
       syncStatusQuery.refetch(),
@@ -266,6 +261,17 @@ export function ReportsDashboard() {
           <Button
             size="sm"
             variant="outline"
+            onClick={() => setIsTargetSettingsOpen(true)}
+            className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-teal-600 text-slate-700 hover:text-teal-700 font-medium rounded-xl shadow-2xs transition-all cursor-pointer active:scale-[0.98]"
+            title="Atur target kuota harian kerja dan akhir pekan"
+          >
+            <Sliders className="w-4 h-4 text-teal-600" />
+            <span>Atur Target</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
             onClick={handleManualRefresh}
             disabled={isRefreshing}
             className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-[#006877] text-slate-700 hover:text-[#006877] font-medium rounded-xl shadow-2xs transition-all cursor-pointer active:scale-[0.98]"
@@ -385,17 +391,6 @@ export function ReportsDashboard() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("H1")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "H1"
-                ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
-                : "text-[#64748b] hover:text-[#0f172a]"
-              }`}
-          >
-            <span>Laporan H-1</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab("CHARTS")}
             className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "CHARTS"
                 ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
@@ -479,23 +474,6 @@ export function ReportsDashboard() {
         </div>
       )}
 
-      {activeTab === "H1" && (
-        <div>
-          {h1Query.isLoading ? (
-            <div className="h-64 flex flex-col items-center justify-center space-y-2 bg-white border border-[#e2e8f0] rounded-2xl shadow-xs">
-              <Loader2 className="w-6 h-6 animate-spin text-[#00a2b9]" />
-              <span className="text-xs text-[#64748b]">Memuat laporan H-1...</span>
-            </div>
-          ) : h1Query.data ? (
-            <ReportTableH1
-              groups={h1Query.data.groups}
-              grandTotal={h1Query.data.grandTotal}
-              h1Date={h1Query.data.targetDate}
-            />
-          ) : null}
-        </div>
-      )}
-
       {activeTab === "CHARTS" && (
         <div className="space-y-4">
           {monthlyQuery.data && (
@@ -507,6 +485,12 @@ export function ReportsDashboard() {
           )}
         </div>
       )}
+
+      {/* Target Settings Configuration Modal */}
+      <TargetSettingsModal
+        isOpen={isTargetSettingsOpen}
+        onClose={() => setIsTargetSettingsOpen(false)}
+      />
     </div>
   );
 }

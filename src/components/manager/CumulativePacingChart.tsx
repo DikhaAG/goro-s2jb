@@ -64,7 +64,7 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
             <span>Kurva Laju Kumulatif Bulanan (Pacing Curve)</span>
           </h3>
           <p className="text-xs text-[#64748b] mt-0.5">
-            Trayektori riil harian (Teal) vs garis linier target bulanan (Amber Putus-Putus)
+            Trayektori riil harian (Teal) vs akumulasi target harian (Amber Putus-Putus: +50 hari kerja, +20 akhir pekan)
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3.5 h-1 border-t-2 border-dashed border-[#d97706]" />
-            <span className="text-[#64748b]">Target Linier</span>
+            <span className="text-[#64748b]">Target Akumulatif</span>
           </div>
         </div>
       </div>
