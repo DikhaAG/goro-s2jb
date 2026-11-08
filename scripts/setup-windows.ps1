@@ -49,6 +49,40 @@ function Test-PortOpen {
     }
 }
 
+# Fungsi Memeriksa Versi Semantik Redis Server
+function Get-RedisVersion {
+    param (
+        [string]$HostName = "127.0.0.1",
+        [int]$Port = 6379,
+        [int]$TimeoutMs = 1200
+    )
+    try {
+        $tcpClient = New-Object System.Net.Sockets.TcpClient
+        $asyncResult = $tcpClient.BeginConnect($HostName, $Port, $null, $null)
+        $wait = $asyncResult.AsyncWaitHandle.WaitOne($TimeoutMs, $false)
+        if (-not ($wait -and $tcpClient.Connected)) {
+            $tcpClient.Close()
+            return $null
+        }
+        $stream = $tcpClient.GetStream()
+        $stream.ReadTimeout = $TimeoutMs
+        $stream.WriteTimeout = $TimeoutMs
+        $cmdBytes = [System.Text.Encoding]::ASCII.GetBytes("INFO server`r`n")
+        $stream.Write($cmdBytes, 0, $cmdBytes.Length)
+        $buffer = New-Object byte[] 4096
+        $bytesRead = $stream.Read($buffer, 0, $buffer.Length)
+        $response = [System.Text.Encoding]::ASCII.GetString($buffer, 0, $bytesRead)
+        $stream.Close()
+        $tcpClient.Close()
+        if ($response -match "redis_version:([0-9.]+)") {
+            return $matches[1]
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
 # 1. Pengecekan Prasyarat Software
 Write-Host "`n[1/8] Memeriksa Prasyarat Software di Windows..." -ForegroundColor Yellow
 
@@ -133,10 +167,9 @@ if (Test-PortOpen -Port 5432) {
     }
 }
 
-# Pengecekan Redis Port 6379
-if (Test-PortOpen -Port 6379) {
-    Write-Host "✓ Redis broker aktif di port 6379." -ForegroundColor Green
-} else {
+# Pengecekan Redis Port 6379 & Validasi Versi
+$redisUp = Test-PortOpen -Port 6379
+if (-not $redisUp) {
     Write-Host "⚠️ Redis port 6379 belum merespons. Mencari Windows Service terkait..." -ForegroundColor Yellow
     $redisSvc = Get-Service -Name "redis*", "memurai*" -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($redisSvc -and $redisSvc.Status -ne "Running") {
@@ -148,14 +181,31 @@ if (Test-PortOpen -Port 6379) {
             # Abaikan jika membutuhkan izin Administrator
         }
     }
+    $redisUp = Test-PortOpen -Port 6379
+}
 
-    if (Test-PortOpen -Port 6379) {
-        Write-Host "✓ Redis port 6379 berhasil diaktifkan." -ForegroundColor Green
+if ($redisUp) {
+    $redisVer = Get-RedisVersion -Port 6379
+    if ($redisVer) {
+        $verParts = $redisVer.Split(".")
+        $major = [int]$verParts[0]
+        $minor = [int]$verParts[1]
+        if ($major -lt 6 -or ($major -eq 6 -and $minor -lt 2)) {
+            Write-Host "⚠️ PERINGATAN: Terdeteksi Redis v$redisVer di port 6379." -ForegroundColor Yellow
+            Write-Host "   BullMQ v5 membutuhkan Redis >= 6.2.0. Redis 5.0.x (tporadowski) akan memicu error saat submit di /intake!" -ForegroundColor Red
+            Write-Host "   Solusi Native Windows (Zero-WSL, Zero-Docker):" -ForegroundColor White
+            Write-Host "   👉 Pasang Memurai: winget install --id Memurai.MemuraiDeveloper -e --source winget" -ForegroundColor Yellow
+            Write-Host "   👉 Atau pasang port native Redis 7: https://github.com/redis-windows/redis-windows" -ForegroundColor Yellow
+        } else {
+            Write-Host "✓ Redis broker aktif di port 6379 (Redis v$redisVer, kompatibel dengan BullMQ v5)." -ForegroundColor Green
+        }
     } else {
-        Write-Host "⚠️ Port 6379 masih belum aktif." -ForegroundColor Yellow
-        Write-Host "   Tips: Jalankan Memurai / Redis service atau gunakan kontainer Docker:" -ForegroundColor DarkGray
-        Write-Host "         docker run -d --name goro-redis -p 6379:6379 redis:7-alpine" -ForegroundColor DarkGray
+        Write-Host "✓ Redis broker aktif di port 6379." -ForegroundColor Green
     }
+} else {
+    Write-Host "⚠️ Port 6379 masih belum aktif." -ForegroundColor Yellow
+    Write-Host "   Tips: Jalankan Memurai / Redis service atau gunakan kontainer Docker:" -ForegroundColor DarkGray
+    Write-Host "         docker run -d --name goro-redis -p 6379:6379 redis:7-alpine" -ForegroundColor DarkGray
 }
 
 # 3. File Konfigurasi .env

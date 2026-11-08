@@ -33,6 +33,40 @@ function Test-PortOpen {
     }
 }
 
+# Fungsi Memeriksa Versi Semantik Redis Server
+function Get-RedisVersion {
+    param (
+        [string]$HostName = "127.0.0.1",
+        [int]$Port = 6379,
+        [int]$TimeoutMs = 1200
+    )
+    try {
+        $tcpClient = New-Object System.Net.Sockets.TcpClient
+        $asyncResult = $tcpClient.BeginConnect($HostName, $Port, $null, $null)
+        $wait = $asyncResult.AsyncWaitHandle.WaitOne($TimeoutMs, $false)
+        if (-not ($wait -and $tcpClient.Connected)) {
+            $tcpClient.Close()
+            return $null
+        }
+        $stream = $tcpClient.GetStream()
+        $stream.ReadTimeout = $TimeoutMs
+        $stream.WriteTimeout = $TimeoutMs
+        $cmdBytes = [System.Text.Encoding]::ASCII.GetBytes("INFO server`r`n")
+        $stream.Write($cmdBytes, 0, $cmdBytes.Length)
+        $buffer = New-Object byte[] 4096
+        $bytesRead = $stream.Read($buffer, 0, $buffer.Length)
+        $response = [System.Text.Encoding]::ASCII.GetString($buffer, 0, $bytesRead)
+        $stream.Close()
+        $tcpClient.Close()
+        if ($response -match "redis_version:([0-9.]+)") {
+            return $matches[1]
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
 # Verifikasi Pra-Syarat Port Database & Cache Sebelum Meluncurkan Worker
 Write-Host "`n[Pra-Syarat] Memverifikasi Kesiapan Layanan PostgreSQL & Redis..." -ForegroundColor Yellow
 
@@ -70,7 +104,23 @@ if (-not $RedisReady) {
 }
 
 if ($RedisReady) {
-    Write-Host "✓ Redis broker aktif di port 6379." -ForegroundColor Green
+    $redisVer = Get-RedisVersion -Port 6379
+    if ($redisVer) {
+        $verParts = $redisVer.Split(".")
+        $major = [int]$verParts[0]
+        $minor = [int]$verParts[1]
+        if ($major -lt 6 -or ($major -eq 6 -and $minor -lt 2)) {
+            Write-Host "⚠️ PERINGATAN KRITIS: Terdeteksi Redis v$redisVer (di bawah versi minimum 6.2.0)!" -ForegroundColor Red
+            Write-Host "   BullMQ v5 membutuhkan Redis >= 6.2.0. Redis 5.0.x (tporadowski) akan memicu error saat submit di /intake!" -ForegroundColor Yellow
+            Write-Host "   Solusi Native Windows (Zero-WSL, Zero-Docker):" -ForegroundColor White
+            Write-Host "   👉 Pasang Memurai: winget install --id Memurai.MemuraiDeveloper -e --source winget" -ForegroundColor Yellow
+            Write-Host "   👉 Atau unduh port native Redis 7: https://github.com/redis-windows/redis-windows" -ForegroundColor Yellow
+        } else {
+            Write-Host "✓ Redis broker aktif di port 6379 (Redis v$redisVer, kompatibel dengan BullMQ v5)." -ForegroundColor Green
+        }
+    } else {
+        Write-Host "✓ Redis broker aktif di port 6379." -ForegroundColor Green
+    }
 } else {
     Write-Host "⚠️ PERINGATAN: Redis broker port 6379 belum aktif! Antrian BullMQ tidak dapat memproses job." -ForegroundColor Red
     Write-Host "   Jalankan Memurai/Redis atau Docker: docker compose up -d redis" -ForegroundColor DarkGray

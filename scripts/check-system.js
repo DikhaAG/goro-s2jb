@@ -42,6 +42,52 @@ function checkPort(port, host = "127.0.0.1", timeout = 600) {
   });
 }
 
+function checkRedisServer(port = 6379, host = "127.0.0.1", timeout = 800) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let isDone = false;
+    let dataBuffer = "";
+
+    const finish = (result) => {
+      if (!isDone) {
+        isDone = true;
+        socket.removeAllListeners();
+        socket.destroy();
+        resolve(result);
+      }
+    };
+
+    socket.setTimeout(timeout);
+
+    socket.once("connect", () => {
+      socket.write("INFO server\r\n");
+    });
+
+    socket.on("data", (chunk) => {
+      dataBuffer += chunk.toString();
+      const match = dataBuffer.match(/redis_version:([0-9.]+)/);
+      if (match) {
+        finish({ isUp: true, version: match[1] });
+      }
+    });
+
+    socket.once("timeout", () => {
+      finish({ isUp: false, version: null });
+    });
+
+    socket.once("error", () => {
+      finish({ isUp: false, version: null });
+    });
+
+    socket.once("end", () => {
+      const match = dataBuffer.match(/redis_version:([0-9.]+)/);
+      finish({ isUp: dataBuffer.length > 0, version: match ? match[1] : null });
+    });
+
+    socket.connect(port, host);
+  });
+}
+
 function runCmd(cmd) {
   try {
     const stdout = execSync(cmd, { stdio: ["pipe", "pipe", "ignore"], encoding: "utf8" });
@@ -277,15 +323,43 @@ async function runSystemDiagnostics() {
   }
 
   // 9. Redis In-Memory Service
-  const isRedisUp = await checkPort(6379);
-  if (isRedisUp) {
-    results.push({
-      name: "Redis Broker (BullMQ)",
-      category: "Database",
-      status: "PASS",
-      details: "Port 6379 aktif dan menerima koneksi soket TCP",
-      isMandatory: true,
-    });
+  const redisProbe = await checkRedisServer(6379);
+  if (redisProbe.isUp) {
+    if (redisProbe.version) {
+      const parts = redisProbe.version.split(".").map((p) => parseInt(p, 10));
+      const major = parts[0] || 0;
+      const minor = parts[1] || 0;
+      const isVersionSupported = major > 6 || (major === 6 && minor >= 2);
+
+      if (isVersionSupported) {
+        results.push({
+          name: "Redis Broker (BullMQ)",
+          category: "Database",
+          status: "PASS",
+          details: `Port 6379 aktif dan terhubung (Redis v${redisProbe.version})`,
+          isMandatory: true,
+        });
+      } else {
+        results.push({
+          name: "Redis Broker (BullMQ)",
+          category: "Database",
+          status: "FAIL",
+          details: `Port 6379 aktif tetapi versi Redis v${redisProbe.version} terlalu lama (BullMQ v5 membutuhkan Redis >= 6.2.0)`,
+          recommendation: platform === "win32"
+            ? "Redis 5.0.x (tporadowski) tidak kompatibel dengan BullMQ v5. Pasang Memurai (winget install Memurai.MemuraiDeveloper) atau port native Redis 7 (https://github.com/redis-windows/redis-windows)"
+            : "Perbarui Redis ke versi >= 6.2.0 atau Redis 7 LTS",
+          isMandatory: true,
+        });
+      }
+    } else {
+      results.push({
+        name: "Redis Broker (BullMQ)",
+        category: "Database",
+        status: "PASS",
+        details: "Port 6379 aktif dan menerima koneksi soket TCP",
+        isMandatory: true,
+      });
+    }
   } else {
     results.push({
       name: "Redis Broker (BullMQ)",
@@ -295,7 +369,7 @@ async function runSystemDiagnostics() {
       recommendation: platform === "darwin"
         ? "brew services start redis"
         : platform === "win32"
-        ? "Nyalakan service Redis atau gunakan docker run -p 6379:6379 redis:7-alpine"
+        ? "Nyalakan service Memurai/Redis atau jalankan: winget install Memurai.MemuraiDeveloper"
         : "sudo systemctl start redis-server",
       isMandatory: true,
     });

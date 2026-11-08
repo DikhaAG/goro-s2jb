@@ -277,6 +277,11 @@ winget install --id Rustlang.Rustup -e --source winget
 winget install --id PostgreSQL.PostgreSQL -e --source winget
 winget install --id Memurai.MemuraiDeveloper -e --source winget
 
+# Catatan Penting Redis Native di Windows (Zero-WSL, Zero-Docker):
+# BullMQ v5 membutuhkan Redis >= 6.2.0. Jangan gunakan port lawas tporadowski/redis (v5.0.14)
+# karena akan memicu error antrian pada halaman /intake. Gunakan Memurai (winget di atas)
+# atau unduh port native Redis 7 untuk Windows: https://github.com/redis-windows/redis-windows
+
 # 2. Inisialisasi toolchain Rust (pilih opsi 1 default):
 rustup-init.exe
 

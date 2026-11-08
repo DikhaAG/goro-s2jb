@@ -69,17 +69,26 @@ export const intakeRouter = router({
         });
 
         // 4. Asynchronously dispatch job to OCR BullMQ Queue
-        await ocrQueue.add(
-          "process-ocr",
-          {
-            reviewId: review.id,
-            evidenceImagePath: absolutePath,
-            expectedReviewerName: input.playstoreReviewerName,
-          },
-          {
-            priority: 1, // High priority for fresh field submissions
-          }
-        );
+        try {
+          await ocrQueue.add(
+            "process-ocr",
+            {
+              reviewId: review.id,
+              evidenceImagePath: absolutePath,
+              expectedReviewerName: input.playstoreReviewerName,
+            },
+            {
+              priority: 1, // High priority for fresh field submissions
+            }
+          );
+        } catch (queueErr: any) {
+          console.error("Gagal mengirim job OCR ke antrian BullMQ/Redis:", queueErr);
+          const queueMsg = queueErr?.message || "";
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Eviden tersimpan, tetapi antrian OCR (Redis/BullMQ) gagal dipicu: ${queueMsg}. Pastikan Redis yang berjalan minimal versi 6.2.0 (versi 5.0.x tidak didukung BullMQ v5).`,
+          });
+        }
 
         const latencyMs = Date.now() - startTime;
 
