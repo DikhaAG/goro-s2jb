@@ -42,6 +42,8 @@ services:
       dockerfile: Dockerfile
     container_name: goro-ocr-engine
     restart: always
+    volumes:
+      - uploads_data:/app/uploads:ro
     ports:
       - "${OCR_PORT:-8001}:8001"
     healthcheck:
