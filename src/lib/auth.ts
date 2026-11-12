@@ -14,6 +14,7 @@ import {
   USER_ID_COOKIE_NAME,
   getRoleMaxAgeSeconds,
   getDefaultRedirectForRole,
+  shouldUseSecureCookie,
 } from "./auth-constants";
 
 export {
@@ -21,6 +22,7 @@ export {
   USER_ID_COOKIE_NAME,
   getRoleMaxAgeSeconds,
   getDefaultRedirectForRole,
+  shouldUseSecureCookie,
 };
 
 export const BETTER_AUTH_COOKIE_NAME = "better-auth.session_token";
@@ -230,7 +232,7 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    useSecureCookies: process.env.NODE_ENV === "production",
+    useSecureCookies: shouldUseSecureCookie(),
   },
 });
 

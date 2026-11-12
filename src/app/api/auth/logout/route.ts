@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME, USER_ID_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import {
+  SESSION_COOKIE_NAME,
+  USER_ID_COOKIE_NAME,
+  shouldUseSecureCookie,
+  verifySessionToken,
+} from "@/lib/auth";
 import { logAuditEvent } from "@/server/services/auditService";
 import prisma from "@/lib/prisma";
 
@@ -30,13 +35,14 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json({ success: true });
+    const isSecureCookie = shouldUseSecureCookie(request);
 
     // Expire cookies
     response.cookies.set({
       name: SESSION_COOKIE_NAME,
       value: "",
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureCookie,
       sameSite: "lax",
       path: "/",
       maxAge: 0,
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest) {
       name: USER_ID_COOKIE_NAME,
       value: "",
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureCookie,
       sameSite: "lax",
       path: "/",
       maxAge: 0,

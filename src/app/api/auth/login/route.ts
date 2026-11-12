@@ -5,6 +5,7 @@ import {
   signSessionToken,
   getRoleMaxAgeSeconds,
   getDefaultRedirectForRole,
+  shouldUseSecureCookie,
   SESSION_COOKIE_NAME,
   USER_ID_COOKIE_NAME,
 } from "@/lib/auth";
@@ -152,13 +153,13 @@ export async function POST(request: NextRequest) {
     });
 
     // 7. Set HTTP-Only SameSite Cookies (AC-1)
-    const isProduction = process.env.NODE_ENV === "production";
+    const isSecureCookie = shouldUseSecureCookie(request);
 
     response.cookies.set({
       name: SESSION_COOKIE_NAME,
       value: token,
       httpOnly: true,
-      secure: isProduction,
+      secure: isSecureCookie,
       sameSite: "lax",
       path: "/",
       maxAge: maxAgeSeconds,
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
       name: USER_ID_COOKIE_NAME,
       value: dbUser.id,
       httpOnly: false, // Accessible to client for quick UI state if needed
-      secure: isProduction,
+      secure: isSecureCookie,
       sameSite: "lax",
       path: "/",
       maxAge: maxAgeSeconds,

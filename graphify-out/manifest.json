@@ -1110,9 +1110,9 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1793939154.2744598,
-    "seen": 1793944419.75583,
-    "ast_hash": "e1fed757b1a590ad1cea5dfee5bda4fd",
+    "mtime": 1794449482.5402234,
+    "seen": 1794449641.112288,
+    "ast_hash": "79efb99c98db0a515b26f8b144e84c6f",
     "semantic_hash": ""
   },
   "next.config.ts": {
@@ -1212,9 +1212,9 @@
     "semantic_hash": ""
   },
   "scripts/setup-windows.ps1": {
-    "mtime": 1793901033.1174598,
-    "seen": 1793901202.63886,
-    "ast_hash": "40af038d52d2f3e9ecc475717fe0d49a",
+    "mtime": 1794153013.2434318,
+    "seen": 1794449641.113285,
+    "ast_hash": "82e014bbf69eba23b6a0412977b781b1",
     "semantic_hash": ""
   },
   "scripts/start-mac.sh": {
@@ -1224,9 +1224,9 @@
     "semantic_hash": ""
   },
   "scripts/start-windows.ps1": {
-    "mtime": 1793899525.1560395,
-    "seen": 1793900096.960192,
-    "ast_hash": "4b035380410dc933882ac9a9987e9f2d",
+    "mtime": 1794153013.3252907,
+    "seen": 1794449641.1133702,
+    "ast_hash": "bdda051030107710329f957c3cbc8f3f",
     "semantic_hash": ""
   },
   "scripts/verify-rbac-matrix.sh": {
@@ -1386,15 +1386,15 @@
     "semantic_hash": ""
   },
   "src/app/api/auth/login/route.ts": {
-    "mtime": 1793180510.2080908,
-    "seen": 1793661150.067266,
-    "ast_hash": "7f0018882d35dd106ac5b200dae93920",
+    "mtime": 1794449463.7599459,
+    "seen": 1794449641.1143098,
+    "ast_hash": "db330c68440775ee25e7c78328803d41",
     "semantic_hash": ""
   },
   "src/app/api/auth/logout/route.ts": {
-    "mtime": 1793264689.1098225,
-    "seen": 1793661150.0672672,
-    "ast_hash": "ad68065342784139a9f34130951cb7e9",
+    "mtime": 1794449469.526236,
+    "seen": 1794449641.114312,
+    "ast_hash": "00d681fb2271f97701cde6b237ad68dc",
     "semantic_hash": ""
   },
   "src/app/api/evidence/proxy/[reviewId]/route.ts": {
@@ -1584,8 +1584,8 @@
     "semantic_hash": ""
   },
   "src/components/manager/CumulativePacingChart.tsx": {
-    "mtime": 1793988737.6951654,
-    "seen": 1793989149.8663151,
+    "mtime": 1794064768.402485,
+    "seen": 1794449641.115482,
     "ast_hash": "c740dfd034a90683e256452907f846b3",
     "semantic_hash": ""
   },
@@ -1614,8 +1614,8 @@
     "semantic_hash": ""
   },
   "src/components/manager/ReportsDashboard.tsx": {
-    "mtime": 1793988876.3027382,
-    "seen": 1793989149.866536,
+    "mtime": 1794064768.6025212,
+    "seen": 1794449641.115613,
     "ast_hash": "5ae692c109fb05a2344589a2dbca9583",
     "semantic_hash": ""
   },
@@ -1842,20 +1842,20 @@
     "semantic_hash": ""
   },
   "src/lib/auth-constants.ts": {
-    "mtime": 1793556658.789572,
-    "seen": 1793661150.067394,
-    "ast_hash": "eac8fc34a01696c8e10f0e0a34fdfded",
+    "mtime": 1794449452.7521122,
+    "seen": 1794449641.117006,
+    "ast_hash": "9d49ab347688f6735b8b05ed679e6a70",
     "semantic_hash": ""
   },
   "src/lib/auth.ts": {
-    "mtime": 1793181095.8463283,
-    "seen": 1793661150.0673962,
-    "ast_hash": "74d2dcb0320b8cbc870b5b4ffd869d50",
+    "mtime": 1794449458.0858953,
+    "seen": 1794449641.117008,
+    "ast_hash": "5b8a91aed863b2d4fa6023a35c7d01c1",
     "semantic_hash": ""
   },
   "src/lib/export/excelExporter.ts": {
-    "mtime": 1793988976.8754508,
-    "seen": 1793989149.869041,
+    "mtime": 1794064769.5319114,
+    "seen": 1794449641.117009,
     "ast_hash": "f0bbf7d02d740f77cf2e4209d9b6e80a",
     "semantic_hash": ""
   },
@@ -1890,9 +1890,9 @@
     "semantic_hash": ""
   },
   "src/lib/processManager.ts": {
-    "mtime": 1793900285.0554643,
-    "seen": 1793900805.790069,
-    "ast_hash": "46ae9354ae20460b5faba62f4cd4506d",
+    "mtime": 1794065765.299011,
+    "seen": 1794449641.1171682,
+    "ast_hash": "3efb62c3ed0ccc4d3ffee00469d6a2b1",
     "semantic_hash": ""
   },
   "src/lib/rateLimit.ts": {
@@ -1986,9 +1986,9 @@
     "semantic_hash": ""
   },
   "src/server/routers/intake.ts": {
-    "mtime": 1793543846.3381007,
-    "seen": 1793661150.067434,
-    "ast_hash": "5464c6d0f6d333ed3cdda5f6e11691f3",
+    "mtime": 1794153027.764984,
+    "seen": 1794449641.117706,
+    "ast_hash": "de93c8abf8ef5ca2ade9bd850d4d2647",
     "semantic_hash": ""
   },
   "src/server/routers/master.ts": {
@@ -2004,8 +2004,8 @@
     "semantic_hash": ""
   },
   "src/server/routers/report.ts": {
-    "mtime": 1793989088.991619,
-    "seen": 1793989149.870348,
+    "mtime": 1794064769.699574,
+    "seen": 1794449641.117772,
     "ast_hash": "9c9ac813c96f826709c9bf7ceef4ce73",
     "semantic_hash": ""
   },
@@ -2064,8 +2064,8 @@
     "semantic_hash": ""
   },
   "src/server/services/reportService.ts": {
-    "mtime": 1793989023.7816472,
-    "seen": 1793989149.870861,
+    "mtime": 1794064769.8060405,
+    "seen": 1794449641.118102,
     "ast_hash": "cc6408f094f207a5a1321b9626e61ad6",
     "semantic_hash": ""
   },
@@ -2148,9 +2148,9 @@
     "semantic_hash": ""
   },
   "tests/integration/excelExporter.test.ts": {
-    "mtime": 1793161725.414655,
-    "seen": 1793661150.067484,
-    "ast_hash": "be9aa36ae367332c265d5498b116aa97",
+    "mtime": 1794064769.949386,
+    "seen": 1794449641.1185348,
+    "ast_hash": "36d29fd15d9a11dc3695d3ae9e40aa35",
     "semantic_hash": ""
   },
   "tests/integration/fullPipelineEndToEnd.test.ts": {
@@ -4884,9 +4884,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793954337.2825859,
-    "seen": 1793972115.737973,
-    "ast_hash": "5fabb859a10ada96c2bafc86936c4f31",
+    "mtime": 1794147954.062482,
+    "seen": 1794449641.135262,
+    "ast_hash": "09ec2527cb90695a9393e2c380d56197",
     "semantic_hash": ""
   },
   "ai_context_guide.md": {
@@ -5382,9 +5382,9 @@
     "semantic_hash": ""
   },
   "scripts/check-system.js": {
-    "mtime": 1793902576.0221133,
-    "seen": 1793929806.85236,
-    "ast_hash": "8f67dde94a63cdb371099aa4f82434a0",
+    "mtime": 1794153013.1608763,
+    "seen": 1794449641.11307,
+    "ast_hash": "4ce124725e88fae4b9fc647fa2026968",
     "semantic_hash": ""
   },
   ".github/workflows/cd.yml": {
@@ -5412,15 +5412,27 @@
     "semantic_hash": ""
   },
   "src/components/manager/TargetSettingsModal.tsx": {
-    "mtime": 1793989158.932339,
-    "seen": 1793989199.6872928,
+    "mtime": 1794064768.872289,
+    "seen": 1794449641.115616,
     "ast_hash": "ee5b60da920d3e352568f27c9d88566c",
     "semantic_hash": ""
   },
   "tests/unit/excelExportAuthenticFormat.test.ts": {
-    "mtime": 1793989093.747723,
-    "seen": 1793989149.872633,
+    "mtime": 1794066203.4063687,
+    "seen": 1794449641.119328,
     "ast_hash": "7d9c58f08622b524fef34b1e336426c9",
+    "semantic_hash": ""
+  },
+  "tests/unit/authCookieSecure.test.ts": {
+    "mtime": 1794449566.0887423,
+    "seen": 1794449641.119141,
+    "ast_hash": "2fcdf54b75560c19f86324b0a2c91fff",
+    "semantic_hash": ""
+  },
+  "tests/unit/authLoginCookie.test.ts": {
+    "mtime": 1794449632.7678852,
+    "seen": 1794449641.119143,
+    "ast_hash": "ac163bfee45af01842fcbdc578e626da",
     "semantic_hash": ""
   },
   "package-lock.json": {
