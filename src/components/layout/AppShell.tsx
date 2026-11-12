@@ -14,7 +14,7 @@ export function AppShell({ children, pageTitle }: AppShellProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f9f9ff] flex flex-col">
+    <div className="min-h-[100dvh] bg-[#f9f9ff] flex flex-col">
       {/* 1. Mobile Top Navigation Bar (< 1024px) */}
       <div className="lg:hidden">
         <TopHeader
@@ -37,7 +37,7 @@ export function AppShell({ children, pageTitle }: AppShellProps) {
         </div>
 
         {/* Content Area with Left Offset on Desktop */}
-        <main className="flex-1 lg:pl-64 flex flex-col min-h-screen w-full overflow-x-hidden">
+        <main className="flex-1 min-w-0 lg:pl-64 flex flex-col min-h-[100dvh] w-full overflow-x-hidden">
           {children}
         </main>
       </div>

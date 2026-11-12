@@ -103,7 +103,7 @@ export function NetworkCdnMetricsCard() {
           type="button"
           onClick={fetchMetrics}
           disabled={isLoading}
-          className="text-xs font-semibold text-[#006877] hover:text-[#00a2b9] flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          className="min-h-[44px] px-2.5 py-2 rounded-xl text-xs font-semibold text-[#006877] hover:text-[#00a2b9] hover:bg-[#f8fafc] flex items-center gap-1.5 self-start sm:self-auto cursor-pointer focus-utility-ring"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
           <span>{lastUpdated.toLocaleTimeString("id-ID")}</span>
@@ -111,7 +111,7 @@ export function NetworkCdnMetricsCard() {
       </div>
 
       {/* 4 Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {/* Metric 1: Average Latency */}
         <div className="p-4 rounded-xl border border-[#e2e8f0] bg-[#f8fafc]/80 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-[#64748b] mb-1">
@@ -191,16 +191,16 @@ export function NetworkCdnMetricsCard() {
 
       {/* Candidate Endpoint Breakdown */}
       <div className="p-4 rounded-xl border border-[#e2e8f0] bg-slate-50/50 space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-bold text-[#0f172a]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-bold text-[#0f172a]">
           <span>Distribusi Keberhasilan 3 Endpoint Kandidat URL Google Drive</span>
-          <span className="text-xs font-mono font-normal text-[#64748b]">
+          <span className="text-xs font-mono font-normal text-[#64748b] shrink-0">
             Total Endpoint Hit: {totalHits}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           {/* Endpoint 1 */}
-          <div className="p-2.5 bg-white rounded-lg border border-[#e2e8f0] flex flex-col justify-between">
+          <div className="p-2.5 bg-white rounded-lg border border-[#e2e8f0] flex flex-col justify-between min-w-0">
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-[#0f172a]">Endpoint 1 (UC Export)</span>
               <span className="font-mono font-bold text-cyan-700">
@@ -219,7 +219,7 @@ export function NetworkCdnMetricsCard() {
           </div>
 
           {/* Endpoint 2 */}
-          <div className="p-2.5 bg-white rounded-lg border border-[#e2e8f0] flex flex-col justify-between">
+          <div className="p-2.5 bg-white rounded-lg border border-[#e2e8f0] flex flex-col justify-between min-w-0">
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-[#0f172a]">Endpoint 2 (UserContent)</span>
               <span className="font-mono font-bold text-indigo-700">
@@ -238,7 +238,7 @@ export function NetworkCdnMetricsCard() {
           </div>
 
           {/* Endpoint 3 */}
-          <div className="p-2.5 bg-white rounded-lg border border-[#e2e8f0] flex flex-col justify-between">
+          <div className="p-2.5 bg-white rounded-lg border border-[#e2e8f0] flex flex-col justify-between min-w-0">
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-[#0f172a]">Endpoint 3 (LH3 CDN)</span>
               <span className="font-mono font-bold text-teal-700">

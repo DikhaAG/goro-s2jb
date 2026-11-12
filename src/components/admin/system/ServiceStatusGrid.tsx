@@ -72,7 +72,7 @@ export function ServiceStatusGrid({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {services.map((svc) => {
         const isVisionEngine = svc.serviceType === "RUST_OCR" || svc.serviceType === "PYTHON_OCR";
         const canRestart = isVisionEngine;
@@ -88,7 +88,7 @@ export function ServiceStatusGrid({
         return (
           <div
             key={`${svc.serviceType}-${svc.port}`}
-            className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between"
+            className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between min-w-0"
           >
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -127,7 +127,7 @@ export function ServiceStatusGrid({
                     <div className="flex justify-between items-center text-xs text-[#64748b] mb-1">
                       <span>Riwayat 5 Latensi:</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1">
                       {recent.map((lat, idx) => {
                         const barColor =
                           lat < 50
@@ -152,12 +152,12 @@ export function ServiceStatusGrid({
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[#f1f5f9] flex items-center justify-between gap-2">
+            <div className="mt-4 pt-3 border-t border-[#f1f5f9] flex flex-wrap items-center justify-between gap-2">
               {associatedLog ? (
                 <button
                   type="button"
                   onClick={() => onViewLogs(associatedLog)}
-                  className="text-xs text-[#006877] hover:text-[#00a2b9] font-bold flex items-center gap-1.5 transition-colors focus-utility-ring rounded px-1.5 py-1 cursor-pointer"
+                  className="min-h-[44px] text-xs text-[#006877] hover:text-[#00a2b9] font-bold flex items-center gap-1.5 transition-colors focus-utility-ring rounded-xl px-2.5 py-2 cursor-pointer"
                 >
                   <Terminal className="w-3.5 h-3.5" />
                   <span>Lihat Log</span>
@@ -171,7 +171,7 @@ export function ServiceStatusGrid({
                   type="button"
                   disabled={isRestarting}
                   onClick={() => onRestartWorker(svc.serviceType === "RUST_OCR" ? "rust" : "python")}
-                  className="min-h-[36px] text-xs px-3 py-1.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#334155] font-bold transition-all focus-utility-ring flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="min-h-[44px] text-xs px-3 py-2 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#334155] font-bold transition-all focus-utility-ring flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   title="Mulai ulang layanan vision engine (Rust native / fallback)"
                 >
                   <RotateCw className={`w-3.5 h-3.5 ${isRestarting ? "animate-spin text-[#006877]" : "text-[#64748b]"}`} />

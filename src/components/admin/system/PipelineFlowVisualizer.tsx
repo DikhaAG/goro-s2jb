@@ -152,11 +152,11 @@ export function PipelineFlowVisualizer() {
       </div>
 
       {/* Interactive 7-Node Flow Chain */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-3">
         {nodes.map((node, index) => {
           const Icon = node.icon;
           return (
-            <div key={node.id} className="relative flex flex-col">
+            <div key={node.id} className="relative flex flex-col min-w-0">
               <div
                 className={`p-3.5 rounded-2xl border bg-gradient-to-b ${node.colorClass} shadow-xs flex flex-col justify-between h-full transition-all hover:shadow-sm`}
               >

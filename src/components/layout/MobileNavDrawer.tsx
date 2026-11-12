@@ -34,7 +34,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 lg:hidden flex">
+    <div className="fixed inset-0 z-50 lg:hidden flex h-[100dvh]">
       {/* Backdrop overlay */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
@@ -43,7 +43,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
       />
 
       {/* Slide-over panel */}
-      <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl z-10 transition-transform duration-200 ease-out">
+      <div className="relative flex-1 flex flex-col max-w-xs w-full h-full max-h-[100dvh] bg-white shadow-xl z-10 overflow-hidden transition-transform duration-200 ease-out">
         {/* Close Button: min 44px tap target (R-03) */}
         <div className="absolute top-3 right-3 z-20">
           <button

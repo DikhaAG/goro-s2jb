@@ -115,35 +115,35 @@ export default function SystemProcessesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-12 space-y-6 min-w-0">
       {/* 1. Enterprise Command Header Banner */}
-      <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+      <div className="bg-white rounded-2xl border border-[#e2e8f0] p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
           {/* Brand Badges Bar */}
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#006877]/10 text-[#006877] text-xs font-bold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#006877]/10 text-[#006877] text-xs font-bold whitespace-nowrap">
               <Zap className="w-3.5 h-3.5 fill-[#006877]" />
               PLN UID S2JB
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs font-semibold">
-              <Server className="w-3.5 h-3.5 text-[#64748b]" />
+              <Server className="w-3.5 h-3.5 text-[#64748b] shrink-0" />
               Host System &amp; OS Daemon Controller
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs font-medium whitespace-nowrap">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               System Engine Active
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center shrink-0 border border-[#bae6fd]">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#e7eeff] text-[#006877] flex items-center justify-center shrink-0 border border-[#bae6fd] mt-0.5 sm:mt-0">
               <Terminal className="w-5 h-5 text-[#006877]" />
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-[#0f172a] tracking-tight">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-2xl font-black text-[#0f172a] tracking-tight">
                 Pusat Kontrol Layanan &amp; Proses Sistem Lokal
               </h1>
-              <p className="text-xs sm:text-sm text-[#475569] mt-0.5">
+              <p className="text-xs sm:text-sm text-[#475569] mt-0.5 leading-relaxed">
                 Pemantauan langsung port TCP, Process ID (PID), penggunaan sumber daya host, pembacaan log real-time, serta pengendalian siklus hidup proses latar belakang.
               </p>
             </div>
@@ -151,15 +151,15 @@ export default function SystemProcessesPage() {
         </div>
 
         {/* Global Control Buttons */}
-        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto lg:justify-end">
           <button
             type="button"
             disabled={cleanOrphansMutation.isPending}
             onClick={() => cleanOrphansMutation.mutate({})}
-            className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold border border-[#fed7aa] bg-[#fff7ed] hover:bg-[#ffedd5] text-[#b45309] shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-none justify-center min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold border border-[#fed7aa] bg-[#fff7ed] hover:bg-[#ffedd5] text-[#b45309] shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
             title="Hentikan proses detached / zombie yang tidak terikat terminal"
           >
-            <Sparkles className={`w-3.5 h-3.5 ${cleanOrphansMutation.isPending ? "animate-spin text-[#f59e0b]" : "text-[#b45309]"}`} />
+            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${cleanOrphansMutation.isPending ? "animate-spin text-[#f59e0b]" : "text-[#b45309]"}`} />
             <span>Bersihkan Zombie</span>
           </button>
 
@@ -167,9 +167,9 @@ export default function SystemProcessesPage() {
             type="button"
             onClick={handleRefreshAll}
             disabled={overviewQuery.isFetching}
-            className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-[#00a2b9] hover:bg-[#008c9f] text-white shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-none justify-center min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-[#00a2b9] hover:bg-[#008c9f] text-white shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
           >
-            <RotateCw className={`w-3.5 h-3.5 ${overviewQuery.isFetching ? "animate-spin text-white" : "text-white"}`} />
+            <RotateCw className={`w-3.5 h-3.5 shrink-0 ${overviewQuery.isFetching ? "animate-spin text-white" : "text-white"}`} />
             <span>Segarkan Status</span>
           </button>
         </div>
@@ -179,18 +179,19 @@ export default function SystemProcessesPage() {
       {feedback && (
         <div
           role="status"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl px-5 py-3 flex items-center gap-3 animate-in fade-in duration-200"
+          className="fixed bottom-4 sm:bottom-6 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 max-w-[calc(100vw-2rem)] sm:max-w-md z-40 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl px-4 sm:px-5 py-3 flex items-center justify-between gap-3 animate-in fade-in duration-200"
         >
           {feedback.type === "success" ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           ) : (
             <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
           )}
-          <span className="text-xs font-semibold">{feedback.message}</span>
+          <span className="text-xs font-semibold flex-1 min-w-0 break-words">{feedback.message}</span>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-slate-400 hover:text-white font-bold ml-2 text-xs focus-utility-ring rounded p-1"
+            aria-label="Tutup notifikasi"
+            className="text-slate-400 hover:text-white font-bold min-w-[36px] min-h-[36px] flex items-center justify-center text-xs focus-utility-ring rounded-lg shrink-0"
           >
             x
           </button>
@@ -202,7 +203,7 @@ export default function SystemProcessesPage() {
 
       {/* 3. Service Status Grid */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
             <Layers className="w-4 h-4 text-[#006877]" />
             <span>Status Port Layanan Inti</span>
@@ -222,7 +223,7 @@ export default function SystemProcessesPage() {
         <NetworkCdnMetricsCard />
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
               <Activity className="w-4 h-4 text-[#006877]" />
               <span>Telemetri Sumber Daya Sistem Host</span>
@@ -241,7 +242,7 @@ export default function SystemProcessesPage() {
 
       {/* 5. Live Log Viewer Terminal */}
       <div id="log-viewer-section" className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
             <FileText className="w-4 h-4 text-[#006877]" />
             <span>Inspeksi Berkas Log Real-Time</span>

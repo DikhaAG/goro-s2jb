@@ -32,15 +32,16 @@ export function KillProcessConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f172a]/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#e2e8f0] animate-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto p-5 sm:p-6 shadow-2xl border border-[#e2e8f0] animate-in zoom-in-95 duration-150">
         <div className="flex items-start justify-between">
           <div className="w-12 h-12 bg-[#fef2f2] text-[#dc2626] rounded-2xl border border-[#fecaca] flex items-center justify-center shrink-0">
             <AlertOctagon className="w-6 h-6 text-[#dc2626]" />
           </div>
           <button
             type="button"
+            aria-label="Tutup dialog konfirmasi"
             onClick={onClose}
-            className="text-[#94a3b8] hover:text-[#0f172a] p-1.5 rounded-xl hover:bg-[#f1f5f9] transition-colors focus-utility-ring"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[#94a3b8] hover:text-[#0f172a] p-2 rounded-xl hover:bg-[#f1f5f9] transition-colors focus-utility-ring cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -69,7 +70,7 @@ export function KillProcessConfirmModal({
             <span className="text-[#64748b]">Waktu Berjalan:</span>
             <span className="text-[#0f172a]">{process.elapsedTime}</span>
           </div>
-          <div className="pt-2 border-t border-[#e2e8f0] text-[#475569] text-[11px] truncate">
+          <div className="pt-2 border-t border-[#e2e8f0] text-[#475569] text-xs break-all">
             {process.command}
           </div>
         </div>
@@ -77,7 +78,7 @@ export function KillProcessConfirmModal({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Reason Input */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-[#475569] uppercase tracking-wider">
+            <label className="block text-xs font-bold text-[#475569] uppercase tracking-wider">
               Alasan Penghentian (Wajib Diisi):
             </label>
             <input
@@ -106,7 +107,7 @@ export function KillProcessConfirmModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-2 flex items-center justify-end gap-2.5">
+          <div className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}

@@ -52,9 +52,9 @@ export function SystemResourceGauge({ resources }: SystemResourceGaugeProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* 1. Hardware Memory */}
-      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between">
+      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between min-w-0">
         <div>
-          <div className="flex items-center justify-between text-[#64748b] mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[#64748b] mb-2">
             <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#0f172a]">
               <HardDrive className="w-4 h-4 text-[#006877]" />
               Memori RAM Host
@@ -85,9 +85,9 @@ export function SystemResourceGauge({ resources }: SystemResourceGaugeProps) {
       </div>
 
       {/* 2. Node.js Runtime Memory */}
-      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between">
+      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between min-w-0">
         <div>
-          <div className="flex items-center justify-between text-[#64748b] mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[#64748b] mb-2">
             <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#0f172a]">
               <Activity className="w-4 h-4 text-[#006877]" />
               Runtime Node.js
@@ -111,9 +111,9 @@ export function SystemResourceGauge({ resources }: SystemResourceGaugeProps) {
       </div>
 
       {/* 3. Uptime & CPU Core */}
-      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between">
+      <div className="p-5 bg-white rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col justify-between min-w-0">
         <div>
-          <div className="flex items-center justify-between text-[#64748b] mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[#64748b] mb-2">
             <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#0f172a]">
               <Cpu className="w-4 h-4 text-[#16a34a]" />
               CPU &amp; Waktu Aktif
