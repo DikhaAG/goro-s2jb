@@ -52,6 +52,7 @@
     "dotenv": "^16.4.7",
     "exceljs": "^4.4.0",
     "fast-csv": "^5.0.8",
+    "heic2any": "^0.0.4",
     "ioredis": "^5.6.0",
     "jose": "^6.2.13",
     "lucide-react": "^0.475.0",

@@ -4,8 +4,8 @@ import React, { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { CascadingUnitSelect } from "./CascadingUnitSelect";
 import {
-  UploadCloud,
   Camera,
+  Image as ImageIcon,
   CheckCircle2,
   AlertTriangle,
   RotateCcw,
@@ -16,10 +16,22 @@ import {
   Tag,
   FileText,
   Clock,
+  Loader2,
   X,
   Zap,
 } from "lucide-react";
-import { intakeReviewSchema, MAX_FILE_SIZE_BYTES, ACCEPTED_IMAGE_TYPES } from "@/lib/validators/intake";
+import { intakeReviewSchema } from "@/lib/validators/intake";
+import {
+  normalizeEvidenceImageFile,
+  type NormalizedEvidenceImage,
+} from "@/lib/client/evidenceImageNormalizer";
+
+function formatFileSizeKb(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
 
 function getTodayString(): string {
   const now = new Date();
@@ -47,6 +59,11 @@ export function IntakeForm() {
   });
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [imageMeta, setImageMeta] = useState<Pick<
+    NormalizedEvidenceImage,
+    "originalSizeBytes" | "finalSizeBytes" | "width" | "height" | "wasNormalized" | "wasHeicConverted"
+  > | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [successInfo, setSuccessInfo] = useState<{
     reviewId: string;
@@ -54,7 +71,8 @@ export function IntakeForm() {
     latencyMs: number;
   } | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Set default appVersionId when query loads
   React.useEffect(() => {
@@ -63,54 +81,73 @@ export function IntakeForm() {
     }
   }, [versionsQuery.data, formData.appVersionId]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processSelectedFile = async (file: File) => {
+    setIsProcessingImage(true);
+    setFormErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.evidenceImageBase64;
+      return copy;
+    });
 
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      setFormErrors((prev) => ({
-        ...prev,
-        evidenceImageBase64: "Format file harus JPG, PNG, atau WebP",
-      }));
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      setFormErrors((prev) => ({
-        ...prev,
-        evidenceImageBase64: "Ukuran berkas melebihi batas 5 MB",
-      }));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
+    try {
+      const normalized = await normalizeEvidenceImageFile(file);
       setFormData((prev) => ({
         ...prev,
-        evidenceImageBase64: base64,
-        evidenceFilename: file.name,
+        evidenceImageBase64: normalized.dataUrl,
+        evidenceFilename: normalized.filename,
       }));
-      setPreviewUrl(base64);
-      setFormErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.evidenceImageBase64;
-        return copy;
+      setPreviewUrl(normalized.dataUrl);
+      setImageMeta({
+        originalSizeBytes: normalized.originalSizeBytes,
+        finalSizeBytes: normalized.finalSizeBytes,
+        width: normalized.width,
+        height: normalized.height,
+        wasNormalized: normalized.wasNormalized,
+        wasHeicConverted: normalized.wasHeicConverted,
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Gagal memproses gambar bukti ulasan.";
+      setFormErrors((prev) => ({
+        ...prev,
+        evidenceImageBase64: message,
+      }));
+    } finally {
+      setIsProcessingImage(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset immediately so picking or retaking the same filename triggers onChange again
+    e.target.value = "";
+    if (!file) return;
+    void processSelectedFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (isProcessingImage) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      void processSelectedFile(file);
+    }
+  };
+
+  const clearFileInputs = () => {
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
   };
 
   const removeImage = () => {
     setPreviewUrl(null);
+    setImageMeta(null);
     setFormData((prev) => ({
       ...prev,
       evidenceImageBase64: "",
       evidenceFilename: "",
     }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    clearFileInputs();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,7 +186,8 @@ export function IntakeForm() {
         evidenceFilename: "",
       }));
       setPreviewUrl(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setImageMeta(null);
+      clearFileInputs();
     } catch (err: any) {
       console.error("Submission failed:", err);
     }
@@ -333,7 +371,7 @@ export function IntakeForm() {
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1.5">
               <Camera className="w-3.5 h-3.5 text-[#006877]" />
-              <span>Foto Bukti Eviden (Tangkapan Layar Ulasan)</span>
+              <span>Eviden Ulasan (Foto Kamera Langsung / Tangkapan Layar)</span>
               <span className="text-[#ef4444] font-bold">*</span>
             </label>
 
@@ -342,75 +380,143 @@ export function IntakeForm() {
                 <div className="relative w-36 h-48 rounded-xl overflow-hidden border border-[#cbd5e1] bg-white shrink-0 shadow-xs">
                   <img
                     src={previewUrl}
-                    alt="Pratinjau Eviden"
+                    alt="Pratinjau Eviden Ulasan"
                     className="w-full h-full object-cover"
                   />
                   <button
                     type="button"
                     onClick={removeImage}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-[#0f172a]/70 hover:bg-[#dc2626] text-white transition-all cursor-pointer focus-utility-ring"
+                    aria-label="Hapus eviden ulasan"
+                    disabled={isProcessingImage}
+                    className="absolute top-2 right-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full bg-[#0f172a]/75 hover:bg-[#dc2626] text-white transition-all cursor-pointer focus-utility-ring disabled:opacity-50"
                     title="Hapus gambar"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="text-xs text-[#475569] space-y-1.5">
-                  <div className="font-bold text-sm text-[#0f172a]">
-                    {formData.evidenceFilename || "eviden_selected.png"}
+                <div className="text-xs text-[#475569] space-y-2 w-full">
+                  <div className="font-bold text-sm text-[#0f172a] break-all">
+                    {formData.evidenceFilename || "eviden_selected.jpg"}
                   </div>
                   <div className="text-[#15803d] flex items-center space-x-1.5 font-bold">
-                    <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#16a34a] shrink-0" />
                     <span>Gambar siap diunggah & diproses OCR</span>
                   </div>
+                  {imageMeta && (
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono text-[#334155]">
+                      <span className="px-2 py-0.5 rounded-full bg-white border border-[#e2e8f0]">
+                        {imageMeta.width}x{imageMeta.height} px
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-white border border-[#e2e8f0]">
+                        {imageMeta.wasNormalized
+                          ? `${formatFileSizeKb(imageMeta.originalSizeBytes)} -> ${formatFileSizeKb(imageMeta.finalSizeBytes)}`
+                          : formatFileSizeKb(imageMeta.finalSizeBytes)}
+                      </span>
+                      {imageMeta.wasHeicConverted && (
+                        <span className="px-2 py-0.5 rounded-full bg-[#f0f9ff] border border-[#bae6fd] text-[#0369a1] font-sans font-semibold">
+                          HEIC dikonversi ke JPG
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <p className="text-[#64748b] text-[11px] leading-relaxed">
-                    Foto akan otomatis disimpan ke direktori lokal terstruktur dan diekstraksi teksnya oleh AI vision service.
+                    Eviden Ulasan akan otomatis disimpan ke penyimpanan lokal server dan diekstraksi teksnya oleh layanan OCR.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="mt-2 min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-[#cbd5e1] text-[#334155] hover:bg-[#f1f5f9] transition-all focus-utility-ring cursor-pointer"
-                  >
-                    Ganti Foto
-                  </button>
+                  <div className="pt-1 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={isProcessingImage}
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-[#00a2b9] hover:bg-[#008c9f] text-white transition-all focus-utility-ring cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Foto Ulang Kamera</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isProcessingImage}
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-[#cbd5e1] text-[#334155] hover:bg-[#f1f5f9] transition-all focus-utility-ring cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <ImageIcon className="w-4 h-4 text-[#006877]" />
+                      <span>Pilih dari Galeri</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
               <div
-                onClick={() => fileInputRef.current?.click()}
-                tabIndex={0}
-                role="button"
-                aria-label="Pilih foto atau ambil gambar kamera"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    fileInputRef.current?.click();
-                  }
-                }}
-                className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 focus-utility-ring ${
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all flex flex-col items-center justify-center space-y-4 ${
                   formErrors.evidenceImageBase64
                     ? "border-[#fecaca] bg-[#fef2f2]"
-                    : "border-[#cbd5e1] bg-[#f8fafc] hover:bg-[#f1f5f9] hover:border-[#00a2b9]"
+                    : "border-[#cbd5e1] bg-[#f8fafc] hover:border-[#00a2b9]"
                 }`}
               >
-                <div className="w-14 h-14 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center text-[#006877] shadow-xs">
-                  <UploadCloud className="w-7 h-7 text-[#006877]" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-[#0f172a]">
-                    Klik untuk Memilih Foto atau Mengambil Kamera
+                {isProcessingImage ? (
+                  <div className="py-4 flex flex-col items-center space-y-2.5">
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center text-[#006877] shadow-xs">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#00a2b9]" />
+                    </div>
+                    <div className="text-sm font-bold text-[#0f172a]">
+                      Mengoptimalkan gambar untuk OCR...
+                    </div>
+                    <p className="text-xs text-[#64748b]">
+                      Menyesuaikan resolusi, format iOS/Android, dan ukuran unggahan.
+                    </p>
                   </div>
-                  <p className="text-xs text-[#64748b] mt-1">
-                    Mendukung format JPG, PNG, atau WebP (Ukuran maksimal 5 MB).
-                  </p>
-                </div>
+                ) : (
+                  <>
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center text-[#006877] shadow-xs">
+                      <Camera className="w-7 h-7 text-[#006877]" />
+                    </div>
+                    <div className="max-w-lg">
+                      <div className="text-sm font-bold text-[#0f172a]">
+                        Ambil Foto Kamera Langsung atau Pilih Tangkapan Layar
+                      </div>
+                      <p className="text-xs text-[#64748b] mt-1 leading-relaxed">
+                        Mendukung kamera Android & iOS (termasuk HEIC/HEIF) maupun screenshot galeri (JPG, PNG, WebP). Foto beresolusi tinggi otomatis dioptimalkan.
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 w-full max-w-md pt-1">
+                      <button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="min-h-[44px] flex-1 px-4 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008c9f] text-white text-xs font-bold shadow-xs transition-all focus-utility-ring cursor-pointer inline-flex items-center justify-center gap-2"
+                      >
+                        <Camera className="w-4 h-4 shrink-0" />
+                        <span>Ambil Foto Kamera</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="min-h-[44px] flex-1 px-4 py-2.5 rounded-xl bg-white hover:bg-[#f1f5f9] text-[#334155] border border-[#cbd5e1] text-xs font-bold shadow-xs transition-all focus-utility-ring cursor-pointer inline-flex items-center justify-center gap-2"
+                      >
+                        <ImageIcon className="w-4 h-4 text-[#006877] shrink-0" />
+                        <span>Pilih dari Galeri / File</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
             <input
-              ref={fileInputRef}
+              ref={cameraInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/*"
               capture="environment"
               onChange={handleFileChange}
+              aria-label="Ambil Foto Kamera Langsung"
+              className="hidden"
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
+              onChange={handleFileChange}
+              aria-label="Pilih Tangkapan Layar dari Galeri atau File"
               className="hidden"
             />
 
@@ -459,10 +565,12 @@ export function IntakeForm() {
                 evidenceFilename: "",
               });
               setPreviewUrl(null);
+              setImageMeta(null);
+              clearFileInputs();
               setFormErrors({});
               setSuccessInfo(null);
             }}
-            disabled={submitMutation.isPending}
+            disabled={submitMutation.isPending || isProcessingImage}
             className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-xs font-bold text-[#334155] transition-all min-h-[44px] flex items-center justify-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50 shadow-xs"
           >
             <RotateCcw className="w-3.5 h-3.5 text-[#64748b]" />
@@ -471,7 +579,7 @@ export function IntakeForm() {
 
           <button
             type="submit"
-            disabled={submitMutation.isPending}
+            disabled={submitMutation.isPending || isProcessingImage}
             className="w-full sm:w-auto min-w-[220px] px-5 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008c9f] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all focus-utility-ring cursor-pointer disabled:opacity-50"
           >
             {submitMutation.isPending ? (
