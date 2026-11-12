@@ -13,6 +13,8 @@ import { getDownloaderNetworkMetrics } from "@/server/services/evidenceDownloade
 import { getOcrBridgeMetrics } from "@/server/services/ocrBridge";
 
 const execAsync = promisify(exec);
+// Keep safely below Docker's 5s HEALTHCHECK timeout while tolerating transient OCR load.
+const OCR_HEALTH_TIMEOUT_MS = 3500;
 
 export async function GET() {
   const startTime = Date.now();
@@ -135,13 +137,19 @@ export async function GET() {
     let isUp = false;
 
     // Check HTTP endpoint first (covers active Rust or Python microservice)
+    const ocrController = new AbortController();
+    const ocrTimeout = setTimeout(() => {
+      ocrController.abort(new DOMException("OCR health check timed out", "TimeoutError"));
+    }, OCR_HEALTH_TIMEOUT_MS);
     try {
-      const res = await fetch(`${ocrUrl}/health`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${ocrUrl}/health`, { signal: ocrController.signal });
       if (res.ok) {
         isUp = true;
       }
     } catch {
       // HTTP not reachable, proceed to check binary directly
+    } finally {
+      clearTimeout(ocrTimeout);
     }
 
     if (!isUp) {
@@ -272,18 +280,27 @@ export async function GET() {
 
   const overallStatus = isCriticalUp && !isDegraded ? "healthy" : "degraded";
   const statusCode = isCriticalUp ? 200 : 503;
-
-  logger.info("Health check executed", {
+  const durationMs = Date.now() - startTime;
+  const healthLogPayload = {
     module: "HEALTH",
-    durationMs: Date.now() - startTime,
+    durationMs,
     metadata: { overallStatus, services },
-  });
+  };
+
+  if (!isCriticalUp) {
+    logger.error("Health check unhealthy", healthLogPayload);
+  } else if (overallStatus !== "healthy") {
+    logger.warn("Health check degraded", healthLogPayload);
+  } else if (process.env.LOG_HEALTH_CHECKS === "true") {
+    // Healthy 15s container polls are suppressed by default to prevent daily log bloat.
+    logger.info("Health check executed", healthLogPayload);
+  }
 
   return NextResponse.json(
     {
       status: overallStatus,
       timestamp,
-      execution_ms: Date.now() - startTime,
+      execution_ms: durationMs,
       services,
     },
     { status: statusCode }

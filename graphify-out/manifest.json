@@ -1110,8 +1110,8 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1794453088.2239122,
-    "seen": 1794457033.771405,
+    "mtime": 1794457613.445059,
+    "seen": 1794461812.022166,
     "ast_hash": "bc2b6754e96c86abae903f5b4e55d755",
     "semantic_hash": ""
   },
@@ -1416,9 +1416,9 @@
     "semantic_hash": ""
   },
   "src/app/api/health/route.ts": {
-    "mtime": 1793899526.0781016,
-    "seen": 1793900096.961814,
-    "ast_hash": "24c1c0a785d90e12fc94c2d31b844eb3",
+    "mtime": 1794461733.1051154,
+    "seen": 1794461812.0248,
+    "ast_hash": "20a3108c621c96444dfc6a19898013d8",
     "semantic_hash": ""
   },
   "src/app/api/trpc/[trpc]/route.ts": {
@@ -1890,8 +1890,8 @@
     "semantic_hash": ""
   },
   "src/lib/processManager.ts": {
-    "mtime": 1794456951.5048094,
-    "seen": 1794457033.787905,
+    "mtime": 1794457608.1997025,
+    "seen": 1794461812.0293581,
     "ast_hash": "df0e39a6e1f0ba2e44acb08ab4174d0f",
     "semantic_hash": ""
   },
@@ -2346,8 +2346,8 @@
     "semantic_hash": ""
   },
   "tests/unit/processManager.test.ts": {
-    "mtime": 1794456981.9854,
-    "seen": 1794457033.797109,
+    "mtime": 1794457608.2395902,
+    "seen": 1794461812.0338361,
     "ast_hash": "50cbf3bce4dbd8ea513b2d60da58cc2a",
     "semantic_hash": ""
   },
@@ -5286,15 +5286,15 @@
     "semantic_hash": ""
   },
   "rust-services/goro-engine/src/server.rs": {
-    "mtime": 1793895959.482719,
-    "seen": 1793896767.9826062,
-    "ast_hash": "767e776f1d3b5851e7d4ff7d7ffe2c31",
+    "mtime": 1794461634.0468698,
+    "seen": 1794461812.0229461,
+    "ast_hash": "35800d3decd2270f9f631c25018882a9",
     "semantic_hash": ""
   },
   "rust-services/goro-engine/src/tesseract_ffi.rs": {
-    "mtime": 1793899523.533873,
-    "seen": 1793900096.9600031,
-    "ast_hash": "158e04098a9f106995f8493aeaf77167",
+    "mtime": 1794461683.7506812,
+    "seen": 1794461812.022948,
+    "ast_hash": "55c0d7dc8f0dfdc0d7b36934d8b11ddc",
     "semantic_hash": ""
   },
   ".agents/skills/rust-best-practices/SKILL.md": {
@@ -5433,6 +5433,12 @@
     "mtime": 1794449632.7678852,
     "seen": 1794449641.119143,
     "ast_hash": "ac163bfee45af01842fcbdc578e626da",
+    "semantic_hash": ""
+  },
+  "tests/unit/healthRoute.test.ts": {
+    "mtime": 1794461735.654557,
+    "seen": 1794461812.033327,
+    "ast_hash": "6aac3636110a1f30d91e1ece53bed7b4",
     "semantic_hash": ""
   },
   "package-lock.json": {

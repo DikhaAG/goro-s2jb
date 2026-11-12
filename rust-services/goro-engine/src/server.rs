@@ -113,9 +113,17 @@ pub async fn process_evidence(
     target_name: &str,
 ) -> ProcessResponse {
     let start = Instant::now();
-    let img = match load_image(image_path, image_base64) {
-        Ok(img) => img,
-        Err(err) => {
+    let path_owned = image_path.map(str::to_owned);
+    let b64_owned = image_base64.map(str::to_owned);
+
+    // Offload file I/O, base64 decoding, and image decompression away from async worker threads.
+    let img = match tokio::task::spawn_blocking(move || {
+        load_image(path_owned.as_deref(), b64_owned.as_deref())
+    })
+    .await
+    {
+        Ok(Ok(img)) => img,
+        Ok(Err(err)) => {
             return ProcessResponse {
                 success: false,
                 extracted_text: String::new(),
@@ -125,6 +133,18 @@ pub async fn process_evidence(
                 recommended_status: "REJECTED".to_string(),
                 execution_time_ms: start.elapsed().as_millis() as u64,
                 error: Some(err),
+            };
+        }
+        Err(join_err) => {
+            return ProcessResponse {
+                success: false,
+                extracted_text: String::new(),
+                phash: String::new(),
+                similarity_score: 0.0,
+                zone: "RED".to_string(),
+                recommended_status: "REJECTED".to_string(),
+                execution_time_ms: start.elapsed().as_millis() as u64,
+                error: Some(format!("Image loader task failed: {join_err}")),
             };
         }
     };
@@ -223,7 +243,21 @@ pub async fn match_handler(
 pub async fn batch_duplicate_check_handler(
     Json(payload): Json<BatchDuplicateRequest>,
 ) -> Json<BatchDuplicateResponse> {
-    let result = evaluate_batch_duplicate(payload);
+    let result = tokio::task::spawn_blocking(move || evaluate_batch_duplicate(payload))
+        .await
+        .unwrap_or_else(|err| {
+            tracing::error!("Batch duplicate check task failed: {err}");
+            BatchDuplicateResponse {
+                is_duplicate: false,
+                duplicate_of_id: None,
+                min_distance: 64,
+                visual_similarity: 0,
+                text_similarity: 0,
+                reviewer_similarity: 0,
+                match_reason: None,
+                execution_time_ms: 0,
+            }
+        });
     Json(result)
 }
 
@@ -253,4 +287,86 @@ pub async fn start_server(pool: TesseractPool, host: &str, port: u16) -> Result<
 
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[test]
+    fn health_stays_responsive_while_ocr_runs_on_single_worker_runtime() {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("runtime should build");
+
+        rt.block_on(async {
+            let pool = TesseractPool::new(2, "eng").expect("pool should initialize");
+            let state = AppState {
+                pool: Arc::new(pool.clone()),
+                start_time: Instant::now(),
+            };
+
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+                .await
+                .expect("listener should bind");
+            let addr = listener.local_addr().expect("addr should exist");
+            let server_handle = tokio::spawn(async move {
+                let _ = axum::serve(listener, create_router(state)).await;
+            });
+
+            // Signal as soon as the blocking OCR closure has started executing
+            let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+            let ocr_pool = pool.clone();
+            let ocr_handle = tokio::spawn(async move {
+                let mut tx = Some(started_tx);
+                ocr_pool
+                    .run_ocr(move |_engine| {
+                        if let Some(sender) = tx.take() {
+                            let _ = sender.send(());
+                        }
+                        std::thread::sleep(Duration::from_millis(300));
+                        Ok(())
+                    })
+                    .await
+            });
+
+            started_rx.await.expect("ocr job should start");
+
+            let health_start = Instant::now();
+            let response = tokio::time::timeout(Duration::from_millis(150), async {
+                let mut stream = tokio::net::TcpStream::connect(addr).await?;
+                stream
+                    .write_all(b"GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                    .await?;
+                let mut buf = String::new();
+                stream.read_to_string(&mut buf).await?;
+                Ok::<String, std::io::Error>(buf)
+            })
+            .await
+            .expect("/health timed out while OCR task blocked runtime")
+            .expect("TCP read should succeed");
+
+            let elapsed = health_start.elapsed();
+            assert!(
+                response.starts_with("HTTP/1.1 200 OK"),
+                "unexpected health status: {response}"
+            );
+            assert!(
+                response.contains("\"status\":\"UP\""),
+                "unexpected health body: {response}"
+            );
+            assert!(
+                elapsed < Duration::from_millis(150),
+                "health took {:?} while OCR blocked",
+                elapsed
+            );
+
+            ocr_handle.await.expect("ocr task panicked").expect("ocr failed");
+            server_handle.abort();
+        });
+    }
 }

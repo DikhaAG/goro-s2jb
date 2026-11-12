@@ -1,8 +1,8 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_uchar};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tracing::info;
 
 #[repr(C)]
@@ -197,10 +197,28 @@ impl Drop for TesseractEngine {
     }
 }
 
+/// Returns a borrowed engine back to the pool before releasing its semaphore permit.
+struct PoolEngineGuard {
+    engine: Option<TesseractEngine>,
+    engines: Arc<Mutex<Vec<TesseractEngine>>>,
+    // Declared last so Drop::drop pushes the engine back before the permit frees a slot.
+    _permit: OwnedSemaphorePermit,
+}
+
+impl Drop for PoolEngineGuard {
+    fn drop(&mut self) {
+        if let Some(engine) = self.engine.take() {
+            let mut guard = self.engines.lock().unwrap_or_else(|e| e.into_inner());
+            guard.push(engine);
+        }
+    }
+}
+
 /// Thread-safe worker pool managing in-memory Tesseract instances.
 #[derive(Clone)]
 pub struct TesseractPool {
-    instances: Arc<Vec<Mutex<TesseractEngine>>>,
+    semaphore: Arc<Semaphore>,
+    engines: Arc<Mutex<Vec<TesseractEngine>>>,
 }
 
 impl TesseractPool {
@@ -211,30 +229,53 @@ impl TesseractPool {
 
         for _ in 0..pool_size {
             let engine = TesseractEngine::new(lang)?;
-            engines.push(Mutex::new(engine));
+            engines.push(engine);
         }
 
         info!("In-Memory Tesseract Pool initialized with {} warm instance(s) [Version: {}]", pool_size, get_tesseract_version());
         Ok(Self {
-            instances: Arc::new(engines),
+            semaphore: Arc::new(Semaphore::new(pool_size)),
+            engines: Arc::new(Mutex::new(engines)),
         })
     }
 
-    /// Acquires an available engine from the pool to process an image.
+    /// Acquires any available engine from the pool and runs OCR on Tokio's blocking thread pool.
     pub async fn run_ocr<F, R>(&self, f: F) -> Result<R, String>
     where
-        F: FnOnce(&mut TesseractEngine) -> Result<R, String>,
+        F: FnOnce(&mut TesseractEngine) -> Result<R, String> + Send + 'static,
+        R: Send + 'static,
     {
-        // Simple round-robin lock acquisition
-        for instance in self.instances.iter() {
-            if let Ok(mut guard) = instance.try_lock() {
-                return f(&mut guard);
-            }
-        }
+        let permit = self
+            .semaphore
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|_| "OCR engine pool closed".to_string())?;
 
-        // If all are busy, wait on the first available instance
-        let mut guard = self.instances[0].lock().await;
-        f(&mut guard)
+        let engines = Arc::clone(&self.engines);
+        tokio::task::spawn_blocking(move || {
+            let engine = {
+                let mut guard = engines.lock().unwrap_or_else(|e| e.into_inner());
+                guard
+                    .pop()
+                    .ok_or_else(|| "No Tesseract engine available in pool".to_string())?
+            };
+
+            let mut engine_guard = PoolEngineGuard {
+                engine: Some(engine),
+                engines,
+                _permit: permit,
+            };
+
+            let engine_ref = engine_guard
+                .engine
+                .as_mut()
+                .ok_or_else(|| "Missing Tesseract engine instance".to_string())?;
+
+            f(engine_ref)
+        })
+        .await
+        .map_err(|e| format!("OCR worker task failed: {e}"))?
     }
 }
 
@@ -253,5 +294,63 @@ mod tests {
     fn test_engine_initialization() {
         let engine = TesseractEngine::new("ind+eng");
         assert!(engine.is_ok(), "Engine should initialize with ind+eng or fallback to eng");
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn pool_schedules_all_engines_concurrently() {
+        let pool = TesseractPool::new(2, "eng").expect("2-slot pool should initialize");
+        let barrier = Arc::new(std::sync::Barrier::new(2));
+
+        let b1 = Arc::clone(&barrier);
+        let p1 = pool.clone();
+        let t1 = tokio::spawn(async move {
+            p1.run_ocr(move |_| {
+                b1.wait();
+                Ok(1)
+            })
+            .await
+        });
+
+        let b2 = Arc::clone(&barrier);
+        let p2 = pool.clone();
+        let t2 = tokio::spawn(async move {
+            p2.run_ocr(move |_| {
+                b2.wait();
+                Ok(2)
+            })
+            .await
+        });
+
+        let (r1, r2) = tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            tokio::join!(t1, t2)
+        })
+        .await
+        .expect("both pool slots should execute in parallel without deadlocking at barrier");
+
+        assert_eq!(r1.expect("task 1 join").expect("task 1 ocr"), 1);
+        assert_eq!(r2.expect("task 2 join").expect("task 2 ocr"), 2);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+    async fn pool_reclaims_engine_and_permit_after_task_panic() {
+        let pool = TesseractPool::new(1, "eng").expect("1-slot pool should initialize");
+
+        let panic_res: Result<(), String> = pool
+            .run_ocr(|_| -> Result<(), String> {
+                panic!("simulated FFI panic");
+            })
+            .await;
+        assert!(panic_res.is_err(), "panic inside blocking task should surface as Err");
+
+        // The single engine and semaphore permit must both have been returned cleanly.
+        let next_res = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            pool.run_ocr(|_| Ok(42)),
+        )
+        .await
+        .expect("subsequent run_ocr should not hang after panic")
+        .expect("reclaimed engine should work");
+
+        assert_eq!(next_res, 42);
     }
 }
