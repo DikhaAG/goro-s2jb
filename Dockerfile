@@ -5,7 +5,7 @@
 # Base image with libc6-compat for Alpine compatibility
 FROM node:22-alpine AS base
 WORKDIR /app
-RUN apk add --no-cache libc6-compat curl
+RUN apk add --no-cache libc6-compat curl procps
 
 # Stage 1: Install dependencies
 FROM base AS deps

@@ -1,17 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   classifyServiceType,
   getSystemResources,
   tailLogFile,
   terminateProcess,
   checkPortConnectivity,
+  resolveServiceEndpoint,
+  detectServicePorts,
+  resetPortLatencyHistory,
 } from "@/lib/processManager";
 import fs from "fs";
+import net from "net";
 import path from "path";
 
 describe("processManager Utility Suite", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetPortLatencyHistory();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe("1. classifyServiceType & Safety Whitelist", () => {
@@ -121,6 +130,94 @@ describe("processManager Utility Suite", () => {
       // Port 59999 should not be listening
       const result = await checkPortConnectivity(59999, "127.0.0.1", 100);
       expect(result.isReachable).toBe(false);
+    });
+  });
+
+  describe("6. resolveServiceEndpoint & Multi-Container Port Detection", () => {
+    it("should parse Docker hostnames and custom ports from connection URLs", () => {
+      expect(
+        resolveServiceEndpoint(
+          "postgresql://goro_admin:goro_secret_2026@postgres:5432/goro_s2jb?schema=public",
+          "127.0.0.1",
+          5432
+        )
+      ).toEqual({ host: "postgres", port: 5432 });
+
+      expect(
+        resolveServiceEndpoint("redis://redis:6379", "127.0.0.1", 6379)
+      ).toEqual({ host: "redis", port: 6379 });
+
+      expect(
+        resolveServiceEndpoint("http://ocr-engine:8001", "127.0.0.1", 8001)
+      ).toEqual({ host: "ocr-engine", port: 8001 });
+    });
+
+    it("should normalize wildcard bind addresses and fallback safely on invalid URLs", () => {
+      expect(
+        resolveServiceEndpoint("http://0.0.0.0:8001", "127.0.0.1", 8001)
+      ).toEqual({ host: "127.0.0.1", port: 8001 });
+
+      expect(
+        resolveServiceEndpoint("https://ocr.internal", "127.0.0.1", 8001)
+      ).toEqual({ host: "ocr.internal", port: 443 });
+
+      expect(resolveServiceEndpoint(undefined, "127.0.0.1", 5432)).toEqual({
+        host: "127.0.0.1",
+        port: 5432,
+      });
+
+      expect(resolveServiceEndpoint("not-a-valid-url", "127.0.0.1", 6379)).toEqual({
+        host: "127.0.0.1",
+        port: 6379,
+      });
+    });
+
+    it("should probe configured DATABASE_URL, REDIS_URL, OCR_SERVICE_URL, and PORT endpoints", async () => {
+      const startServer = (): Promise<{ server: net.Server; port: number }> =>
+        new Promise((resolve, reject) => {
+          const srv = net.createServer();
+          srv.once("error", reject);
+          srv.listen(0, "127.0.0.1", () => {
+            const addr = srv.address();
+            if (addr && typeof addr === "object") {
+              resolve({ server: srv, port: addr.port });
+            } else {
+              reject(new Error("Failed to get ephemeral port"));
+            }
+          });
+        });
+
+      const started = await Promise.all([
+        startServer(),
+        startServer(),
+        startServer(),
+        startServer(),
+      ]);
+
+      try {
+        const [pgSrv, redisSrv, ocrSrv, webSrv] = started;
+        vi.stubEnv("DATABASE_URL", `postgresql://user:pass@127.0.0.1:${pgSrv.port}/goro_s2jb`);
+        vi.stubEnv("REDIS_URL", `redis://127.0.0.1:${redisSrv.port}`);
+        vi.stubEnv("OCR_SERVICE_URL", `http://127.0.0.1:${ocrSrv.port}`);
+        vi.stubEnv("PORT", String(webSrv.port));
+
+        const results = await detectServicePorts();
+        expect(results).toHaveLength(4);
+        expect(results.map((r) => r.port)).toEqual([
+          pgSrv.port,
+          redisSrv.port,
+          ocrSrv.port,
+          webSrv.port,
+        ]);
+        expect(results.every((r) => r.status === "UP")).toBe(true);
+      } finally {
+        await Promise.all(
+          started.map(
+            ({ server }) =>
+              new Promise<void>((resolve) => server.close(() => resolve()))
+          )
+        );
+      }
     });
   });
 });

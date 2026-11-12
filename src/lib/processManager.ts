@@ -167,7 +167,55 @@ export async function getPidForPort(port: number): Promise<number | null> {
 }
 
 /**
- * Inspects all 5 core services to determine port binding, connectivity latency, and PID.
+ * Parses host and port from a service connection URL (e.g. DATABASE_URL, REDIS_URL,
+ * OCR_SERVICE_URL), normalizing wildcard bind hosts to defaultHost.
+ */
+export function resolveServiceEndpoint(
+  rawUrl: string | undefined,
+  defaultHost: string,
+  defaultPort: number
+): { host: string; port: number } {
+  if (!rawUrl || !rawUrl.trim()) {
+    return { host: defaultHost, port: defaultPort };
+  }
+
+  try {
+    const parsed = new URL(rawUrl.trim());
+    const hostname = parsed.hostname?.trim();
+    const host =
+      !hostname || hostname === "0.0.0.0" || hostname === "::"
+        ? defaultHost
+        : hostname;
+
+    let port = defaultPort;
+    if (parsed.port) {
+      const parsedPort = parseInt(parsed.port, 10);
+      if (!isNaN(parsedPort) && parsedPort > 0 && parsedPort <= 65535) {
+        port = parsedPort;
+      }
+    } else if (parsed.protocol === "https:") {
+      port = 443;
+    } else if (parsed.protocol === "http:") {
+      port = 80;
+    }
+
+    return { host, port };
+  } catch {
+    return { host: defaultHost, port: defaultPort };
+  }
+}
+
+function isLoopbackHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase();
+  return (
+    normalized === "127.0.0.1" ||
+    normalized === "localhost" ||
+    normalized === "::1"
+  );
+}
+
+/**
+ * Inspects all 4 core services to determine endpoint reachability, latency, and local PID.
  */
 export async function detectServicePorts(): Promise<ServicePortInfo[]> {
   const isWindows = process.platform === "win32";
@@ -179,23 +227,51 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
     "release",
     isWindows ? "goro-engine.exe" : "goro-engine"
   );
-  const defaultOcrIsRust = fs.existsSync(rustBin);
+  const pgEndpoint = resolveServiceEndpoint(process.env.DATABASE_URL, "127.0.0.1", 5432);
+  const redisEndpoint = resolveServiceEndpoint(process.env.REDIS_URL, "127.0.0.1", 6379);
+  const ocrEndpoint = resolveServiceEndpoint(process.env.OCR_SERVICE_URL, "127.0.0.1", 8001);
+  const parsedWebPort = parseInt(process.env.PORT || "3000", 10);
+  const webPort = !isNaN(parsedWebPort) && parsedWebPort > 0 ? parsedWebPort : 3000;
 
-  const serviceDefs: Array<{ name: string; port: number; serviceType: ServiceType }> = [
-    { name: "PostgreSQL Database", port: 5432, serviceType: "POSTGRES" },
-    { name: "Redis In-Memory Broker", port: 6379, serviceType: "REDIS" },
+  const defaultOcrIsRust =
+    fs.existsSync(rustBin) || ocrEndpoint.host.toLowerCase() === "ocr-engine";
+
+  const serviceDefs: Array<{
+    name: string;
+    host: string;
+    port: number;
+    serviceType: ServiceType;
+  }> = [
+    {
+      name: "PostgreSQL Database",
+      host: pgEndpoint.host,
+      port: pgEndpoint.port,
+      serviceType: "POSTGRES",
+    },
+    {
+      name: "Redis In-Memory Broker",
+      host: redisEndpoint.host,
+      port: redisEndpoint.port,
+      serviceType: "REDIS",
+    },
     {
       name: defaultOcrIsRust ? "Rust Native Vision Engine" : "Vision & OCR Engine",
-      port: 8001,
+      host: ocrEndpoint.host,
+      port: ocrEndpoint.port,
       serviceType: defaultOcrIsRust ? "RUST_OCR" : "PYTHON_OCR",
     },
-    { name: "Next.js Web Application", port: 3000, serviceType: "WEB_SERVER" },
+    {
+      name: "Next.js Web Application",
+      host: "127.0.0.1",
+      port: webPort,
+      serviceType: "WEB_SERVER",
+    },
   ];
 
   const results: ServicePortInfo[] = await Promise.all(
     serviceDefs.map(async (svc) => {
-      const conn = await checkPortConnectivity(svc.port);
-      const pid = await getPidForPort(svc.port);
+      const conn = await checkPortConnectivity(svc.port, svc.host);
+      const pid = isLoopbackHost(svc.host) ? await getPidForPort(svc.port) : null;
 
       const recentLatencies = getPortLatencyHistory(svc.port);
       let averageLatencyMs: number | undefined;
@@ -228,7 +304,7 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
             processCommandText = stdout.trim();
           }
           processCommand = processCommandText || undefined;
-          if (svc.port === 8001) {
+          if (svc.port === ocrEndpoint.port) {
             if (processCommand?.toLowerCase().includes("goro-engine")) {
               finalName = "Rust Native Vision Engine (goro-engine)";
               finalType = "RUST_OCR";
@@ -297,6 +373,47 @@ export function classifyServiceType(command: string): { serviceType: ServiceType
   return { serviceType: "OTHER", isSafeToKill: false };
 }
 
+function isRelatedProcessCommand(command: string): boolean {
+  return (
+    command.includes("goro-s2jb") ||
+    command.includes("goro-engine") ||
+    command.includes("importWorker.ts") ||
+    command.includes("ocrWorker.ts") ||
+    command.includes("worker:import") ||
+    command.includes("worker:ocr") ||
+    (command.includes("uvicorn") && command.includes("main:app")) ||
+    command.includes("redis-server") ||
+    command.includes("postgres")
+  );
+}
+
+function buildManagedProcess(
+  pid: number,
+  ppid: number,
+  cpuPercent: number,
+  memPercent: number,
+  rssKb: number,
+  status: string,
+  elapsedTime: string,
+  command: string,
+  currentPid: number
+): ManagedProcess {
+  const { serviceType, isSafeToKill } = classifyServiceType(command);
+  const safe = isSafeToKill && pid !== currentPid && pid > 100;
+  return {
+    pid,
+    ppid,
+    cpuPercent,
+    memPercent,
+    rssKb,
+    status,
+    elapsedTime,
+    command,
+    serviceType,
+    isSafeToKill: safe,
+  };
+}
+
 /**
  * Lists running processes on the host operating system filtered specifically for GORO S2JB ecosystem.
  */
@@ -317,36 +434,13 @@ export async function listAppProcesses(): Promise<ManagedProcess[]> {
           const pid = Number(item.ProcessId);
           const ppid = Number(item.ParentProcessId) || 0;
           const command = String(item.CommandLine || "");
-          if (!command || isNaN(pid) || pid <= 0) continue;
+          if (!command || isNaN(pid) || pid <= 0 || !isRelatedProcessCommand(command)) {
+            continue;
+          }
 
-          const isRelated =
-            command.includes("goro-s2jb") ||
-            command.includes("goro-engine") ||
-            command.includes("importWorker.ts") ||
-            command.includes("ocrWorker.ts") ||
-            command.includes("worker:import") ||
-            command.includes("worker:ocr") ||
-            (command.includes("uvicorn") && command.includes("main:app")) ||
-            command.includes("redis-server") ||
-            command.includes("postgres");
-
-          if (!isRelated) continue;
-
-          const { serviceType, isSafeToKill } = classifyServiceType(command);
-          const safe = isSafeToKill && pid !== currentPid && pid > 100;
-
-          processes.push({
-            pid,
-            ppid,
-            cpuPercent: 0,
-            memPercent: 0,
-            rssKb: 0,
-            status: "RUNNING",
-            elapsedTime: "N/A",
-            command,
-            serviceType,
-            isSafeToKill: safe,
-          });
+          processes.push(
+            buildManagedProcess(pid, ppid, 0, 0, 0, "RUNNING", "N/A", command, currentPid)
+          );
         }
 
         return processes;
@@ -356,69 +450,74 @@ export async function listAppProcesses(): Promise<ManagedProcess[]> {
       }
     }
 
-    // Format: PID, PPID, %CPU, %MEM, RSS (KB), STAT, ETIME, COMMAND
-    const { stdout } = await execAsync("ps -axo pid,ppid,pcpu,pmem,rss,stat,etime,command 2>/dev/null");
-    const lines = stdout.trim().split("\n");
-
-    if (lines.length <= 1) return [];
-
     const processes: ManagedProcess[] = [];
     const currentPid = process.pid;
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+    try {
+      // Format: PID, PPID, %CPU, %MEM, RSS (KB), STAT, ETIME, COMMAND
+      const { stdout } = await execAsync(
+        "ps -axo pid,ppid,pcpu,pmem,rss,stat,etime,command 2>/dev/null"
+      );
+      const lines = stdout.trim().split("\n");
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
 
-      // Extract fixed columns up to command
-      const match = line.match(/^(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/);
-      if (!match) continue;
+        const match = line.match(
+          /^(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/
+        );
+        if (!match) continue;
 
-      const pid = parseInt(match[1], 10);
-      const ppid = parseInt(match[2], 10);
-      const cpuPercent = parseFloat(match[3]);
-      const memPercent = parseFloat(match[4]);
-      const rssKb = parseInt(match[5], 10);
-      const status = match[6];
-      const elapsedTime = match[7];
-      const command = match[8];
+        const command = match[8];
+        if (!isRelatedProcessCommand(command)) continue;
 
-      // Whitelist filter: only include processes tied to this project or related services
-      const isRelated =
-        command.includes("goro-s2jb") ||
-        command.includes("goro-engine") ||
-        command.includes("importWorker.ts") ||
-        command.includes("ocrWorker.ts") ||
-        command.includes("worker:import") ||
-        command.includes("worker:ocr") ||
-        (command.includes("uvicorn") && command.includes("main:app")) ||
-        command.includes("redis-server") ||
-        command.includes("postgres");
+        processes.push(
+          buildManagedProcess(
+            parseInt(match[1], 10),
+            parseInt(match[2], 10),
+            parseFloat(match[3]),
+            parseFloat(match[4]),
+            parseInt(match[5], 10),
+            match[6],
+            match[7],
+            command,
+            currentPid
+          )
+        );
+      }
+    } catch {
+      // BusyBox/minimal Alpine fallback without procps -axo extensions
+      const { stdout } = await execAsync("ps -o pid,ppid,stat,args 2>/dev/null");
+      const lines = stdout.trim().split("\n");
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
 
-      if (!isRelated) continue;
+        const match = line.match(/^(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/);
+        if (!match) continue;
 
-      const { serviceType, isSafeToKill } = classifyServiceType(command);
+        const command = match[4];
+        if (!isRelatedProcessCommand(command)) continue;
 
-      // Current running Node.js process must NEVER be safe to kill from within itself
-      const safe = isSafeToKill && pid !== currentPid && pid > 100;
-
-      processes.push({
-        pid,
-        ppid,
-        cpuPercent,
-        memPercent,
-        rssKb,
-        status,
-        elapsedTime,
-        command,
-        serviceType,
-        isSafeToKill: safe,
-      });
+        processes.push(
+          buildManagedProcess(
+            parseInt(match[1], 10),
+            parseInt(match[2], 10),
+            0,
+            0,
+            0,
+            match[3],
+            "N/A",
+            command,
+            currentPid
+          )
+        );
+      }
     }
 
     // Sort by CPU usage descending
     return processes.sort((a, b) => b.cpuPercent - a.cpuPercent);
-  } catch (error) {
-    console.error("Error executing ps command:", error);
+  } catch {
     return [];
   }
 }
