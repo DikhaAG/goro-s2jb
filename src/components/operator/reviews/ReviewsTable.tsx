@@ -12,6 +12,7 @@ import {
   type RowData,
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
+import { hasConfirmedDuplicate } from "./duplicateDisplay";
 import {
   ChevronLeft,
   ChevronRight,
@@ -372,7 +373,7 @@ export function ReviewsTable({
               <div className="absolute inset-0 bg-[#0f172a]/35 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
                 <Maximize2 className="w-3.5 h-3.5 text-white drop-shadow-sm" />
               </div>
-              {item.isDuplicate && (
+              {hasConfirmedDuplicate(item) && (
                 <div
                   className="absolute top-0.5 right-0.5 bg-[#7e22ce] text-white text-xs font-bold px-1.5 py-0.5 rounded shadow-2xs leading-none"
                   title="Terindikasi Duplikasi Visual"
@@ -417,7 +418,7 @@ export function ReviewsTable({
               )}
 
               {/* Cohesive Duplication Attribution Card with Split View Trigger */}
-              {item.isDuplicate && (
+              {hasConfirmedDuplicate(item) ? (
                 <div className="mt-2 p-2.5 rounded-xl bg-[#faf5ff] border border-[#e9d5ff] text-xs space-y-2 max-w-[380px] shadow-2xs">
                   <div className="flex items-center justify-between gap-1.5">
                     <span className="inline-flex items-center gap-1 text-xs font-bold tracking-wide uppercase text-[#7e22ce]">
@@ -528,7 +529,12 @@ export function ReviewsTable({
                     </button>
                   </div>
                 </div>
-              )}
+              ) : item.ocrStatus === "FAILED" && item.reviewRemarks ? (
+                <div className="mt-2 p-2 rounded-xl bg-[#fef2f2] border border-[#fee2e2] text-xs text-[#991b1b] max-w-[380px] flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-[#dc2626] shrink-0 mt-0.5" />
+                  <p className="leading-snug break-words">{item.reviewRemarks}</p>
+                </div>
+              ) : null}
             </div>
           );
         },
@@ -673,7 +679,7 @@ export function ReviewsTable({
               </button>
 
               {/* Duplicate Comparison Split View Quick Button */}
-              {item.isDuplicate && (
+              {hasConfirmedDuplicate(item) && (
                 <button
                   type="button"
                   onClick={() => meta?.onOpenDuplicateSplitView?.(item)}

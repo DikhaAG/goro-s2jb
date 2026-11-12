@@ -55,6 +55,8 @@ export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OC
         data: {
           ocrStatus: "FAILED",
           validationStatus: "NEEDS_REVIEW",
+          isDuplicate: false,
+          duplicateOfId: null,
           reviewRemarks: `OCR Gagal: Tautan gambar Google Drive tidak dapat dialirkan (${streamResult.error || "Gagal streaming"})`,
         },
       }).catch(() => {});
@@ -86,6 +88,8 @@ export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OC
       data: {
         ocrStatus: "FAILED",
         validationStatus: "NEEDS_REVIEW",
+        isDuplicate: false,
+        duplicateOfId: null,
         reviewRemarks: `OCR Gagal: ${ocrResult.error || "Citra tidak dapat diproses"}`,
       },
     }).catch(() => {

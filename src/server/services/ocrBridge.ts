@@ -55,48 +55,63 @@ export async function executeOcrBridge(
   const startTime = Date.now();
   const isBuffer = Buffer.isBuffer(imageInput);
 
-  // 1. Attempt HTTP request to local FastAPI microservice
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
-
-    const bodyPayload = isBuffer
-      ? {
-          image_base64: (imageInput as Buffer).toString("base64"),
-          target_name: targetReviewerName,
-        }
-      : {
-          image_path: imageInput as string,
-          target_name: targetReviewerName,
-        };
-
-    const res = await fetch(`${OCR_SERVICE_URL}/api/v1/process`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bodyPayload),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (res.ok) {
-      const data = (await res.json()) as OcrResultPayload;
-      const duration = data.execution_time_ms || Date.now() - startTime;
-      ocrBridgeMetrics.httpSuccessCount++;
-      ocrBridgeTotalDurationMs += duration;
-      ocrBridgeMetrics.averageExecutionMs = Math.round(
-        ocrBridgeTotalDurationMs / (ocrBridgeMetrics.httpSuccessCount + ocrBridgeMetrics.cliSuccessCount || 1)
-      );
-
-      return {
-        ...data,
-        execution_time_ms: duration,
+  // 1. Attempt HTTP request to OCR microservice with bounded retry for transient failures/restarts
+  const HTTP_MAX_ATTEMPTS = 3;
+  const HTTP_TIMEOUT_MS = 90000;
+  const bodyPayload = isBuffer
+    ? {
+        image_base64: (imageInput as Buffer).toString("base64"),
+        target_name: targetReviewerName,
+      }
+    : {
+        image_path: imageInput as string,
+        target_name: targetReviewerName,
       };
+  const serializedPayload = JSON.stringify(bodyPayload);
+
+  let lastHttpError = "";
+  for (let attempt = 1; attempt <= HTTP_MAX_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
+
+    try {
+      const res = await fetch(`${OCR_SERVICE_URL}/api/v1/process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: serializedPayload,
+        signal: controller.signal,
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as OcrResultPayload;
+        const duration = data.execution_time_ms || Date.now() - startTime;
+        ocrBridgeMetrics.httpSuccessCount++;
+        ocrBridgeTotalDurationMs += duration;
+        ocrBridgeMetrics.averageExecutionMs = Math.round(
+          ocrBridgeTotalDurationMs / (ocrBridgeMetrics.httpSuccessCount + ocrBridgeMetrics.cliSuccessCount || 1)
+        );
+
+        return {
+          ...data,
+          execution_time_ms: duration,
+        };
+      }
+
+      lastHttpError = `HTTP ${res.status} ${res.statusText || ""}`.trim();
+    } catch (httpErr) {
+      lastHttpError = httpErr instanceof Error ? httpErr.message : String(httpErr);
+    } finally {
+      clearTimeout(timeout);
     }
-  } catch (httpErr) {
-    // HTTP service unavailable or timed out, gracefully continue to subprocess fallback
-    ocrBridgeMetrics.cliFallbackCount++;
-    ocrBridgeMetrics.lastFallbackAt = new Date().toISOString();
+
+    if (attempt < HTTP_MAX_ATTEMPTS && !process.env.VITEST) {
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, attempt * 1500));
+    }
   }
+
+  // HTTP service unavailable, returned non-OK, or timed out after retries: gracefully continue to subprocess fallback
+  ocrBridgeMetrics.cliFallbackCount++;
+  ocrBridgeMetrics.lastFallbackAt = new Date().toISOString();
 
   // 2. Subprocess fallback execution
   // In-memory buffer streams directly via stdin (--base64 -) for true zero-disk execution
@@ -165,6 +180,12 @@ export async function executeOcrBridge(
 
     proc.on("error", (err) => {
       ocrBridgeMetrics.cliFailureCount++;
+      const errCode = (err as NodeJS.ErrnoException).code;
+      const errorMessage =
+        errCode === "ENOENT" || err.message.includes("ENOENT")
+          ? `Layanan OCR (${OCR_SERVICE_URL}) tidak dapat dihubungi (${lastHttpError || "HTTP error"}) dan runner CLI lokal tidak tersedia.`
+          : `Subprocess error: ${err.message}`;
+
       resolve({
         success: false,
         extracted_text: "",
@@ -173,7 +194,7 @@ export async function executeOcrBridge(
         zone: "RED",
         recommended_status: ValidationStatus.REJECTED,
         execution_time_ms: Date.now() - startTime,
-        error: `Subprocess error: ${err.message}`,
+        error: errorMessage,
       });
     });
 

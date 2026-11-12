@@ -27,6 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { EvidenceLightbox } from "@/components/operator/EvidenceLightbox";
+import { hasConfirmedDuplicate } from "./duplicateDisplay";
 
 interface Up3Option {
   id: string;
@@ -308,7 +309,7 @@ export function ReviewDetailDrawer({
                 <span className="text-[11px] font-semibold text-white/90 bg-[#0f172a]/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-sm">
                   Citra Eviden Tangkapan Layar
                 </span>
-                {review?.isDuplicate && (
+                {hasConfirmedDuplicate(review) && (
                   <span className="text-[10px] font-extrabold text-white bg-[#7e22ce] px-2 py-0.5 rounded-md shadow-sm">
                     DUP (pHash)
                   </span>
@@ -412,7 +413,7 @@ export function ReviewDetailDrawer({
             </div>
 
             {/* Detailed Duplication Breakdown Card */}
-            {review?.isDuplicate && (
+            {hasConfirmedDuplicate(review) ? (
               <div className="rounded-2xl border border-[#e9d5ff] bg-[#faf5ff] p-4 shadow-xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -463,7 +464,17 @@ export function ReviewDetailDrawer({
                   </p>
                 )}
               </div>
-            )}
+            ) : review?.ocrStatus === "FAILED" && review?.reviewRemarks ? (
+              <div className="rounded-2xl border border-[#fee2e2] bg-[#fef2f2] p-4 space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#991b1b] uppercase tracking-wider">
+                  <AlertCircle className="w-4 h-4 text-[#dc2626]" />
+                  <span>Pemrosesan OCR Gagal</span>
+                </div>
+                <p className="text-xs text-[#991b1b] leading-relaxed break-words">
+                  {review.reviewRemarks}
+                </p>
+              </div>
+            ) : null}
 
             {/* OCR Extracted Text Section */}
             <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-xs space-y-2.5">

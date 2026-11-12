@@ -1416,8 +1416,8 @@
     "semantic_hash": ""
   },
   "src/app/api/health/route.ts": {
-    "mtime": 1794461733.1051154,
-    "seen": 1794461812.0248,
+    "mtime": 1794462000.2123716,
+    "seen": 1794466164.0538518,
     "ast_hash": "20a3108c621c96444dfc6a19898013d8",
     "semantic_hash": ""
   },
@@ -1746,9 +1746,9 @@
     "semantic_hash": ""
   },
   "src/components/operator/reviews/ReviewDetailDrawer.tsx": {
-    "mtime": 1793659745.1033955,
-    "seen": 1793661150.0673559,
-    "ast_hash": "5fc8b2951b79b09221e07e268d16462e",
+    "mtime": 1794466534.0422544,
+    "seen": 1794466606.372041,
+    "ast_hash": "004ef8b0ef7bd250013b109dba5287e3",
     "semantic_hash": ""
   },
   "src/components/operator/reviews/ReviewsDashboard.tsx": {
@@ -1770,9 +1770,9 @@
     "semantic_hash": ""
   },
   "src/components/operator/reviews/ReviewsTable.tsx": {
-    "mtime": 1793757428.4628448,
-    "seen": 1793757697.216355,
-    "ast_hash": "12857d7e2014312d128462b735333d71",
+    "mtime": 1794466518.0318332,
+    "seen": 1794466606.372164,
+    "ast_hash": "898e051c99ffce84f6a81133617d5c78",
     "semantic_hash": ""
   },
   "src/components/providers.tsx": {
@@ -2052,9 +2052,9 @@
     "semantic_hash": ""
   },
   "src/server/services/ocrBridge.ts": {
-    "mtime": 1793893432.3010635,
-    "seen": 1793893574.471373,
-    "ast_hash": "6cf852354c40f3f8e7f7280e23c0c3b5",
+    "mtime": 1794466394.3341687,
+    "seen": 1794466606.373947,
+    "ast_hash": "ee333a00d29cd9964bd0354713a7e949",
     "semantic_hash": ""
   },
   "src/server/services/ocrService.ts": {
@@ -2082,9 +2082,9 @@
     "semantic_hash": ""
   },
   "src/server/workers/ocrWorker.ts": {
-    "mtime": 1793849946.2973137,
-    "seen": 1793850138.902146,
-    "ast_hash": "096b4876e1e65c5779bac6ecf69fc42a",
+    "mtime": 1794466126.354411,
+    "seen": 1794466164.057808,
+    "ast_hash": "b5076c89c4a11c0f5bbbf5c8e8a6c1d2",
     "semantic_hash": ""
   },
   "src/types/index.ts": {
@@ -5286,14 +5286,14 @@
     "semantic_hash": ""
   },
   "rust-services/goro-engine/src/server.rs": {
-    "mtime": 1794461634.0468698,
-    "seen": 1794461812.0229461,
+    "mtime": 1794461999.865421,
+    "seen": 1794466164.052332,
     "ast_hash": "35800d3decd2270f9f631c25018882a9",
     "semantic_hash": ""
   },
   "rust-services/goro-engine/src/tesseract_ffi.rs": {
-    "mtime": 1794461683.7506812,
-    "seen": 1794461812.022948,
+    "mtime": 1794461999.918907,
+    "seen": 1794466164.052334,
     "ast_hash": "55c0d7dc8f0dfdc0d7b36934d8b11ddc",
     "semantic_hash": ""
   },
@@ -5436,9 +5436,33 @@
     "semantic_hash": ""
   },
   "tests/unit/healthRoute.test.ts": {
-    "mtime": 1794461735.654557,
-    "seen": 1794461812.033327,
+    "mtime": 1794462000.5267024,
+    "seen": 1794466164.059075,
     "ast_hash": "6aac3636110a1f30d91e1ece53bed7b4",
+    "semantic_hash": ""
+  },
+  "tests/unit/ocrBridgeResilience.test.ts": {
+    "mtime": 1794466394.4058342,
+    "seen": 1794466606.3759859,
+    "ast_hash": "cc3a4dbb56dc757f9b1ae2c56b45b7b4",
+    "semantic_hash": ""
+  },
+  "tests/unit/ocrWorkerFailure.test.ts": {
+    "mtime": 1794466394.6116683,
+    "seen": 1794466606.3760278,
+    "ast_hash": "2898329d39fad2ee7e249f653837f327",
+    "semantic_hash": ""
+  },
+  "src/components/operator/reviews/duplicateDisplay.ts": {
+    "mtime": 1794466595.9557714,
+    "seen": 1794466606.3721669,
+    "ast_hash": "21133a0a5c7388cd61f4479f029c93e4",
+    "semantic_hash": ""
+  },
+  "tests/unit/reviewsTableDuplicateGuard.test.tsx": {
+    "mtime": 1794466573.1450279,
+    "seen": 1794466606.3762739,
+    "ast_hash": "db467114ab44955b001ba26cc64ba532",
     "semantic_hash": ""
   },
   "package-lock.json": {
