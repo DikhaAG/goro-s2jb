@@ -1,7 +1,7 @@
 import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
 import { ValidationStatus, OcrProcessingStatus, Prisma, ReviewSource } from "@prisma/client";
-import { ocrQueue } from "../queues/ocrQueue";
+import { enqueueEvidenceVerification } from "../services/evidenceVerification";
 
 export const triageRouter = router({
   getQueue: operatorProcedure
@@ -177,14 +177,17 @@ export const triageRouter = router({
           reviewRemarks: "Dipicu ulang oleh operator untuk pemindaian OCR",
         },
       });
-      await ocrQueue.add(
-        "process-ocr",
+      await enqueueEvidenceVerification(
         {
           reviewId: review.id,
           evidenceImagePath: review.evidenceImagePath,
           expectedReviewerName: review.playstoreReviewerName,
         },
-        { priority: 1 }
+        {
+          priority: 1,
+          markQueuedInDb: false,
+          prismaClient: ctx.prisma,
+        }
       );
       return { success: true };
     }),

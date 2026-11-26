@@ -6,10 +6,10 @@ import {
   resetDownloaderMetrics,
 } from "@/server/services/evidenceDownloader";
 import {
-  executeOcrBridge,
-  getOcrBridgeMetrics,
-  resetOcrBridgeMetrics,
-} from "@/server/services/ocrBridge";
+  rustVisionEngineAdapter,
+  getEngineBridgeMetrics,
+  resetEngineBridgeMetrics,
+} from "@/server/services/evidenceVerification";
 import {
   recordJobCompleted,
   recordJobFailed,
@@ -94,7 +94,7 @@ vi.mock("child_process", async (importOriginal) => {
 describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)", () => {
   beforeEach(() => {
     resetDownloaderMetrics();
-    resetOcrBridgeMetrics();
+    resetEngineBridgeMetrics();
     resetQueueTelemetry();
     resetAlertsCache();
   });
@@ -106,13 +106,13 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
 
       const mockBuffer = Buffer.from("dummy-image-binary");
 
-      const result = await executeOcrBridge(mockBuffer, "Ahmad Dahlan");
+      const result = await rustVisionEngineAdapter.extractAndMatch(mockBuffer, "Ahmad Dahlan");
 
       expect(result.success).toBe(true);
       expect(result.extracted_text).toContain("AHMAD DAHLAN");
 
       // Verify loopback telemetry recorded the fallback
-      const bridgeMetrics = getOcrBridgeMetrics();
+      const bridgeMetrics = getEngineBridgeMetrics();
       expect(bridgeMetrics.totalRequests).toBe(1);
       expect(bridgeMetrics.httpSuccessCount).toBe(0);
       expect(bridgeMetrics.cliFallbackCount).toBe(1);

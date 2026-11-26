@@ -1,9 +1,37 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import {
-  calculateHammingDistance,
-  checkImageDuplicate,
-} from "@/server/services/antiFraudService";
+import { calculateHammingDistance } from "@/lib/similarity";
+import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
 import prisma from "@/lib/prisma";
+
+async function checkDuplicateAgainstDb(
+  reviewId: string,
+  imageHash: string,
+  threshold: number = 5,
+  options?: { extractedText?: string; reviewerName?: string; evidenceImagePath?: string }
+) {
+  const candidates = await prisma.ratingReview.findMany({
+    where: { evidenceImageHash: { not: null }, id: { not: reviewId } },
+    select: {
+      id: true,
+      evidenceImageHash: true,
+      duplicateOfId: true,
+      extractedOcrText: true,
+      playstoreReviewerName: true,
+      evidenceImagePath: true,
+    },
+    take: 50000,
+    orderBy: { createdAt: "desc" },
+  });
+  return rustVisionEngineAdapter.checkBatchDuplicates({
+    reviewId,
+    imageHash,
+    threshold,
+    extractedText: options?.extractedText,
+    reviewerName: options?.reviewerName,
+    evidenceImagePath: options?.evidenceImagePath,
+    candidates,
+  });
+}
 
 describe("Anti-Fraud Perceptual Hashing & Hamming Distance Service", () => {
   const hashOriginal = "8707f8f80707f0f8"; // 64-bit hex
@@ -70,27 +98,27 @@ describe("Anti-Fraud Perceptual Hashing & Hamming Distance Service", () => {
     });
 
     it("should detect exact visual duplicate (distance 0)", async () => {
-      const result = await checkImageDuplicate("new_temp_id", hashOriginal);
+      const result = await checkDuplicateAgainstDb("new_temp_id", hashOriginal);
       expect(result.isDuplicate).toBe(true);
       expect(result.duplicateOfId).toBe(originalReviewId);
       expect(result.minDistance).toBe(0);
     });
 
     it("should detect near visual duplicate within threshold (distance <= 5)", async () => {
-      const result = await checkImageDuplicate("new_temp_id_2", hashNearDup, 5);
+      const result = await checkDuplicateAgainstDb("new_temp_id_2", hashNearDup, 5);
       expect(result.isDuplicate).toBe(true);
       expect(result.duplicateOfId).toBe(originalReviewId);
       expect(result.minDistance).toBe(1);
     });
 
     it("should not flag distinct image (distance > 5)", async () => {
-      const result = await checkImageDuplicate("new_temp_id_3", hashFar, 5);
+      const result = await checkDuplicateAgainstDb("new_temp_id_3", hashFar, 5);
       expect(result.isDuplicate).toBe(false);
       expect(result.duplicateOfId).toBeNull();
     });
 
     it("should dismiss template collision when pHash matches but reviewer name and OCR text differ", async () => {
-      const result = await checkImageDuplicate("new_temp_id_4", hashOriginal, 5, {
+      const result = await checkDuplicateAgainstDb("new_temp_id_4", hashOriginal, 5, {
         reviewerName: "Siti Rahmawati Berbeda",
         extractedText: "Aplikasi sering keluar sendiri mohon diperbaiki kendala login",
         evidenceImagePath: "https://drive.google.com/open?id=DIFFERENT_DRIVE_ID_123",
@@ -102,7 +130,7 @@ describe("Anti-Fraud Perceptual Hashing & Hamming Distance Service", () => {
     });
 
     it("should confirm duplicate when reviewer name matches even with identical layout pHash", async () => {
-      const result = await checkImageDuplicate("new_temp_id_5", hashOriginal, 5, {
+      const result = await checkDuplicateAgainstDb("new_temp_id_5", hashOriginal, 5, {
         reviewerName: "Pengulas Asli AntiFraud",
         extractedText: "Komentar lain",
         evidenceImagePath: "https://drive.google.com/open?id=DIFFERENT_DRIVE_ID_456",

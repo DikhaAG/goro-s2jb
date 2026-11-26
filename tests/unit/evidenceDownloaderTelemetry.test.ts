@@ -7,17 +7,17 @@ import {
   getCandidateImageUrls,
 } from "@/server/services/evidenceDownloader";
 import {
-  executeOcrBridge,
-  getOcrBridgeMetrics,
-  resetOcrBridgeMetrics,
-} from "@/server/services/ocrBridge";
+  rustVisionEngineAdapter,
+  getEngineBridgeMetrics,
+  resetEngineBridgeMetrics,
+} from "@/server/services/evidenceVerification";
 import { GET as healthRouteGet } from "@/app/api/health/route";
 
 describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     resetDownloaderMetrics();
-    resetOcrBridgeMetrics();
+    resetEngineBridgeMetrics();
   });
 
   describe("1. In-Memory Network Telemetry Accumulation", () => {
@@ -219,7 +219,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
           }),
       });
 
-      const result = await executeOcrBridge(
+      const result = await rustVisionEngineAdapter.extractAndMatch(
         Buffer.from("sample-image-data"),
         "Sample Reviewer Name"
       );
@@ -227,7 +227,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
       expect(result.success).toBe(true);
       expect(result.zone).toBe("GREEN");
 
-      const metrics = getOcrBridgeMetrics();
+      const metrics = getEngineBridgeMetrics();
       expect(metrics.totalRequests).toBe(1);
       expect(metrics.httpSuccessCount).toBe(1);
       expect(metrics.cliFallbackCount).toBe(0);

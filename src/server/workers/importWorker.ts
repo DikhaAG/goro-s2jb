@@ -3,7 +3,7 @@ import redis from "@/lib/redis";
 import prisma from "@/lib/prisma";
 import { OcrProcessingStatus, ReviewSource, ValidationStatus } from "@prisma/client";
 import { IMPORT_QUEUE_NAME, ImportJobData } from "../queues/importQueue";
-import { ocrQueue } from "../queues/ocrQueue";
+import { enqueueEvidenceVerification } from "../services/evidenceVerification";
 import { parseCsvStream } from "@/lib/parsers/csvStreamParser";
 import { parseXlsxStream } from "@/lib/parsers/xlsxStreamParser";
 import { downloadEvidenceImage, isExternalUrl, extractGoogleDriveFileId } from "../services/evidenceDownloader";
@@ -288,8 +288,8 @@ export function createImportWorker() {
             totalProcessedRows += validRows.length;
           }
 
-          // Non-blocking Tier 2: Asynchronously dispatch only valid reviews with evidence images to OCR background queue
-          const ocrJobs = insertedReviews
+          // Non-blocking Tier 2: Asynchronously dispatch only valid reviews with evidence images via Verifikasi Eviden
+          const verificationTargets = insertedReviews
             .filter(
               (r) =>
                 r.evidenceImagePath &&
@@ -297,17 +297,16 @@ export function createImportWorker() {
                 r.evidenceImagePath !== "legacy/gdrive_import"
             )
             .map((r) => ({
-              name: "process-ocr",
-              data: {
-                reviewId: r.id,
-                evidenceImagePath: r.evidenceImagePath,
-                expectedReviewerName: r.playstoreReviewerName,
-              },
-              opts: { priority: 2 },
+              reviewId: r.id,
+              evidenceImagePath: r.evidenceImagePath,
+              expectedReviewerName: r.playstoreReviewerName,
             }));
 
-          if (ocrJobs.length > 0) {
-            await ocrQueue.addBulk(ocrJobs);
+          if (verificationTargets.length > 0) {
+            await enqueueEvidenceVerification(verificationTargets, {
+              priority: 2,
+              markQueuedInDb: false,
+            });
           }
 
           const maxRowInBatch = Math.max(
@@ -404,31 +403,7 @@ export function createImportWorker() {
           },
         });
 
-        // 4. Pastikan semua ulasan pada batch migrasi ini dengan skor OCR >= 90% otomatis menjadi APPROVED (True)
-        try {
-          const autoApproved = await prisma.ratingReview.updateMany({
-            where: {
-              migrationBatchId: importBatchId,
-              confidenceScore: { gte: 90.0 },
-              isDuplicate: false,
-              validationStatus: { not: "APPROVED" },
-            },
-            data: {
-              validationStatus: "APPROVED",
-              verifiedAt: new Date(),
-              reviewRemarks: "Verifikasi Otomatis AI (Skor OCR >= 90%, Zona Hijau Valid)",
-            },
-          });
-          if (autoApproved.count > 0) {
-            console.log(
-              `[Import Worker] Batch ${importBatchId}: ${autoApproved.count} baris zona hijau (>=90%) otomatis disetujui (APPROVED / True).`
-            );
-          }
-        } catch (syncErr: any) {
-          console.warn(`[Import Worker] Failed green-zone auto-approval sync:`, syncErr.message);
-        }
-
-        // 5. Trigger sinkronisasi laporan manajerial agar /reports langsung ter-update secara real-time
+        // 4. Trigger sinkronisasi laporan manajerial agar /reports langsung ter-update secara real-time
         try {
           const syncTimestamp = Date.now().toString();
           await redis.set("reports:last_update_timestamp", syncTimestamp);

@@ -8,7 +8,7 @@ import {
   ReviewSource,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { ocrQueue } from "../queues/ocrQueue";
+import { enqueueEvidenceVerification } from "../services/evidenceVerification";
 
 export const reviewsRouter = router({
   /**
@@ -489,25 +489,20 @@ export const reviewsRouter = router({
         });
       }
 
-      await ctx.prisma.ratingReview.update({
-        where: { id: input.reviewId },
-        data: {
-          ocrStatus: OcrProcessingStatus.QUEUED,
-        },
-      });
-
-      const job = await ocrQueue.add(
-        "process-ocr",
+      const enqueueResult = await enqueueEvidenceVerification(
         {
           reviewId: review.id,
           evidenceImagePath: review.evidenceImagePath,
           expectedReviewerName: review.playstoreReviewerName,
         },
         {
-          priority: 1, // Highest priority
+          priority: 1,
           attempts: 3,
+          prismaClient: ctx.prisma,
         }
       );
+
+      const jobId = enqueueResult.jobIds[0];
 
       await ctx.prisma.auditLog.create({
         data: {
@@ -516,7 +511,7 @@ export const reviewsRouter = router({
           entityType: "RatingReview",
           entityId: review.id,
           metadata: {
-            jobId: job.id,
+            jobId,
             reviewerName: review.playstoreReviewerName,
           },
         },
@@ -524,7 +519,7 @@ export const reviewsRouter = router({
 
       return {
         success: true,
-        jobId: job.id,
+        jobId,
       };
     }),
 
@@ -555,26 +550,17 @@ export const reviewsRouter = router({
         });
       }
 
-      // Mark all reviews as QUEUED in database
-      await ctx.prisma.ratingReview.updateMany({
-        where: { id: { in: input.reviewIds } },
-        data: { ocrStatus: OcrProcessingStatus.QUEUED },
-      });
-
-      const jobs = reviews.map((r) => ({
-        name: "process-ocr",
-        data: {
-          reviewId: r.id,
-          evidenceImagePath: r.evidenceImagePath,
-          expectedReviewerName: r.playstoreReviewerName,
-        },
-        opts: {
-          priority: 1,
-          attempts: 3,
-        },
+      const targets = reviews.map((r) => ({
+        reviewId: r.id,
+        evidenceImagePath: r.evidenceImagePath,
+        expectedReviewerName: r.playstoreReviewerName,
       }));
 
-      await ocrQueue.addBulk(jobs);
+      await enqueueEvidenceVerification(targets, {
+        priority: 1,
+        attempts: 3,
+        prismaClient: ctx.prisma,
+      });
 
       await ctx.prisma.auditLog.create({
         data: {
@@ -582,14 +568,14 @@ export const reviewsRouter = router({
           action: "BULK_RETRY_OCR",
           entityType: "RatingReview",
           metadata: {
-            totalEnqueued: jobs.length,
+            totalEnqueued: targets.length,
           },
         },
       });
 
       return {
         success: true,
-        count: jobs.length,
+        count: targets.length,
       };
     }),
 

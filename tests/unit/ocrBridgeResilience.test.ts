@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "events";
 
-const spawnMock = vi.hoisted(() => vi.fn());
+const { spawnMock, existsSyncMock } = vi.hoisted(() => ({
+  spawnMock: vi.fn(),
+  existsSyncMock: vi.fn(),
+}));
 
 vi.mock("child_process", async (importOriginal) => {
   const actual = await importOriginal<typeof import("child_process")>();
@@ -11,11 +14,23 @@ vi.mock("child_process", async (importOriginal) => {
   };
 });
 
+vi.mock("fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("fs")>();
+  const patched = {
+    ...actual,
+    existsSync: existsSyncMock,
+  };
+  return {
+    ...patched,
+    default: patched,
+  };
+});
+
 import {
-  executeOcrBridge,
-  getOcrBridgeMetrics,
-  resetOcrBridgeMetrics,
-} from "@/server/services/ocrBridge";
+  rustVisionEngineAdapter,
+  getEngineBridgeMetrics,
+  resetEngineBridgeMetrics,
+} from "@/server/services/evidenceVerification";
 
 function createErrorProcess(errCode: string, message: string) {
   const proc = new EventEmitter() as any;
@@ -69,9 +84,11 @@ describe("executeOcrBridge resilience", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    resetOcrBridgeMetrics();
-    spawnMock.mockReset();
     vi.restoreAllMocks();
+    resetEngineBridgeMetrics();
+    spawnMock.mockReset();
+    existsSyncMock.mockReset();
+    existsSyncMock.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -103,37 +120,37 @@ describe("executeOcrBridge resilience", () => {
 
     global.fetch = fetchMock as any;
 
-    const result = await executeOcrBridge(Buffer.from("fake-image"), "Budi");
+    const result = await rustVisionEngineAdapter.extractAndMatch(Buffer.from("fake-image"), "Budi");
 
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(spawnMock).not.toHaveBeenCalled();
 
-    const metrics = getOcrBridgeMetrics();
+    const metrics = getEngineBridgeMetrics();
     expect(metrics.httpSuccessCount).toBe(1);
     expect(metrics.cliFallbackCount).toBe(0);
   });
 
-  it("returns a clear unreachable message instead of raw spawn python3 ENOENT when HTTP fails and fallback binary is missing", async () => {
+  it("returns a clear unreachable message instead of raw spawn ENOENT when HTTP fails and fallback binary errors", async () => {
     const fetchMock = vi
       .fn()
       .mockRejectedValue(new Error("connect ECONNREFUSED 127.0.0.1:8001"));
     global.fetch = fetchMock as any;
 
     spawnMock.mockImplementation(() =>
-      createErrorProcess("ENOENT", "spawn python3 ENOENT")
+      createErrorProcess("ENOENT", "spawn goro-engine ENOENT")
     );
 
-    const result = await executeOcrBridge(Buffer.from("fake-image"), "Nofran");
+    const result = await rustVisionEngineAdapter.extractAndMatch(Buffer.from("fake-image"), "Nofran");
 
     expect(result.success).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(spawnMock).toHaveBeenCalledTimes(1);
-    expect(result.error).not.toContain("spawn python3 ENOENT");
+    expect(result.error).not.toContain("spawn goro-engine ENOENT");
     expect(result.error?.toLowerCase()).toContain("tidak dapat dihubungi");
     expect(result.error).toContain("ECONNREFUSED");
 
-    const metrics = getOcrBridgeMetrics();
+    const metrics = getEngineBridgeMetrics();
     expect(metrics.cliFallbackCount).toBe(1);
     expect(metrics.cliFailureCount).toBe(1);
   });
@@ -148,13 +165,13 @@ describe("executeOcrBridge resilience", () => {
 
     spawnMock.mockImplementation(() => createSuccessProcess());
 
-    const result = await executeOcrBridge(Buffer.from("fake-image"), "Andi");
+    const result = await rustVisionEngineAdapter.extractAndMatch(Buffer.from("fake-image"), "Andi");
 
     expect(result.success).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(spawnMock).toHaveBeenCalledTimes(1);
 
-    const metrics = getOcrBridgeMetrics();
+    const metrics = getEngineBridgeMetrics();
     expect(metrics.cliFallbackCount).toBe(1);
     expect(metrics.cliSuccessCount).toBe(1);
   });
@@ -174,7 +191,7 @@ describe("executeOcrBridge resilience", () => {
       }),
     } as any);
 
-    await executeOcrBridge(Buffer.from("fake-image"), "Sari");
+    await rustVisionEngineAdapter.extractAndMatch(Buffer.from("fake-image"), "Sari");
 
     const delays = setTimeoutSpy.mock.calls.map((call) => call[1]);
     expect(delays).toContain(90000);

@@ -18,3 +18,9 @@ _Avoid_: Foto kamera, jepretan langsung
 Berkas gambar hasil tangkapan layar (*screenshot*) yang dipilih petugas dari galeri atau penyimpanan berkas perangkat.
 _Avoid_: Capture, screen, foto galeri
 
+### Verifikasi Eviden
+
+**Verifikasi Eviden**:
+Penilaian otomatis atas Eviden Ulasan untuk mencocokkan nama pengulas, mendeteksi indikasi duplikasi, dan menetapkan kelayakan awal ke dalam tiga zona kepercayaan (Hijau, Kuning, Merah).
+_Avoid_: Proses OCR saja, validasi AI, cek gambar
+

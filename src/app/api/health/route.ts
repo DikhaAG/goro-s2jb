@@ -10,7 +10,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { logger } from "@/lib/logger";
 import { getDownloaderNetworkMetrics } from "@/server/services/evidenceDownloader";
-import { getOcrBridgeMetrics } from "@/server/services/ocrBridge";
+import { getEngineBridgeMetrics } from "@/server/services/evidenceVerification";
 
 const execAsync = promisify(exec);
 // Keep safely below Docker's 5s HEALTHCHECK timeout while tolerating transient OCR load.
@@ -253,7 +253,7 @@ export async function GET() {
   };
 
   // 7. OCR Bridge Loopback Telemetry
-  const bridgeMetrics = getOcrBridgeMetrics();
+  const bridgeMetrics = getEngineBridgeMetrics();
   const bridgeTotal = bridgeMetrics.totalRequests;
   const fallbackRate = bridgeTotal > 0 ? (bridgeMetrics.cliFallbackCount / bridgeTotal) * 100 : 0;
 

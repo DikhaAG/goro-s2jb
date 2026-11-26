@@ -4,7 +4,7 @@ import fs from "fs";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
 import { appRouter } from "@/server/routers/_app";
-import { processEvidenceOcr } from "@/server/services/ocrService";
+import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
 import {
   Role,
   ValidationStatus,
@@ -91,7 +91,7 @@ describe("Comprehensive End-to-End Integration Test Suite: UI + Python OCR Worke
     });
 
     it("should successfully execute Python OCR engine directly via adapter and extract valid results", async () => {
-      const ocrResult = await processEvidenceOcr(sampleImagePath, "Budi Santoso");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(sampleImagePath, "Budi Santoso");
 
       expect(ocrResult.success).toBe(true);
       expect(ocrResult.phash).toHaveLength(16);
@@ -136,7 +136,7 @@ describe("Comprehensive End-to-End Integration Test Suite: UI + Python OCR Worke
 
     it("should process evidence through Python OCR worker and update review metrics", async () => {
       // Simulate worker executing Python OCR on the newly ingested record
-      const ocrResult = await processEvidenceOcr(sampleImagePath, "Budi Santoso");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(sampleImagePath, "Budi Santoso");
 
       const updatedReview = await prisma.ratingReview.update({
         where: { id: newReviewId },

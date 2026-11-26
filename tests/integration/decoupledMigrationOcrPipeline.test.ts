@@ -10,8 +10,8 @@ import {
   extractGoogleDriveFileId,
   isExternalUrl,
 } from "@/server/services/evidenceDownloader";
-import { executeOcrBridge } from "@/server/services/ocrBridge";
-import { checkImageDuplicate } from "@/server/services/antiFraudService";
+import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
+import prismaClient from "@/lib/prisma";
 
 describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline", () => {
   const CSV_FILE_PATH = path.resolve(process.cwd(), "docs/testing/100baris.csv");
@@ -207,7 +207,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       expect(streamRes.success).toBe(true);
       expect(streamRes.buffer).toBeDefined();
 
-      const ocrResult = await executeOcrBridge(streamRes.buffer!, "Mika");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(streamRes.buffer!, "Mika");
 
       expect(ocrResult.success).toBe(true);
       expect(ocrResult.extracted_text.length).toBeGreaterThan(50);
@@ -226,7 +226,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       expect(streamRes.success).toBe(true);
       expect(streamRes.buffer).toBeDefined();
 
-      const ocrResult = await executeOcrBridge(streamRes.buffer!, "Eta");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(streamRes.buffer!, "Eta");
 
       expect(ocrResult.success).toBe(true);
       expect(ocrResult.extracted_text.length).toBeGreaterThan(50);
@@ -242,7 +242,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       const dl = await downloadEvidenceImage("https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC");
       expect(dl.success).toBe(true);
 
-      const ocrResult = await executeOcrBridge(dl.absolutePath!, "NamaPengulasTidakAdaSamaSekali12345");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(dl.absolutePath!, "NamaPengulasTidakAdaSamaSekali12345");
 
       expect(ocrResult.success).toBe(true);
       expect(ocrResult.similarity_score).toBeLessThan(70);
@@ -254,7 +254,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       const mikaUrl = "https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC";
       const dl = await downloadEvidenceImage(mikaUrl);
 
-      const ocrResult = await executeOcrBridge(dl.absolutePath!, "Mika");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(dl.absolutePath!, "Mika");
       expect(ocrResult.phash).toBeTruthy();
 
       // Create primary review record with this phash
@@ -289,7 +289,25 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       testReviewIds.push(duplicateReview.id);
 
       // Run anti-fraud check (Hamming distance threshold <= 5)
-      const antiFraud = await checkImageDuplicate(duplicateReview.id, ocrResult.phash, 5);
+      const candidates = await prismaClient.ratingReview.findMany({
+        where: { evidenceImageHash: { not: null }, id: { not: duplicateReview.id } },
+        select: {
+          id: true,
+          evidenceImageHash: true,
+          duplicateOfId: true,
+          extractedOcrText: true,
+          playstoreReviewerName: true,
+          evidenceImagePath: true,
+        },
+        take: 50000,
+        orderBy: { createdAt: "desc" },
+      });
+      const antiFraud = await rustVisionEngineAdapter.checkBatchDuplicates({
+        reviewId: duplicateReview.id,
+        imageHash: ocrResult.phash,
+        threshold: 5,
+        candidates,
+      });
 
       expect(antiFraud.isDuplicate).toBe(true);
       expect(antiFraud.duplicateOfId).toBeTruthy();
