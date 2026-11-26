@@ -27,7 +27,11 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { EvidenceLightbox } from "@/components/operator/EvidenceLightbox";
-import { hasConfirmedDuplicate } from "./duplicateDisplay";
+import {
+  hasConfirmedDuplicate,
+  resolveEvidenceImageUrl,
+  getValidationStatusMeta,
+} from "@/lib/evidenceDisplay";
 
 interface Up3Option {
   id: string;
@@ -58,7 +62,7 @@ const reviewDetailSchema = z.object({
   ulpId: z.string().min(1, "Unit ULP wajib dipilih."),
   entryDate: z.string().optional(),
   reviewerCategory: z.string(),
-  validationStatus: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+  validationStatus: z.enum(["PENDING", "NEEDS_REVIEW", "APPROVED", "REJECTED"]),
   isDuplicate: z.boolean(),
   fieldNotes: z.string().optional(),
   reviewRemarks: z.string().optional(),
@@ -214,13 +218,7 @@ export function ReviewDetailDrawer({
     retryOcrMutation.mutate({ reviewId });
   };
 
-  const imageUrl = review?.evidenceImagePath
-    ? review.evidenceImagePath.startsWith("http")
-      ? `/api/evidence/proxy/${review.id}`
-      : review.evidenceImagePath.startsWith("/")
-      ? `/api/uploads${review.evidenceImagePath}`
-      : `/api/uploads/${review.evidenceImagePath}`
-    : "";
+  const imageUrl = resolveEvidenceImageUrl(review?.evidenceImagePath, review?.id);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -251,36 +249,28 @@ export function ReviewDetailDrawer({
                 >
                   Inspeksi & Koreksi Ulasan
                 </h2>
-                {review && (
-                  <span
-                    className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0",
-                      review.validationStatus === "APPROVED" &&
-                        "bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]",
-                      review.validationStatus === "REJECTED" &&
-                        "bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]",
-                      review.validationStatus === "PENDING" &&
-                        "bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]"
-                    )}
-                  >
-                    {review.validationStatus === "APPROVED" ? (
-                      <>
+                {review && (() => {
+                  const statusMeta = getValidationStatusMeta(review.validationStatus);
+                  return (
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0 border",
+                        statusMeta.badgeClass
+                      )}
+                    >
+                      {statusMeta.status === "APPROVED" ? (
                         <CheckCircle2 className="w-3 h-3 text-[#16a34a]" />
-                        <span>Disetujui</span>
-                      </>
-                    ) : review.validationStatus === "REJECTED" ? (
-                      <>
+                      ) : statusMeta.status === "REJECTED" ? (
                         <XCircle className="w-3 h-3 text-[#ef4444]" />
-                        <span>Ditolak</span>
-                      </>
-                    ) : (
-                      <>
+                      ) : statusMeta.status === "NEEDS_REVIEW" ? (
+                        <AlertCircle className="w-3 h-3 text-[#ca8a04]" />
+                      ) : (
                         <Clock className="w-3 h-3 text-[#f97316]" />
-                        <span>Menunggu Triase</span>
-                      </>
-                    )}
-                  </span>
-                )}
+                      )}
+                      <span>{statusMeta.label}</span>
+                    </span>
+                  );
+                })()}
               </div>
               <p className="text-[11px] text-[#64748b] font-mono mt-0.5 truncate">
                 ID: {reviewId}
@@ -711,7 +701,8 @@ export function ReviewDetailDrawer({
                       {...register("validationStatus")}
                       className="w-full min-h-[42px] px-3 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] text-xs font-semibold text-[#0f172a] focus:bg-white focus-utility-ring"
                     >
-                      <option value="PENDING">Menunggu Triase (PENDING)</option>
+                      <option value="PENDING">Menunggu Verifikasi (PENDING)</option>
+                      <option value="NEEDS_REVIEW">Perlu Triase / Zona Kuning (NEEDS_REVIEW)</option>
                       <option value="APPROVED">Lolos Validasi (APPROVED)</option>
                       <option value="REJECTED">Ditolak (REJECTED)</option>
                     </select>

@@ -158,7 +158,8 @@ export function ReviewsFilterBar({
           className="bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] text-xs rounded-xl px-3 py-2 min-h-[38px] focus-utility-ring font-medium"
         >
           <option value="ALL">Semua Status Validasi</option>
-          <option value="PENDING">Menunggu Triase (PENDING)</option>
+          <option value="NEEDS_REVIEW">Perlu Triase / Zona Kuning (NEEDS_REVIEW)</option>
+          <option value="PENDING">Menunggu Verifikasi (PENDING)</option>
           <option value="APPROVED">Lolos Validasi (APPROVED)</option>
           <option value="REJECTED">Ditolak (REJECTED)</option>
         </select>

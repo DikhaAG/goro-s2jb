@@ -4,7 +4,6 @@ import { masterRouter } from "./master";
 import { authRouter } from "./auth";
 import { intakeRouter } from "./intake";
 import { migrationRouter } from "./migration";
-import { triageRouter } from "./triage";
 import { reportRouter } from "./report";
 import { userRouter } from "./user";
 import { systemProcessesRouter } from "./systemProcesses";
@@ -17,7 +16,6 @@ export const appRouter = router({
   user: userRouter,
   intake: intakeRouter,
   migration: migrationRouter,
-  triage: triageRouter,
   report: reportRouter,
   systemProcesses: systemProcessesRouter,
   reviews: reviewsRouter,

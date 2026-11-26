@@ -12,7 +12,11 @@ import {
   type RowData,
 } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
-import { hasConfirmedDuplicate } from "./duplicateDisplay";
+import {
+  hasConfirmedDuplicate,
+  resolveEvidenceImageUrl,
+  getValidationStatusMeta,
+} from "@/lib/evidenceDisplay";
 import {
   ChevronLeft,
   ChevronRight,
@@ -50,7 +54,7 @@ export interface ReviewItem {
   appVersion: { id: string; version: string };
   confidenceScore: number | null;
   ocrStatus: "QUEUED" | "DOWNLOADING" | "PROCESSING" | "COMPLETED" | "FAILED";
-  validationStatus: "PENDING" | "APPROVED" | "REJECTED";
+  validationStatus: "PENDING" | "NEEDS_REVIEW" | "APPROVED" | "REJECTED";
   isDuplicate: boolean;
   duplicateOfId?: string | null;
   duplicateOf?: {
@@ -166,15 +170,6 @@ export function ReviewsTable({
     }
   };
 
-  const getImageUrl = (item: ReviewItem) => {
-    if (!item.evidenceImagePath) return "";
-    return item.evidenceImagePath.startsWith("http")
-      ? `/api/evidence/proxy/${item.id}`
-      : item.evidenceImagePath.startsWith("/")
-      ? `/api/uploads${item.evidenceImagePath}`
-      : `/api/uploads/${item.evidenceImagePath}`;
-  };
-
   const renderSortIcon = (columnId: string) => {
     const isActive = sortBy === columnId;
     return (
@@ -244,27 +239,35 @@ export function ReviewsTable({
   };
 
   const renderValidationStatusBadge = (status: string) => {
-    switch (status) {
+    const meta = getValidationStatusMeta(status);
+    switch (meta.status) {
       case "APPROVED":
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">
+          <span className={cn("inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border", meta.badgeClass)}>
             <CheckCircle2 className="w-3.5 h-3.5 text-[#16a34a]" />
-            <span>Disetujui</span>
+            <span>{meta.shortLabel}</span>
           </span>
         );
       case "REJECTED":
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#fef2f2] text-[#b91c1c] border border-[#fee2e2]">
+          <span className={cn("inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border", meta.badgeClass)}>
             <XCircle className="w-3.5 h-3.5 text-[#ef4444]" />
-            <span>Ditolak</span>
+            <span>{meta.shortLabel}</span>
+          </span>
+        );
+      case "NEEDS_REVIEW":
+        return (
+          <span className={cn("inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border", meta.badgeClass)}>
+            <AlertCircle className="w-3.5 h-3.5 text-[#ca8a04]" />
+            <span>{meta.shortLabel}</span>
           </span>
         );
       case "PENDING":
       default:
         return (
-          <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#fff7ed] text-[#b45309] border border-[#fed7aa]">
+          <span className={cn("inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border", meta.badgeClass)}>
             <Clock className="w-3.5 h-3.5 text-[#f97316]" />
-            <span>Menunggu</span>
+            <span>{meta.shortLabel}</span>
           </span>
         );
     }
@@ -343,7 +346,7 @@ export function ReviewsTable({
         header: "Eviden",
         cell: ({ row, table }) => {
           const item = row.original;
-          const imageUrl = getImageUrl(item);
+          const imageUrl = resolveEvidenceImageUrl(item.evidenceImagePath, item.id);
           return (
             <button
               type="button"

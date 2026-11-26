@@ -38,6 +38,10 @@ import {
 import { ReviewItem } from "./ReviewsTable";
 import { EvidenceLightbox } from "@/components/operator/EvidenceLightbox";
 import {
+  resolveEvidenceImageUrl,
+  getValidationStatusMeta,
+} from "@/lib/evidenceDisplay";
+import {
   calculateHammingDistance,
   calculateVisualSimilarity,
   calculateTextSimilarity,
@@ -110,7 +114,7 @@ export function DuplicateSplitViewModal({
   );
 
   // Mutations for verification decisions and duplicate flags
-  const submitDecisionMutation = trpc.triage.submitDecision.useMutation();
+  const submitDecisionMutation = trpc.reviews.submitDecision.useMutation();
   const updateReviewMutation = trpc.reviews.update.useMutation();
 
   // Reset zoom, error states, and lock body scroll on open
@@ -329,19 +333,6 @@ export function DuplicateSplitViewModal({
   const originalSubmission = getReviewSubmissionDate(originalReview);
   const currentSubmission = getReviewSubmissionDate(currentReview);
 
-  // Resolve Image URL with sanitized path routing
-  const getImageUrl = (imagePath?: string | null, id?: string) => {
-    if (!imagePath) return "";
-    if (imagePath.startsWith("http")) {
-      return id ? `/api/evidence/proxy/${id}` : imagePath;
-    }
-    let cleanPath = imagePath.startsWith("/") ? imagePath.slice(1) : imagePath;
-    if (cleanPath.startsWith("uploads/")) {
-      cleanPath = cleanPath.slice(8);
-    }
-    return `/api/uploads/${cleanPath}`;
-  };
-
   // Calculate submission time delta based on Column 1 for migration data
   const calculateTimeDelta = () => {
     if (!originalSubmission.date || !currentSubmission.date) return null;
@@ -442,8 +433,8 @@ export function DuplicateSplitViewModal({
     }
   };
 
-  const originalImageUrl = getImageUrl(originalReview?.evidenceImagePath, originalReview?.id);
-  const currentImageUrl = getImageUrl(currentReview.evidenceImagePath, currentReview.id);
+  const originalImageUrl = resolveEvidenceImageUrl(originalReview?.evidenceImagePath, originalReview?.id);
+  const currentImageUrl = resolveEvidenceImageUrl(currentReview.evidenceImagePath, currentReview.id);
 
   return (
     <div
@@ -673,25 +664,19 @@ export function DuplicateSplitViewModal({
                     </span>
                   </div>
 
-                  {originalReview?.validationStatus && (
-                    <span
-                      className={cn(
-                        "text-xs font-bold px-2 py-0.5 rounded-md border",
-                        originalReview.validationStatus === "APPROVED" &&
-                          "bg-[#ecfdf5] text-[#15803d] border-[#a7f3d0]",
-                        originalReview.validationStatus === "REJECTED" &&
-                          "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]",
-                        originalReview.validationStatus === "PENDING" &&
-                          "bg-[#fff7ed] text-[#b45309] border-[#fed7aa]"
-                      )}
-                    >
-                      {originalReview.validationStatus === "APPROVED"
-                        ? "Disetujui"
-                        : originalReview.validationStatus === "REJECTED"
-                        ? "Ditolak"
-                        : "Menunggu"}
-                    </span>
-                  )}
+                  {originalReview?.validationStatus && (() => {
+                    const meta = getValidationStatusMeta(originalReview.validationStatus);
+                    return (
+                      <span
+                        className={cn(
+                          "text-xs font-bold px-2 py-0.5 rounded-md border",
+                          meta.badgeClass
+                        )}
+                      >
+                        {meta.shortLabel}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Column 1 Body */}
@@ -895,23 +880,19 @@ export function DuplicateSplitViewModal({
                     </span>
                   </div>
 
-                  <span
-                    className={cn(
-                      "text-xs font-bold px-2 py-0.5 rounded-md border",
-                      currentReview.validationStatus === "APPROVED" &&
-                        "bg-[#ecfdf5] text-[#15803d] border-[#a7f3d0]",
-                      currentReview.validationStatus === "REJECTED" &&
-                        "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]",
-                      currentReview.validationStatus === "PENDING" &&
-                        "bg-[#fff7ed] text-[#b45309] border-[#fed7aa]"
-                    )}
-                  >
-                    {currentReview.validationStatus === "APPROVED"
-                      ? "Disetujui"
-                      : currentReview.validationStatus === "REJECTED"
-                      ? "Ditolak"
-                      : "Menunggu"}
-                  </span>
+                  {(() => {
+                    const meta = getValidationStatusMeta(currentReview.validationStatus);
+                    return (
+                      <span
+                        className={cn(
+                          "text-xs font-bold px-2 py-0.5 rounded-md border",
+                          meta.badgeClass
+                        )}
+                      >
+                        {meta.shortLabel}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Column 2 Body */}

@@ -179,7 +179,7 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
       );
     });
 
-    it("should reject non-operator from triage procedures with FORBIDDEN error", async () => {
+    it("should reject non-operator (Manager) from reviews procedures with FORBIDDEN error", async () => {
       const caller = appRouter.createCaller({
         prisma,
         redis,
@@ -188,7 +188,7 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
         userAgent: "test",
       } as any);
 
-      await expect(caller.triage.getQueue({})).rejects.toThrow(
+      await expect(caller.reviews.getList({})).rejects.toThrow(
         "Hanya Pegawai Operator atau Super Admin yang diizinkan."
       );
     });

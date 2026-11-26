@@ -24,3 +24,10 @@ _Avoid_: Capture, screen, foto galeri
 Penilaian otomatis atas Eviden Ulasan untuk mencocokkan nama pengulas, mendeteksi indikasi duplikasi, dan menetapkan kelayakan awal ke dalam tiga zona kepercayaan (Hijau, Kuning, Merah).
 _Avoid_: Proses OCR saja, validasi AI, cek gambar
 
+### Triase & Manajemen Ulasan
+
+**Triase Ulasan**:
+Penilaian manual oleh operator atas Eviden Ulasan yang menunggu verifikasi atau perlu triase (Zona Kuning) untuk menetapkan status akhir, termasuk koreksi kuratif dan peninjauan duplikasi.
+_Avoid_: Kurasi saja, approval manual, antrean triage terpisah
+
+

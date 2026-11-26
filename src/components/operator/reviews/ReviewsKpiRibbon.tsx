@@ -17,6 +17,7 @@ export interface ReviewsKpiData {
   approved: number;
   rejected: number;
   pending: number;
+  needsReview?: number;
   activeOcr: number;
   duplicates: number;
 }
@@ -99,9 +100,26 @@ export function ReviewsKpiRibbon({
         }),
     },
     {
+      id: "needsReview",
+      label: "Perlu Triase",
+      sublabel: "zona kuning",
+      count: kpi?.needsReview ?? 0,
+      icon: AlertCircle,
+      bgClass: "bg-[#fefce8] border-[#fde047]",
+      textTitleClass: "text-[#a16207]",
+      textCountClass: "text-[#854d0e]",
+      iconBoxClass: "bg-white border-[#fde047] text-[#ca8a04]",
+      isActive: selectedValidationStatus === "NEEDS_REVIEW",
+      onClick: () =>
+        onSelectQuickFilter({
+          validationStatus:
+            selectedValidationStatus === "NEEDS_REVIEW" ? "ALL" : "NEEDS_REVIEW",
+        }),
+    },
+    {
       id: "pending",
-      label: "Menunggu Triase",
-      sublabel: "perlu tindakan",
+      label: "Menunggu Verifikasi",
+      sublabel: "antrean awal",
       count: kpi?.pending ?? 0,
       icon: Clock,
       bgClass: "bg-[#fff7ed] border-[#fed7aa]",
@@ -150,7 +168,7 @@ export function ReviewsKpiRibbon({
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
       {cards.map((card) => {
         const Icon = card.icon;
         return (

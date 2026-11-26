@@ -106,21 +106,22 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
       userAgent: "E2E-Runner",
     });
 
-    // 1. Fetch queue items
+    // 1. Fetch queue items via unified reviews interface
     const todayStr = new Date().toISOString().split("T")[0];
-    const queue = await operatorCaller.triage.getQueue({
-      status: "NEEDS_REVIEW",
+    const queue = await operatorCaller.reviews.getList({
+      validationStatus: "NEEDS_REVIEW",
       ulpId: ulpRivai.id,
       dateFrom: todayStr,
       dateTo: todayStr,
+      pageSize: 100,
     });
 
     const targetItem = queue.items.find((item) => item.id === createdReviewId);
     expect(targetItem).toBeDefined();
     expect(targetItem?.validationStatus).toBe(ValidationStatus.NEEDS_REVIEW);
 
-    // 2. Approve review
-    const approveRes = await operatorCaller.triage.submitDecision({
+    // 2. Approve review via unified reviews interface
+    const approveRes = await operatorCaller.reviews.submitDecision({
       reviewId: createdReviewId,
       decision: "APPROVED",
       remarks: "Eviden terverifikasi sah oleh Operator Triase E2E",

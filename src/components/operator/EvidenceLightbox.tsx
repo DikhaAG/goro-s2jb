@@ -19,6 +19,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OcrTextHighlighter } from "./OcrTextHighlighter";
+import {
+  hasConfirmedDuplicate,
+  resolveEvidenceImageUrl,
+} from "@/lib/evidenceDisplay";
 
 export interface LightboxReviewItem {
   id: string;
@@ -26,6 +30,7 @@ export interface LightboxReviewItem {
   originalReviewerName?: string | null;
   evidenceImagePath: string;
   confidenceScore: number | null;
+  ocrStatus?: string | null;
   validationStatus: string;
   extractedOcrText: string | null;
   isDuplicate: boolean;
@@ -72,11 +77,8 @@ export function EvidenceLightbox({
 
   if (!isOpen || !item) return null;
 
-  const imageUrl = item.evidenceImagePath.startsWith("http")
-    ? `/api/evidence/proxy/${item.id}`
-    : item.evidenceImagePath.startsWith("/")
-    ? `/api/uploads${item.evidenceImagePath}`
-    : `/api/uploads/${item.evidenceImagePath}`;
+  const imageUrl = resolveEvidenceImageUrl(item.evidenceImagePath, item.id);
+  const confirmedDuplicate = hasConfirmedDuplicate(item);
 
   const handleZoomIn = () => {
     setZoomLevel((prev) => Math.min(prev + 0.5, 3.0));
@@ -127,7 +129,7 @@ export function EvidenceLightbox({
                 {item.appVersion.version}
               </Badge>
             )}
-            {item.isDuplicate && (
+            {confirmedDuplicate && (
               <Badge variant="destructive" className="animate-pulse">
                 DUPLIKAT VISUAL
               </Badge>
@@ -328,7 +330,7 @@ export function EvidenceLightbox({
                   />
                 </div>
 
-                {item.isDuplicate && item.duplicateOf && (
+                {confirmedDuplicate && item.duplicateOf && (
                   <div className="p-3 bg-red-950/30 border border-red-800/50 rounded-lg text-xs space-y-1">
                     <span className="font-semibold text-red-300 flex items-center gap-1.5">
                       ⚠️ Terindikasi Duplikasi Visual

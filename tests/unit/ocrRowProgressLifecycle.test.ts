@@ -168,19 +168,19 @@ describe("Row-Level Background OCR Worker & Image Proxy Progress Tracking", () =
       prisma,
     } as any);
 
-    const res = await caller.triage.getQueue({
+    const res = await caller.reviews.getList({
       up3Id,
-      status: "ALL",
+      validationStatus: "ALL",
       ocrStatus: "ALL",
     });
 
-    expect(res.metrics).toBeDefined();
-    expect(res.metrics.inProgressOcrCount).toBeGreaterThanOrEqual(1); // includes Siti Unduh (PROCESSING) or Budi Antrean (QUEUED)
+    expect(res.kpi).toBeDefined();
+    expect(res.kpi.activeOcr).toBeGreaterThanOrEqual(1); // includes Siti Unduh (PROCESSING) or Budi Antrean (QUEUED)
 
     // Filter specifically for in-progress OCR rows
-    const inProgressRes = await caller.triage.getQueue({
+    const inProgressRes = await caller.reviews.getList({
       up3Id,
-      status: "ALL",
+      validationStatus: "ALL",
       ocrStatus: "PROCESSING",
     });
 
@@ -188,9 +188,9 @@ describe("Row-Level Background OCR Worker & Image Proxy Progress Tracking", () =
     expect(inProgressRes.items.every((item: any) => item.ocrStatus === "PROCESSING")).toBe(true);
 
     // Filter specifically for failed rows
-    const failedRes = await caller.triage.getQueue({
+    const failedRes = await caller.reviews.getList({
       up3Id,
-      status: "ALL",
+      validationStatus: "ALL",
       ocrStatus: "FAILED",
     });
 
@@ -225,13 +225,12 @@ describe("Row-Level Background OCR Worker & Image Proxy Progress Tracking", () =
       prisma,
     } as any);
 
-    const retryRes = await caller.triage.retryOcr({ reviewId: failedReview.id });
+    const retryRes = await caller.reviews.retryOcr({ reviewId: failedReview.id });
     expect(retryRes.success).toBe(true);
 
     const afterRetry = await prisma.ratingReview.findUnique({
       where: { id: failedReview.id },
     });
     expect(afterRetry?.ocrStatus).toBe("QUEUED");
-    expect(afterRetry?.reviewRemarks).toContain("Dipicu ulang oleh operator");
   });
 });

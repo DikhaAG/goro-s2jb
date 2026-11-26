@@ -119,29 +119,29 @@ describe("Task 12.4: Layer 4 tRPC RBAC Procedure Matrix Verification Suite", () 
     });
   });
 
-  describe("2. Operator Procedure Guard (operatorProcedure: triage.*)", () => {
+  describe("2. Operator Procedure Guard (operatorProcedure: reviews.*)", () => {
     it("should reject unauthenticated guest with UNAUTHORIZED", async () => {
-      await expect(guestCaller.triage.getQueue({})).rejects.toMatchObject({
+      await expect(guestCaller.reviews.getList({})).rejects.toMatchObject({
         code: "UNAUTHORIZED",
       });
     });
 
     it("should reject Petugas Lapangan and Manager with FORBIDDEN", async () => {
-      await expect(fieldCaller.triage.getQueue({})).rejects.toMatchObject({
+      await expect(fieldCaller.reviews.getList({})).rejects.toMatchObject({
         code: "FORBIDDEN",
       });
 
-      await expect(managerCaller.triage.getQueue({})).rejects.toMatchObject({
+      await expect(managerCaller.reviews.getList({})).rejects.toMatchObject({
         code: "FORBIDDEN",
       });
     });
 
-    it("should allow Pegawai Triase and Super Admin to query the triage queue", async () => {
-      const operatorRes = await operatorCaller.triage.getQueue({});
+    it("should allow Pegawai Triase and Super Admin to query unified reviews", async () => {
+      const operatorRes = await operatorCaller.reviews.getList({});
       expect(operatorRes).toHaveProperty("items");
       expect(Array.isArray(operatorRes.items)).toBe(true);
 
-      const adminRes = await adminCaller.triage.getQueue({});
+      const adminRes = await adminCaller.reviews.getList({});
       expect(adminRes).toHaveProperty("items");
       expect(Array.isArray(adminRes.items)).toBe(true);
     });

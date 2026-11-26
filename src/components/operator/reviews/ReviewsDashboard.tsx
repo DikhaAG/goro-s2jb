@@ -37,6 +37,7 @@ interface UndoState {
   reviewId: string;
   reviewerName: string;
   decision: "APPROVED" | "REJECTED";
+  previousStatus: ReviewItem["validationStatus"];
   item: ReviewItem;
   expiresAt: number;
 }
@@ -164,7 +165,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   }, [currentItems, activeId]);
 
   // Mutations
-  const submitDecisionMutation = trpc.triage.submitDecision.useMutation({
+  const submitDecisionMutation = trpc.reviews.submitDecision.useMutation({
     onSuccess: () => {
       refetchList();
     },
@@ -173,7 +174,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
     },
   });
 
-  const undoDecisionMutation = trpc.triage.undoDecision.useMutation({
+  const undoDecisionMutation = trpc.reviews.undoDecision.useMutation({
     onSuccess: () => {
       showToast("success", "Keputusan verifikasi berhasil dibatalkan.");
       refetchList();
@@ -298,6 +299,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       reviewId: id,
       reviewerName: targetItem.playstoreReviewerName,
       decision: "APPROVED",
+      previousStatus: targetItem.validationStatus,
       item: targetItem,
       expiresAt: Date.now() + 5000,
     });
@@ -330,6 +332,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       reviewId: id,
       reviewerName: targetItem.playstoreReviewerName,
       decision: "REJECTED",
+      previousStatus: targetItem.validationStatus,
       item: targetItem,
       expiresAt: Date.now() + 5000,
     });
@@ -344,12 +347,12 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
 
   const handleUndo = () => {
     if (!undoState) return;
-    const { reviewId } = undoState;
+    const { reviewId, previousStatus } = undoState;
     setUndoState(null);
 
     undoDecisionMutation.mutate({
       reviewId,
-      previousStatus: "NEEDS_REVIEW",
+      previousStatus,
     });
   };
 

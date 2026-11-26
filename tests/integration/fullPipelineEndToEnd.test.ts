@@ -182,7 +182,7 @@ describe("Comprehensive End-to-End Integration Test Suite: UI + Python OCR Worke
     it("should allow operator to inspect queue and approve review with remarks", async () => {
       const operatorCaller = getCaller(operatorUser);
 
-      const decisionRes = await operatorCaller.triage.submitDecision({
+      const decisionRes = await operatorCaller.reviews.submitDecision({
         reviewId: triageReviewId,
         decision: "APPROVED",
         remarks: "Disetujui oleh verifikator dalam uji integrasi menyeluruh",
