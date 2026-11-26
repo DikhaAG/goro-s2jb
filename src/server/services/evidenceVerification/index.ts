@@ -11,8 +11,6 @@ import {
   normalizeEvidenceQueuePath,
 } from "./classification";
 import {
-  getEngineBridgeMetrics,
-  resetEngineBridgeMetrics,
   rustVisionEngineAdapter,
   buildRustBatchDuplicatePayload,
 } from "./rustEngineAdapter";
@@ -27,8 +25,6 @@ import {
 } from "./types";
 
 export {
-  getEngineBridgeMetrics,
-  resetEngineBridgeMetrics,
   rustVisionEngineAdapter,
   buildRustBatchDuplicatePayload,
   normalizeEvidenceQueuePath,

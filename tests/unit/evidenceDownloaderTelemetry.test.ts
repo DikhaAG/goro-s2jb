@@ -1,28 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   streamEvidenceImageBuffer,
-  getDownloaderNetworkMetrics,
-  resetDownloaderMetrics,
   extractGoogleDriveFileId,
   getCandidateImageUrls,
 } from "@/server/services/evidenceDownloader";
-import {
-  rustVisionEngineAdapter,
-  getEngineBridgeMetrics,
-  resetEngineBridgeMetrics,
-} from "@/server/services/evidenceVerification";
+import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
+import { systemTelemetry } from "@/server/services/systemTelemetry";
 import { GET as healthRouteGet } from "@/app/api/health/route";
 
 describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
-    resetDownloaderMetrics();
-    resetEngineBridgeMetrics();
+    await systemTelemetry.reset();
   });
 
-  describe("1. In-Memory Network Telemetry Accumulation", () => {
-    it("should initialize with clean zeroed metrics", () => {
-      const metrics = getDownloaderNetworkMetrics();
+  describe("1. Cross-Process Network Telemetry Accumulation", () => {
+    it("should initialize with clean zeroed metrics", async () => {
+      const metrics = await systemTelemetry.getDownloaderMetrics();
       expect(metrics.totalRequests).toBe(0);
       expect(metrics.successfulStreams).toBe(0);
       expect(metrics.failedStreams).toBe(0);
@@ -39,7 +33,6 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
     });
 
     it("should accurately track successful stream and candidate endpoint hits", async () => {
-      // Mock valid JPEG binary header (FF D8 FF E0 ...)
       const mockJpegBytes = new Uint8Array([
         0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
       ]);
@@ -64,7 +57,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
       expect(result.mimeType).toBe("image/jpeg");
       expect(result.buffer).toBeDefined();
 
-      const metrics = getDownloaderNetworkMetrics();
+      const metrics = await systemTelemetry.getDownloaderMetrics();
       expect(metrics.totalRequests).toBe(1);
       expect(metrics.successfulStreams).toBe(1);
       expect(metrics.failedStreams).toBe(0);
@@ -80,7 +73,6 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
       ]);
 
       global.fetch = vi.fn().mockImplementation((url: string) => {
-        // Endpoint 1 fails with HTTP 429 Too Many Requests
         if (url.includes("drive.google.com/uc")) {
           return Promise.resolve({
             ok: false,
@@ -88,7 +80,6 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
             headers: new Headers(),
           });
         }
-        // Endpoint 2 succeeds with valid PNG
         if (url.includes("drive.usercontent.google.com")) {
           return Promise.resolve({
             ok: true,
@@ -107,7 +98,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
       expect(result.success).toBe(true);
       expect(result.mimeType).toBe("image/png");
 
-      const metrics = getDownloaderNetworkMetrics();
+      const metrics = await systemTelemetry.getDownloaderMetrics();
       expect(metrics.totalRequests).toBe(1);
       expect(metrics.successfulStreams).toBe(1);
       expect(metrics.rejectionReasons.httpError).toBe(1);
@@ -131,10 +122,10 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
 
       expect(result.success).toBe(false);
 
-      const metrics = getDownloaderNetworkMetrics();
+      const metrics = await systemTelemetry.getDownloaderMetrics();
       expect(metrics.totalRequests).toBe(1);
       expect(metrics.failedStreams).toBe(1);
-      expect(metrics.rejectionReasons.htmlResponse).toBe(3); // All 3 candidates returned HTML
+      expect(metrics.rejectionReasons.htmlResponse).toBe(3);
       expect(metrics.lastIncident).toBeDefined();
       expect(metrics.lastIncident?.url).toContain("privateOrDeletedFileId");
     });
@@ -155,21 +146,20 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
 
       expect(result.success).toBe(false);
 
-      const metrics = getDownloaderNetworkMetrics();
+      const metrics = await systemTelemetry.getDownloaderMetrics();
       expect(metrics.totalRequests).toBe(1);
       expect(metrics.failedStreams).toBe(1);
-      expect(metrics.rejectionReasons.invalidMagicBytes).toBe(3); // All 3 candidates rejected
+      expect(metrics.rejectionReasons.invalidMagicBytes).toBe(3);
     });
   });
 
   describe("3. Health Route Integration (/api/health)", () => {
     it("should include network_downloader and ocr_bridge telemetry in health route response", async () => {
-      // Simulate 1 successful download before health check
       const mockWebpBytes = new Uint8Array([
         0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
       ]);
 
-      global.fetch = vi.fn().mockImplementation((url: string) => {
+      global.fetch = vi.fn().mockImplementation(() => {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -227,7 +217,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
       expect(result.success).toBe(true);
       expect(result.zone).toBe("GREEN");
 
-      const metrics = getEngineBridgeMetrics();
+      const metrics = await systemTelemetry.getEngineBridgeMetrics();
       expect(metrics.totalRequests).toBe(1);
       expect(metrics.httpSuccessCount).toBe(1);
       expect(metrics.cliFallbackCount).toBe(0);

@@ -30,4 +30,15 @@ _Avoid_: Proses OCR saja, validasi AI, cek gambar
 Penilaian manual oleh operator atas Eviden Ulasan yang menunggu verifikasi atau perlu triase (Zona Kuning) untuk menetapkan status akhir, termasuk koreksi kuratif dan peninjauan duplikasi.
 _Avoid_: Kurasi saja, approval manual, antrean triage terpisah
 
+### Telemetri & Kesehatan Sistem
+
+**Telemetri Sistem**:
+Pengukuran langsung status layanan inti, antrean pemrosesan, pengunduhan eviden eksternal, dan kinerja mesin visi di seluruh proses aplikasi.
+_Avoid_: Log saja, metrik mentah, monitoring UI
+
+**Peringatan Anomali**:
+Sinyal gangguan operasional hasil evaluasi Telemetri Sistem yang memisahkan detail teknis bagi administrator dari ringkasan aman bagi operator.
+_Avoid_: Error log, notifikasi umum, status kesehatan mentah
+
+
 

@@ -26,11 +26,8 @@ vi.mock("fs", async (importOriginal) => {
   };
 });
 
-import {
-  rustVisionEngineAdapter,
-  getEngineBridgeMetrics,
-  resetEngineBridgeMetrics,
-} from "@/server/services/evidenceVerification";
+import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
+import { systemTelemetry } from "@/server/services/systemTelemetry";
 
 function createErrorProcess(errCode: string, message: string) {
   const proc = new EventEmitter() as any;
@@ -83,9 +80,9 @@ function createSuccessProcess() {
 describe("executeOcrBridge resilience", () => {
   const originalFetch = global.fetch;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
-    resetEngineBridgeMetrics();
+    await systemTelemetry.reset();
     spawnMock.mockReset();
     existsSyncMock.mockReset();
     existsSyncMock.mockReturnValue(true);
@@ -126,7 +123,7 @@ describe("executeOcrBridge resilience", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(spawnMock).not.toHaveBeenCalled();
 
-    const metrics = getEngineBridgeMetrics();
+    const metrics = await systemTelemetry.getEngineBridgeMetrics();
     expect(metrics.httpSuccessCount).toBe(1);
     expect(metrics.cliFallbackCount).toBe(0);
   });
@@ -150,7 +147,7 @@ describe("executeOcrBridge resilience", () => {
     expect(result.error?.toLowerCase()).toContain("tidak dapat dihubungi");
     expect(result.error).toContain("ECONNREFUSED");
 
-    const metrics = getEngineBridgeMetrics();
+    const metrics = await systemTelemetry.getEngineBridgeMetrics();
     expect(metrics.cliFallbackCount).toBe(1);
     expect(metrics.cliFailureCount).toBe(1);
   });
@@ -171,7 +168,7 @@ describe("executeOcrBridge resilience", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(spawnMock).toHaveBeenCalledTimes(1);
 
-    const metrics = getEngineBridgeMetrics();
+    const metrics = await systemTelemetry.getEngineBridgeMetrics();
     expect(metrics.cliFallbackCount).toBe(1);
     expect(metrics.cliSuccessCount).toBe(1);
   });

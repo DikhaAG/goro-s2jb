@@ -2,7 +2,7 @@ import { Worker, Job } from "bullmq";
 import redis from "@/lib/redis";
 import { OCR_QUEUE_NAME, OcrJobData } from "../queues/ocrQueue";
 import { verifyEvidence } from "../services/evidenceVerification";
-import { recordJobCompleted, recordJobFailed } from "../queues/queueTelemetry";
+import { systemTelemetry } from "../services/systemTelemetry";
 
 export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OCR_QUEUE_NAME) {
   const jobStartTime = Date.now();
@@ -24,7 +24,11 @@ export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OC
       throw new Error(result.error || "Verifikasi Eviden gagal diproses");
     }
     if (result.permanentFailure && !result.skipped) {
-      recordJobFailed(queueName);
+      await systemTelemetry.record({
+        kind: "queue_job",
+        queue: queueName,
+        outcome: "failed",
+      });
     }
     return result;
   }
@@ -34,7 +38,12 @@ export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OC
   );
 
   const jobDurationMs = Date.now() - jobStartTime;
-  recordJobCompleted(queueName, jobDurationMs);
+  await systemTelemetry.record({
+    kind: "queue_job",
+    queue: queueName,
+    outcome: "completed",
+    durationMs: jobDurationMs,
+  });
 
   return result;
 }
@@ -52,7 +61,11 @@ export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
   );
 
   worker.on("failed", (job, err) => {
-    recordJobFailed(queueName);
+    void systemTelemetry.record({
+      kind: "queue_job",
+      queue: queueName,
+      outcome: "failed",
+    });
     console.error(`[OCR Worker] Job ${job?.id} failed with error:`, err);
   });
 

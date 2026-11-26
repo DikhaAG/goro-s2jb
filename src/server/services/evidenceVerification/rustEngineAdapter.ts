@@ -2,10 +2,10 @@ import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 import { OcrResultPayload, ValidationStatus } from "@/types";
+import { systemTelemetry } from "@/server/services/systemTelemetry";
 import {
   AntiFraudCheckResult,
   BatchDuplicateQuery,
-  EngineBridgeMetrics,
   VisionEnginePort,
 } from "./types";
 import { evaluateLocalDuplicates } from "./classification";
@@ -14,33 +14,6 @@ const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://127.0.0.1:8001";
 const HTTP_MAX_ATTEMPTS = 3;
 const HTTP_TIMEOUT_MS = 90000;
 const BATCH_DUPLICATE_TIMEOUT_MS = 2000;
-
-let engineBridgeTotalDurationMs = 0;
-
-let engineBridgeMetrics: EngineBridgeMetrics = {
-  totalRequests: 0,
-  httpSuccessCount: 0,
-  cliFallbackCount: 0,
-  cliSuccessCount: 0,
-  cliFailureCount: 0,
-  averageExecutionMs: 0,
-};
-
-export function getEngineBridgeMetrics(): EngineBridgeMetrics {
-  return { ...engineBridgeMetrics };
-}
-
-export function resetEngineBridgeMetrics(): void {
-  engineBridgeTotalDurationMs = 0;
-  engineBridgeMetrics = {
-    totalRequests: 0,
-    httpSuccessCount: 0,
-    cliFallbackCount: 0,
-    cliSuccessCount: 0,
-    cliFailureCount: 0,
-    averageExecutionMs: 0,
-  };
-}
 
 /**
  * Resolves the native goro-engine binary path across platforms.
@@ -79,20 +52,6 @@ export function buildRustBatchDuplicatePayload(query: BatchDuplicateQuery) {
   };
 }
 
-function recordSuccessfulExecution(durationMs: number, kind: "http" | "cli"): void {
-  if (kind === "http") {
-    engineBridgeMetrics.httpSuccessCount++;
-  } else {
-    engineBridgeMetrics.cliSuccessCount++;
-  }
-  engineBridgeTotalDurationMs += durationMs;
-  const completedCount =
-    engineBridgeMetrics.httpSuccessCount + engineBridgeMetrics.cliSuccessCount;
-  engineBridgeMetrics.averageExecutionMs = Math.round(
-    engineBridgeTotalDurationMs / (completedCount || 1)
-  );
-}
-
 async function runRustCliFallback(
   imageInput: string | Buffer,
   targetReviewerName: string,
@@ -103,7 +62,13 @@ async function runRustCliFallback(
   const rustBin = resolveGoroEngineBinaryPath();
 
   if (!fs.existsSync(rustBin)) {
-    engineBridgeMetrics.cliFailureCount++;
+    await systemTelemetry.record({
+      kind: "ocr_bridge",
+      transport: "cli",
+      outcome: "failure",
+      fallbackTriggered: true,
+      durationMs: Date.now() - startTime,
+    });
     return {
       success: false,
       extracted_text: "",
@@ -142,8 +107,14 @@ async function runRustCliFallback(
       stderrData += chunk.toString();
     });
 
-    proc.on("error", (err) => {
-      engineBridgeMetrics.cliFailureCount++;
+    proc.on("error", async (err) => {
+      await systemTelemetry.record({
+        kind: "ocr_bridge",
+        transport: "cli",
+        outcome: "failure",
+        fallbackTriggered: true,
+        durationMs: Date.now() - startTime,
+      });
       const errCode = (err as NodeJS.ErrnoException).code;
       const errorMessage =
         errCode === "ENOENT" || err.message.includes("ENOENT")
@@ -162,10 +133,16 @@ async function runRustCliFallback(
       });
     });
 
-    proc.on("close", (code) => {
+    proc.on("close", async (code) => {
       const duration = Date.now() - startTime;
       if (code !== 0) {
-        engineBridgeMetrics.cliFailureCount++;
+        await systemTelemetry.record({
+          kind: "ocr_bridge",
+          transport: "cli",
+          outcome: "failure",
+          fallbackTriggered: true,
+          durationMs: duration,
+        });
         resolve({
           success: false,
           extracted_text: "",
@@ -182,13 +159,25 @@ async function runRustCliFallback(
       try {
         const parsed = JSON.parse(stdoutData.trim()) as OcrResultPayload;
         const effectiveDuration = parsed.execution_time_ms || duration;
-        recordSuccessfulExecution(effectiveDuration, "cli");
+        await systemTelemetry.record({
+          kind: "ocr_bridge",
+          transport: "cli",
+          outcome: "success",
+          fallbackTriggered: true,
+          durationMs: effectiveDuration,
+        });
         resolve({
           ...parsed,
           execution_time_ms: effectiveDuration,
         });
       } catch (parseErr: any) {
-        engineBridgeMetrics.cliFailureCount++;
+        await systemTelemetry.record({
+          kind: "ocr_bridge",
+          transport: "cli",
+          outcome: "failure",
+          fallbackTriggered: true,
+          durationMs: duration,
+        });
         resolve({
           success: false,
           extracted_text: stdoutData,
@@ -212,7 +201,6 @@ export const rustVisionEngineAdapter: VisionEnginePort = {
     imageInput: string | Buffer,
     targetReviewerName: string
   ): Promise<OcrResultPayload> {
-    engineBridgeMetrics.totalRequests++;
     const startTime = Date.now();
     const isBuffer = Buffer.isBuffer(imageInput);
 
@@ -244,7 +232,12 @@ export const rustVisionEngineAdapter: VisionEnginePort = {
         if (res.ok) {
           const data = (await res.json()) as OcrResultPayload;
           const duration = data.execution_time_ms || Date.now() - startTime;
-          recordSuccessfulExecution(duration, "http");
+          await systemTelemetry.record({
+            kind: "ocr_bridge",
+            transport: "http",
+            outcome: "success",
+            durationMs: duration,
+          });
           return {
             ...data,
             execution_time_ms: duration,
@@ -262,9 +255,6 @@ export const rustVisionEngineAdapter: VisionEnginePort = {
         await new Promise((resolveDelay) => setTimeout(resolveDelay, attempt * 1500));
       }
     }
-
-    engineBridgeMetrics.cliFallbackCount++;
-    engineBridgeMetrics.lastFallbackAt = new Date().toISOString();
 
     return runRustCliFallback(imageInput, targetReviewerName, startTime, lastHttpError);
   },

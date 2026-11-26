@@ -1,229 +1,25 @@
 import { saveEvidenceFile } from "@/lib/storage";
 import fs from "fs";
-import { redis } from "@/lib/redis";
+import { systemTelemetry } from "./systemTelemetry";
+import type {
+  DownloaderEndpoint,
+  DownloaderRejectionReason,
+} from "./systemTelemetry";
 
 // Cache for previously downloaded external file IDs (avoids repeated network calls)
 const gdriveCache = new Map<string, { relativePath: string; absolutePath: string }>();
 
-export interface NetworkTrafficPoint {
-  timestamp: number;
-  rateKbps: number;
-  bytesDelta: number;
-  latencyMs: number;
-  requestsCount: number;
-}
-
-export interface DownloaderNetworkMetrics {
-  totalRequests: number;
-  successfulStreams: number;
-  failedStreams: number;
-  totalBytesStreamed: number;
-  averageLatencyMs: number;
-  candidateHits: {
-    endpointUc: number;
-    endpointUserContent: number;
-    endpointLh3: number;
-    directUrl: number;
-  };
-  rejectionReasons: {
-    htmlResponse: number;
-    invalidMagicBytes: number;
-    timeoutAbort: number;
-    httpError: number;
-  };
-  cacheStats: {
-    hits: number;
-    misses: number;
-    cachedEntriesCount: number;
-  };
-  timeSeries?: NetworkTrafficPoint[];
-  lastIncident?: {
-    timestamp: string;
-    url: string;
-    error: string;
-  };
-}
-
-let totalLatencyAccumulator = 0;
-
-let networkMetrics: DownloaderNetworkMetrics = {
-  totalRequests: 0,
-  successfulStreams: 0,
-  failedStreams: 0,
-  totalBytesStreamed: 0,
-  averageLatencyMs: 0,
-  candidateHits: {
-    endpointUc: 0,
-    endpointUserContent: 0,
-    endpointLh3: 0,
-    directUrl: 0,
-  },
-  rejectionReasons: {
-    htmlResponse: 0,
-    invalidMagicBytes: 0,
-    timeoutAbort: 0,
-    httpError: 0,
-  },
-  cacheStats: {
-    hits: 0,
-    misses: 0,
-    cachedEntriesCount: 0,
-  },
-};
-
-function recordCandidateHit(candidateUrl: string) {
+function classifyCandidateEndpoint(candidateUrl: string): DownloaderEndpoint {
   if (candidateUrl.includes("drive.google.com/uc")) {
-    networkMetrics.candidateHits.endpointUc++;
-  } else if (candidateUrl.includes("drive.usercontent.google.com")) {
-    networkMetrics.candidateHits.endpointUserContent++;
-  } else if (candidateUrl.includes("lh3.googleusercontent.com")) {
-    networkMetrics.candidateHits.endpointLh3++;
-  } else {
-    networkMetrics.candidateHits.directUrl++;
+    return "endpointUc";
   }
-}
-
-export const REDIS_GDOWNLOADER_METRICS_KEY = "telemetry:gdrive_downloader";
-export const REDIS_GDOWNLOADER_SERIES_KEY = "telemetry:gdrive_downloader_series";
-
-let syncTimeout: NodeJS.Timeout | null = null;
-let lastSampleTimestamp = Date.now();
-let lastSampleBytes = 0;
-let lastSampleRequests = 0;
-
-/**
- * Persists live Google Drive downloader telemetry and rolling time-series to Redis.
- * Enables zero-delay observability across different Node.js processes.
- */
-export async function syncDownloaderMetricsToRedis(): Promise<void> {
-  try {
-    if (redis && (redis.status === "ready" || redis.status === "connect")) {
-      const data = getDownloaderNetworkMetrics();
-      await redis.set(REDIS_GDOWNLOADER_METRICS_KEY, JSON.stringify(data));
-
-      const now = Date.now();
-      const deltaSec = Math.max(1, (now - lastSampleTimestamp) / 1000);
-      const deltaBytes = Math.max(0, data.totalBytesStreamed - lastSampleBytes);
-      const deltaRequests = Math.max(0, data.totalRequests - lastSampleRequests);
-      const rateKbps = Math.round(deltaBytes / 1024 / deltaSec);
-
-      lastSampleTimestamp = now;
-      lastSampleBytes = data.totalBytesStreamed;
-      lastSampleRequests = data.totalRequests;
-
-      const point: NetworkTrafficPoint = {
-        timestamp: now,
-        rateKbps,
-        bytesDelta: deltaBytes,
-        latencyMs: data.averageLatencyMs,
-        requestsCount: deltaRequests,
-      };
-
-      await redis.rpush(REDIS_GDOWNLOADER_SERIES_KEY, JSON.stringify(point));
-      await redis.ltrim(REDIS_GDOWNLOADER_SERIES_KEY, -30, -1);
-    }
-  } catch {
-    // Non-critical telemetry persistence fallback
+  if (candidateUrl.includes("drive.usercontent.google.com")) {
+    return "endpointUserContent";
   }
-}
-
-/**
- * Retrieves rolling time-series points from Redis.
- */
-export async function fetchDownloaderTimeSeriesFromRedis(): Promise<NetworkTrafficPoint[]> {
-  try {
-    if (redis && (redis.status === "ready" || redis.status === "connect")) {
-      const items = await redis.lrange(REDIS_GDOWNLOADER_SERIES_KEY, 0, -1);
-      if (items && items.length > 0) {
-        return items.map((raw) => JSON.parse(raw) as NetworkTrafficPoint);
-      }
-    }
-  } catch {
-    // Fall back to empty array
+  if (candidateUrl.includes("lh3.googleusercontent.com")) {
+    return "endpointLh3";
   }
-  return [];
-}
-
-/**
- * Schedules non-blocking debounced sync to Redis.
- */
-export function scheduleDownloaderMetricsSync(): void {
-  if (syncTimeout) return;
-  syncTimeout = setTimeout(async () => {
-    syncTimeout = null;
-    await syncDownloaderMetricsToRedis();
-  }, 1000);
-}
-
-/**
- * Retrieves latest downloader metrics from Redis, falling back to local memory.
- */
-export async function fetchDownloaderNetworkMetricsFromRedis(): Promise<DownloaderNetworkMetrics> {
-  try {
-    if (redis && (redis.status === "ready" || redis.status === "connect")) {
-      const [raw, series] = await Promise.all([
-        redis.get(REDIS_GDOWNLOADER_METRICS_KEY),
-        fetchDownloaderTimeSeriesFromRedis(),
-      ]);
-
-      if (raw) {
-        const parsed = JSON.parse(raw) as DownloaderNetworkMetrics;
-        return {
-          ...parsed,
-          timeSeries: series,
-        };
-      }
-    }
-  } catch {
-    // Fall back to local memory if Redis call fails
-  }
-
-  const local = getDownloaderNetworkMetrics();
-  return {
-    ...local,
-    timeSeries: [],
-  };
-}
-
-export function getDownloaderNetworkMetrics(): DownloaderNetworkMetrics {
-  return {
-    ...networkMetrics,
-    candidateHits: { ...networkMetrics.candidateHits },
-    rejectionReasons: { ...networkMetrics.rejectionReasons },
-    cacheStats: {
-      ...networkMetrics.cacheStats,
-      cachedEntriesCount: gdriveCache.size,
-    },
-    lastIncident: networkMetrics.lastIncident ? { ...networkMetrics.lastIncident } : undefined,
-  };
-}
-
-export function resetDownloaderMetrics(): void {
-  totalLatencyAccumulator = 0;
-  networkMetrics = {
-    totalRequests: 0,
-    successfulStreams: 0,
-    failedStreams: 0,
-    totalBytesStreamed: 0,
-    averageLatencyMs: 0,
-    candidateHits: {
-      endpointUc: 0,
-      endpointUserContent: 0,
-      endpointLh3: 0,
-      directUrl: 0,
-    },
-    rejectionReasons: {
-      htmlResponse: 0,
-      invalidMagicBytes: 0,
-      timeoutAbort: 0,
-      httpError: 0,
-    },
-    cacheStats: {
-      hits: 0,
-      misses: 0,
-      cachedEntriesCount: gdriveCache.size,
-    },
-  };
+  return "directUrl";
 }
 
 /**
@@ -292,21 +88,32 @@ export async function streamEvidenceImageBuffer(
   urlOrPath: string,
   timeoutMs: number = 15000
 ): Promise<{ success: boolean; buffer?: Buffer; mimeType?: string; error?: string }> {
-  networkMetrics.totalRequests++;
   const requestStart = Date.now();
 
   if (!urlOrPath || typeof urlOrPath !== "string") {
-    networkMetrics.failedStreams++;
+    await systemTelemetry.record({
+      kind: "downloader_stream",
+      outcome: "failure",
+      latencyMs: Date.now() - requestStart,
+    });
     return { success: false, error: "Tautan gambar kosong" };
   }
 
   const trimmed = urlOrPath.trim();
   if (!isExternalUrl(trimmed)) {
-    networkMetrics.failedStreams++;
+    await systemTelemetry.record({
+      kind: "downloader_stream",
+      outcome: "failure",
+      latencyMs: Date.now() - requestStart,
+    });
     return { success: false, error: "Bukan tautan URL eksternal" };
   }
 
   const candidateUrls = getCandidateImageUrls(trimmed);
+  const rejections: Partial<Record<DownloaderRejectionReason, number>> = {};
+  const addRejection = (reason: DownloaderRejectionReason) => {
+    rejections[reason] = (rejections[reason] || 0) + 1;
+  };
 
   for (const candidate of candidateUrls) {
     const controller = new AbortController();
@@ -326,13 +133,13 @@ export async function streamEvidenceImageBuffer(
       clearTimeout(timeout);
 
       if (!res.ok) {
-        networkMetrics.rejectionReasons.httpError++;
+        addRejection("httpError");
         continue;
       }
 
       const contentType = res.headers.get("content-type")?.toLowerCase() || "";
       if (contentType.includes("text/html")) {
-        networkMetrics.rejectionReasons.htmlResponse++;
+        addRejection("htmlResponse");
         continue;
       }
 
@@ -340,7 +147,7 @@ export async function streamEvidenceImageBuffer(
       const buffer = Buffer.from(arrayBuf);
 
       if (buffer.length === 0) {
-        networkMetrics.rejectionReasons.invalidMagicBytes++;
+        addRejection("invalidMagicBytes");
         continue;
       }
 
@@ -370,21 +177,18 @@ export async function streamEvidenceImageBuffer(
 
       if (!detectedMimeType) {
         // Reject non-image response bodies (e.g. error texts, non-image binaries)
-        networkMetrics.rejectionReasons.invalidMagicBytes++;
+        addRejection("invalidMagicBytes");
         continue;
       }
 
-      networkMetrics.successfulStreams++;
-      networkMetrics.totalBytesStreamed += buffer.length;
-      recordCandidateHit(candidate);
-
-      const latency = Date.now() - requestStart;
-      totalLatencyAccumulator += latency;
-      networkMetrics.averageLatencyMs = Math.round(
-        totalLatencyAccumulator / (networkMetrics.successfulStreams + networkMetrics.failedStreams || 1)
-      );
-
-      scheduleDownloaderMetricsSync();
+      await systemTelemetry.record({
+        kind: "downloader_stream",
+        outcome: "success",
+        bytes: buffer.length,
+        latencyMs: Date.now() - requestStart,
+        endpoint: classifyCandidateEndpoint(candidate),
+        rejections,
+      });
 
       return {
         success: true,
@@ -394,28 +198,24 @@ export async function streamEvidenceImageBuffer(
     } catch (err: any) {
       clearTimeout(timeout);
       if (err?.name === "AbortError" || controller.signal.aborted) {
-        networkMetrics.rejectionReasons.timeoutAbort++;
+        addRejection("timeoutAbort");
       } else {
-        networkMetrics.rejectionReasons.httpError++;
+        addRejection("httpError");
       }
     }
   }
 
-  networkMetrics.failedStreams++;
-  const latency = Date.now() - requestStart;
-  totalLatencyAccumulator += latency;
-  networkMetrics.averageLatencyMs = Math.round(
-    totalLatencyAccumulator / (networkMetrics.successfulStreams + networkMetrics.failedStreams || 1)
-  );
-
   const errorMsg = `Gagal streaming gambar dari tautan Google Drive: ${trimmed}`;
-  networkMetrics.lastIncident = {
-    timestamp: new Date().toISOString(),
-    url: trimmed,
-    error: errorMsg,
-  };
-
-  scheduleDownloaderMetricsSync();
+  await systemTelemetry.record({
+    kind: "downloader_stream",
+    outcome: "failure",
+    latencyMs: Date.now() - requestStart,
+    rejections,
+    incident: {
+      url: trimmed,
+      error: errorMsg,
+    },
+  });
 
   return {
     success: false,
@@ -448,7 +248,7 @@ export async function downloadEvidenceImage(
   // Check in-memory cache first
   if (googleDriveFileId) {
     if (gdriveCache.has(googleDriveFileId)) {
-      networkMetrics.cacheStats.hits++;
+      await systemTelemetry.record({ kind: "downloader_cache", hit: true });
       const cached = gdriveCache.get(googleDriveFileId)!;
       if (fs.existsSync(cached.absolutePath)) {
         return {
@@ -458,7 +258,7 @@ export async function downloadEvidenceImage(
         };
       }
     } else {
-      networkMetrics.cacheStats.misses++;
+      await systemTelemetry.record({ kind: "downloader_cache", hit: false });
     }
   }
 
@@ -554,10 +354,13 @@ export async function downloadEvidenceImage(
         });
       }
 
-      networkMetrics.cacheStats.cachedEntriesCount = gdriveCache.size;
-      networkMetrics.totalBytesStreamed += buffer.length;
-      recordCandidateHit(downloadUrl);
-      scheduleDownloaderMetricsSync();
+      await systemTelemetry.record({
+        kind: "downloader_cache",
+        hit: false,
+        cachedEntriesCount: gdriveCache.size,
+        bytes: buffer.length,
+        endpoint: classifyCandidateEndpoint(downloadUrl),
+      });
 
       return {
         success: true,

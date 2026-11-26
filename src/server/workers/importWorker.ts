@@ -7,7 +7,7 @@ import { enqueueEvidenceVerification } from "../services/evidenceVerification";
 import { parseCsvStream } from "@/lib/parsers/csvStreamParser";
 import { parseXlsxStream } from "@/lib/parsers/xlsxStreamParser";
 import { downloadEvidenceImage, isExternalUrl, extractGoogleDriveFileId } from "../services/evidenceDownloader";
-import { recordJobCompleted, recordJobFailed } from "../queues/queueTelemetry";
+import { systemTelemetry } from "../services/systemTelemetry";
 import path from "path";
 import fs from "fs";
 
@@ -425,7 +425,12 @@ export function createImportWorker() {
         );
 
         const jobDurationMs = Date.now() - jobStartTime;
-        recordJobCompleted(IMPORT_QUEUE_NAME, jobDurationMs);
+        await systemTelemetry.record({
+          kind: "queue_job",
+          queue: IMPORT_QUEUE_NAME,
+          outcome: "completed",
+          durationMs: jobDurationMs,
+        });
 
         return {
           success: true,
@@ -433,7 +438,11 @@ export function createImportWorker() {
           failedRows: totalFailedRows,
         };
       } catch (err: any) {
-        recordJobFailed(IMPORT_QUEUE_NAME);
+        await systemTelemetry.record({
+          kind: "queue_job",
+          queue: IMPORT_QUEUE_NAME,
+          outcome: "failed",
+        });
         console.error(`[Import Worker] Batch ${importBatchId} failed:`, err);
         try {
           await prisma.migrationBatch.update({

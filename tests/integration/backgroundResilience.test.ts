@@ -1,35 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EventEmitter } from "events";
+import { streamEvidenceImageBuffer } from "@/server/services/evidenceDownloader";
+import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
 import {
-  streamEvidenceImageBuffer,
-  getDownloaderNetworkMetrics,
-  resetDownloaderMetrics,
-} from "@/server/services/evidenceDownloader";
-import {
-  rustVisionEngineAdapter,
-  getEngineBridgeMetrics,
-  resetEngineBridgeMetrics,
-} from "@/server/services/evidenceVerification";
-import {
-  recordJobCompleted,
-  recordJobFailed,
-  getQueueThroughputStatsSync,
-  resetQueueTelemetry,
-} from "@/server/queues/queueTelemetry";
-import {
-  evaluateSystemAlerts,
-  getActiveAlerts,
-  getPublicOperatorAlertSummary,
-  resetAlertsCache,
-} from "@/server/services/alertService";
-import * as childProcess from "child_process";
+  createInMemoryTelemetryStore,
+  createSystemTelemetry,
+  systemTelemetry,
+} from "@/server/services/systemTelemetry";
 import * as auditService from "@/server/services/auditService";
 import { migrationRouter } from "@/server/routers/migration";
 import * as processManagerModule from "@/lib/processManager";
 import { Role } from "@prisma/client";
 
-// Top-level mocks for Vitest hoisting compliance
 vi.mock("@/server/queues/ocrQueue", () => ({
+  OCR_QUEUE_NAME: "ocr-processing-queue",
   ocrQueue: {
     pause: vi.fn().mockResolvedValue(undefined),
     resume: vi.fn().mockResolvedValue(undefined),
@@ -44,6 +28,7 @@ vi.mock("@/server/queues/ocrQueue", () => ({
 }));
 
 vi.mock("@/server/queues/importQueue", () => ({
+  IMPORT_QUEUE_NAME: "import-processing-queue",
   importQueue: {
     pause: vi.fn().mockResolvedValue(undefined),
     resume: vi.fn().mockResolvedValue(undefined),
@@ -92,27 +77,21 @@ vi.mock("child_process", async (importOriginal) => {
 });
 
 describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)", () => {
-  beforeEach(() => {
-    resetDownloaderMetrics();
-    resetEngineBridgeMetrics();
-    resetQueueTelemetry();
-    resetAlertsCache();
+  beforeEach(async () => {
+    await systemTelemetry.reset();
   });
 
-  describe("1. Python OCR Microservice Graceful Fallback", () => {
+  describe("1. Vision Engine Microservice Graceful Fallback", () => {
     it("should gracefully fallback to CLI subprocess runner when HTTP port 8001 is unavailable", async () => {
-      // Mock fetch failing with ECONNREFUSED on port 8001
       global.fetch = vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED 127.0.0.1:8001"));
 
       const mockBuffer = Buffer.from("dummy-image-binary");
-
       const result = await rustVisionEngineAdapter.extractAndMatch(mockBuffer, "Ahmad Dahlan");
 
       expect(result.success).toBe(true);
       expect(result.extracted_text).toContain("AHMAD DAHLAN");
 
-      // Verify loopback telemetry recorded the fallback
-      const bridgeMetrics = getEngineBridgeMetrics();
+      const bridgeMetrics = await systemTelemetry.getEngineBridgeMetrics();
       expect(bridgeMetrics.totalRequests).toBe(1);
       expect(bridgeMetrics.httpSuccessCount).toBe(0);
       expect(bridgeMetrics.cliFallbackCount).toBe(1);
@@ -127,7 +106,6 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
       ]);
 
       global.fetch = vi.fn().mockImplementation((url: string) => {
-        // Endpoint 1 throttled with 429 Too Many Requests
         if (url.includes("drive.google.com/uc")) {
           return Promise.resolve({
             ok: false,
@@ -137,7 +115,6 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
             arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
           });
         }
-        // Endpoint 2 returns 403 Forbidden
         if (url.includes("drive.usercontent.google.com")) {
           return Promise.resolve({
             ok: false,
@@ -147,7 +124,6 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
             arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
           });
         }
-        // Endpoint 3 (LH3 CDN) succeeds
         if (url.includes("lh3.googleusercontent.com")) {
           return Promise.resolve({
             ok: true,
@@ -167,7 +143,7 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
       expect(result.buffer).toBeInstanceOf(Buffer);
       expect(result.mimeType).toBe("image/jpeg");
 
-      const metrics = getDownloaderNetworkMetrics();
+      const metrics = await systemTelemetry.getDownloaderMetrics();
       expect(metrics.totalRequests).toBe(1);
       expect(metrics.successfulStreams).toBe(1);
       expect(metrics.failedStreams).toBe(0);
@@ -176,20 +152,43 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
   });
 
   describe("3. High-Load Queue Telemetry Sliding Window", () => {
-    it("should compute throughput across 60-second sliding window and average execution durations", () => {
-      // Record 15 completed jobs
-      for (let i = 1; i <= 15; i++) {
-        recordJobCompleted("ocr", 1000 + i * 10);
-      }
-      // Record 2 failed jobs
-      recordJobFailed("ocr", 500);
-      recordJobFailed("ocr", 600);
+    it("should compute throughput across 60-second sliding window and average execution durations", async () => {
+      const telemetry = createSystemTelemetry({
+        store: createInMemoryTelemetryStore(),
+        redis: { ping: vi.fn().mockResolvedValue("PONG") },
+        prisma: {
+          ratingReview: { count: vi.fn().mockResolvedValue(0) },
+        },
+        queues: {
+          import: {
+            getJobCounts: vi.fn().mockResolvedValue({}),
+            isPaused: vi.fn().mockResolvedValue(false),
+            getJobs: vi.fn().mockResolvedValue([]),
+          },
+          ocr: {
+            getJobCounts: vi.fn().mockResolvedValue({}),
+            isPaused: vi.fn().mockResolvedValue(false),
+            getJobs: vi.fn().mockResolvedValue([]),
+          },
+        },
+      });
 
-      const stats = getQueueThroughputStatsSync("ocr");
-      expect(stats.throughputJobsPerMinute).toBe(15);
-      expect(stats.totalCompletedInWindow).toBe(15);
-      expect(stats.totalFailedInWindow).toBe(2);
-      expect(stats.averageExecutionDurationMs).toBeGreaterThan(1000);
+      for (let i = 1; i <= 15; i++) {
+        await telemetry.record({
+          kind: "queue_job",
+          queue: "ocr",
+          outcome: "completed",
+          durationMs: 1000 + i * 10,
+        });
+      }
+      await telemetry.record({ kind: "queue_job", queue: "ocr", outcome: "failed" });
+      await telemetry.record({ kind: "queue_job", queue: "ocr", outcome: "failed" });
+
+      const detailed = await telemetry.getWorkerTelemetry("detailed");
+      expect(detailed.queues.ocr.throughput.jobsPerMinute).toBe(15);
+      expect(detailed.queues.ocr.throughput.completedInWindow).toBe(15);
+      expect(detailed.queues.ocr.throughput.failedInWindow).toBe(2);
+      expect(detailed.queues.ocr.throughput.averageDurationMs).toBeGreaterThan(1000);
     });
   });
 
@@ -231,10 +230,10 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
         arch: "arm64",
       });
 
-      const alerts = await evaluateSystemAlerts(true);
+      const alerts = await systemTelemetry.evaluateAlerts("admin", { force: true });
       expect(alerts).toHaveLength(0);
 
-      const operatorSummary = await getPublicOperatorAlertSummary();
+      const operatorSummary = await systemTelemetry.evaluateAlerts("operator");
       expect(operatorSummary.hasActiveAlert).toBe(false);
       expect(operatorSummary.status).toBe("NORMAL");
       expect(operatorSummary.userMessage).toContain("beroperasi normal");
@@ -261,7 +260,7 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
         arch: "x64",
       });
 
-      const alerts = await evaluateSystemAlerts(true);
+      const alerts = await systemTelemetry.evaluateAlerts("admin", { force: true });
       expect(alerts.length).toBeGreaterThan(0);
 
       const portAlert = alerts.find((a) => a.code === "CORE_PORT_DOWN");
@@ -269,7 +268,7 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
       expect(portAlert?.severity).toBe("CRITICAL");
       expect(portAlert?.message).toContain("PostgreSQL (Port 5432)");
 
-      const operatorSummary = await getPublicOperatorAlertSummary();
+      const operatorSummary = await systemTelemetry.evaluateAlerts("operator");
       expect(operatorSummary.hasActiveAlert).toBe(true);
       expect(operatorSummary.status).toBe("CRITICAL");
     });

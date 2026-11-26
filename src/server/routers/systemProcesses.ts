@@ -1,23 +1,20 @@
 import { z } from "zod";
 import { router, adminProcedure, operatorProcedure } from "../trpc";
 import {
-  detectServicePorts,
-  listAppProcesses,
-  getSystemResources,
   tailLogFile,
   terminateProcess,
   restartWorker,
   cleanOrphanProcesses,
 } from "@/lib/processManager";
 import { logAuditEvent } from "@/server/services/auditService";
-import { getActiveAlerts, getPublicOperatorAlertSummary } from "@/server/services/alertService";
+import { systemTelemetry } from "@/server/services/systemTelemetry";
 
 export const systemProcessesRouter = router({
   /**
    * Proactive anomaly alerts for Super Admin dashboard.
    */
   getActiveSystemAlerts: adminProcedure.query(async () => {
-    const alerts = await getActiveAlerts();
+    const alerts = await systemTelemetry.evaluateAlerts("admin");
     return {
       alerts,
       totalCount: alerts.length,
@@ -29,7 +26,7 @@ export const systemProcessesRouter = router({
    * Sanitized operator alert summary for PEGAWAI.
    */
   getOperatorAlertSummary: operatorProcedure.query(async () => {
-    return await getPublicOperatorAlertSummary();
+    return systemTelemetry.evaluateAlerts("operator");
   }),
 
   /**
@@ -37,56 +34,23 @@ export const systemProcessesRouter = router({
    * Strips all internal OS kernel PIDs, ports, and memory data for safe operator consumption.
    */
   getServiceHealthSummary: operatorProcedure.query(async () => {
-    const services = await detectServicePorts();
-    const allUp = services.every((s) => s.status === "UP");
-    const anyDegraded = services.some((s) => s.status === "DEGRADED");
-    const anyDown = services.some((s) => s.status === "DOWN");
-
-    let status: "OPERATIONAL" | "DEGRADED" | "DOWN" = "OPERATIONAL";
-    let message = "Semua layanan sistem berjalan normal.";
-
-    if (anyDown) {
-      status = "DOWN";
-      message = "Sebagian layanan sistem sedang mengalami gangguan.";
-    } else if (anyDegraded) {
-      status = "DEGRADED";
-      message = "Layanan sistem beroperasi dengan latensi meningkat.";
-    }
-
-    return {
-      isHealthy: allUp,
-      status,
-      message,
-      timestamp: new Date().toISOString(),
-    };
+    const { isHealthy, status, message, timestamp } =
+      await systemTelemetry.getHostTelemetry("ports");
+    return { isHealthy, status, message, timestamp };
   }),
 
   /**
    * Returns overview of 4 primary service ports and machine telemetry.
    */
   getSystemOverview: adminProcedure.query(async () => {
-    const [services, resources] = await Promise.all([
-      detectServicePorts(),
-      Promise.resolve(getSystemResources()),
-    ]);
-
-    return {
-      services,
-      resources,
-      timestamp: new Date().toISOString(),
-    };
+    return systemTelemetry.getHostTelemetry("overview");
   }),
 
   /**
    * Returns running OS processes filtered for GORO S2JB ecosystem.
    */
   getRunningProcesses: adminProcedure.query(async () => {
-    const processes = await listAppProcesses();
-    return {
-      processes,
-      totalCount: processes.length,
-      timestamp: new Date().toISOString(),
-    };
+    return systemTelemetry.getHostTelemetry("processes");
   }),
 
   /**

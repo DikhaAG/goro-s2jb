@@ -784,6 +784,18 @@ export async function restartWorker(
 }
 
 /**
+ * Canonical orphan/zombie predicate shared between process cleanup and Peringatan Anomali.
+ */
+export function isOrphanOrZombieProcess(proc: ManagedProcess): boolean {
+  const isDetachedCli = proc.serviceType === "CLI_TASK" && proc.isSafeToKill;
+  const isDefunct = proc.status.includes("Z");
+  const isOrphanWorker =
+    (proc.serviceType === "IMPORT_WORKER" || proc.serviceType === "OCR_WORKER") &&
+    (proc.ppid === 1 || proc.status.includes("Z"));
+  return isDetachedCli || isDefunct || isOrphanWorker;
+}
+
+/**
  * Scans and cleans orphan or hanging background processes matching start-mac.sh or detached workers.
  */
 export async function cleanOrphanProcesses(
@@ -799,14 +811,7 @@ export async function cleanOrphanProcesses(
       continue;
     }
 
-    // Identify candidate orphan processes
-    const isDetachedCli = proc.serviceType === "CLI_TASK" && proc.isSafeToKill;
-    const isDefunct = proc.status.includes("Z");
-    const isOrphanWorker =
-      (proc.serviceType === "IMPORT_WORKER" || proc.serviceType === "OCR_WORKER") &&
-      (proc.ppid === 1 || proc.status.includes("Z"));
-
-    if (isDetachedCli || isDefunct || isOrphanWorker) {
+    if (isOrphanOrZombieProcess(proc)) {
       try {
         if (process.platform === "win32") {
           await execAsync(`taskkill /PID ${proc.pid} /T /F`);
