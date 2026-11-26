@@ -8,6 +8,9 @@ All AI agents working in this repository must strictly adhere to [ai_context_gui
 
 Before designing solutions or generating code, always read the relevant files in these two directories first.
 
+## Forbidden Tools
+- **graphify is removed from this project. Do not use it.** Do not run `graphify` commands (`query`, `path`, `explain`, `update`, etc.) or its MCP tools (`query_graph`, `shortest_path`, `get_node`), do not create or read `graphify-out/`, and do not reinstall the graphify skill, rule, workflow, or hooks. Explore the codebase with normal search and file reads.
+
 <!-- antislop:start -->
 ## antislop
 For UI, copy, people, mobile layout, or code comments work, read `.agents/skills/antislop/SKILL.md` (core) and then the skill for the task:
