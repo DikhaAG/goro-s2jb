@@ -1,6 +1,6 @@
 # ==============================================================================
 # GORO S2JB - Skrip Inisialisasi Pertama Kali (Windows PowerShell)
-# Menyiapkan dependensi, virtual environment Python, migrasi DB, dan data seed.
+# Menyiapkan dependensi, Rust Native Vision Engine, migrasi DB, dan data seed.
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
@@ -84,24 +84,20 @@ function Get-RedisVersion {
 }
 
 # 1. Pengecekan Prasyarat Software
-Write-Host "`n[1/8] Memeriksa Prasyarat Software di Windows..." -ForegroundColor Yellow
+Write-Host "`n[1/7] Memeriksa Prasyarat Software di Windows..." -ForegroundColor Yellow
 
 $MissingDeps = $false
 if (-not (Test-CommandAvailable "node" "Unduh Node.js v20+ LTS dari https://nodejs.org atau: winget install OpenJS.NodeJS.LTS")) { $MissingDeps = $true }
 if (-not (Test-CommandAvailable "npm" "Disertakan bersama instalasi Node.js.")) { $MissingDeps = $true }
 if (-not (Test-CommandAvailable "git" "Unduh Git dari https://git-scm.com atau: winget install Git.Git")) { $MissingDeps = $true }
 
-# Rust Cargo adalah kompilator utama; Python adalah fallback sekunder
 $CargoFound = (Get-Command "cargo" -ErrorAction SilentlyContinue) -ne $null
-$PythonFound = (Get-Command "python" -ErrorAction SilentlyContinue) -ne $null
 
 if ($CargoFound) {
     Write-Host "✓ cargo terdeteksi (Rust Native Vision Engine Siap)." -ForegroundColor Green
-} elseif ($PythonFound) {
-    Write-Host "✓ python terdeteksi (Fallback OCR Microservice)." -ForegroundColor Green
 } else {
-    Write-Host "❌ Baik cargo maupun python tidak terdeteksi." -ForegroundColor Red
-    Write-Host "   Tips: Pasang Rust dari https://rustup.rs (winget install Rustlang.Rustup) atau Python 3.10+ (winget install Python.Python.3.11)" -ForegroundColor DarkGray
+    Write-Host "❌ cargo tidak terdeteksi." -ForegroundColor Red
+    Write-Host "   Tips: Pasang Rust dari https://rustup.rs (winget install Rustlang.Rustup)" -ForegroundColor DarkGray
     $MissingDeps = $true
 }
 
@@ -140,7 +136,7 @@ if ($MissingDeps) {
 }
 
 # 2. Pengecekan Layanan Basis Data & Broker Redis
-Write-Host "`n[2/8] Memeriksa Layanan Basis Data PostgreSQL & Broker Redis..." -ForegroundColor Yellow
+Write-Host "`n[2/7] Memeriksa Layanan Basis Data PostgreSQL & Broker Redis..." -ForegroundColor Yellow
 
 # Pengecekan PostgreSQL Port 5432
 if (Test-PortOpen -Port 5432) {
@@ -209,7 +205,7 @@ if ($redisUp) {
 }
 
 # 3. File Konfigurasi .env
-Write-Host "`n[3/8] Memeriksa Berkas Konfigurasi Lingkungan (.env)..." -ForegroundColor Yellow
+Write-Host "`n[3/7] Memeriksa Berkas Konfigurasi Lingkungan (.env)..." -ForegroundColor Yellow
 if (-not (Test-Path ".env")) {
     if (Test-Path ".env.example") {
         Copy-Item ".env.example" ".env"
@@ -236,48 +232,24 @@ SKIP_DB_INIT="false"
 }
 
 # 4. Instalasi Dependensi Node.js
-Write-Host "`n[4/8] Memasang Dependensi Node.js (npm install)..." -ForegroundColor Yellow
+Write-Host "`n[4/7] Memasang Dependensi Node.js (npm install)..." -ForegroundColor Yellow
 npm install
 
 # 5. Kompilasi Engine Rust Native (Prioritas Utama)
 if (Get-Command cargo -ErrorAction SilentlyContinue) {
-    Write-Host "`n[5/8] Mengompilasi Rust Native Vision Engine (goro-engine)..." -ForegroundColor Yellow
+    Write-Host "`n[5/7] Mengompilasi Rust Native Vision Engine (goro-engine)..." -ForegroundColor Yellow
     try {
         npm run rust:build
         Write-Host "✓ Engine Rust Native berhasil dikompilasi." -ForegroundColor Green
     } catch {
-        Write-Host "⚠️ Peringatan: Kompilasi Rust mengalami kendala. Sistem akan menggunakan fallback Python OCR jika tersedia." -ForegroundColor Yellow
+        Write-Host "⚠️ Peringatan: Kompilasi Rust mengalami kendala. Jalankan ulang: npm run rust:build" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "`n[5/8] Cargo tidak ditemukan. Melewati kompilasi Rust Native Engine." -ForegroundColor DarkGray
+    Write-Host "`n[5/7] Cargo tidak ditemukan. Melewati kompilasi Rust Native Engine." -ForegroundColor DarkGray
 }
 
-# 6. Setup Python Virtual Environment (Fallback Microservice OCR)
-$OcrDir = Join-Path $ProjectDir "python-services\ocr"
-if (Test-Path $OcrDir) {
-    Write-Host "`n[6/8] Menyiapkan Python Virtual Environment (Fallback Microservice OCR)..." -ForegroundColor Yellow
-    if (Get-Command python -ErrorAction SilentlyContinue) {
-        $VenvDir = Join-Path $OcrDir "venv"
-        $PipExe = Join-Path $VenvDir "Scripts\pip.exe"
-
-        if (-not (Test-Path $VenvDir)) {
-            Write-Host "Membuat virtual environment di $VenvDir..."
-            python -m venv $VenvDir
-        }
-
-        if (Test-Path $PipExe) {
-            Write-Host "Memasang dependensi Python (Pillow, RapidFuzz, Pytesseract, FastAPI, Uvicorn)..."
-            & $PipExe install --upgrade pip --quiet
-            & $PipExe install -r (Join-Path $OcrDir "requirements.txt") --quiet
-            Write-Host "✓ Virtual environment Python OCR siap digunakan." -ForegroundColor Green
-        }
-    } else {
-        Write-Host "⚠️ Python tidak terdeteksi. Melewati setup Python OCR venv." -ForegroundColor Yellow
-    }
-}
-
-# 7. Persiapan Direktori Penyimpanan & Log
-Write-Host "`n[7/8] Memastikan Direktori Upload, Cache & Log Tersedia..." -ForegroundColor Yellow
+# 6. Persiapan Direktori Penyimpanan & Log
+Write-Host "`n[6/7] Memastikan Direktori Upload, Cache & Log Tersedia..." -ForegroundColor Yellow
 $DirsToCreate = @("uploads", "logs", "backups")
 foreach ($dir in $DirsToCreate) {
     if (-not (Test-Path $dir)) {
@@ -287,7 +259,7 @@ foreach ($dir in $DirsToCreate) {
 Write-Host "✓ Direktori uploads, logs, dan backups siap." -ForegroundColor Green
 
 # 8. Migrasi Skema Basis Data & Seed Data Awal
-Write-Host "`n[8/8] Menjalankan Prisma Generate, Skema Database, dan Data Seed..." -ForegroundColor Yellow
+Write-Host "`n[7/7] Menjalankan Prisma Generate, Skema Database, dan Data Seed..." -ForegroundColor Yellow
 npx prisma generate
 
 try {

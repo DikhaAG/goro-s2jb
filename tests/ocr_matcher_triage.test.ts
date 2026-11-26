@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { execFileSync, execSync } from "child_process";
+import { execFileSync } from "child_process";
 import path from "path";
 import fs from "fs";
 
-describe("OCR Fuzzy Matcher & Tri-Zone Triage (matcher.py / Rust matcher.rs)", () => {
+describe("OCR Fuzzy Matcher & Tri-Zone Triage (Rust matcher.rs)", () => {
   const isWindows = process.platform === "win32";
   const rustBin = path.resolve(
     process.cwd(),
@@ -15,40 +15,20 @@ describe("OCR Fuzzy Matcher & Tri-Zone Triage (matcher.py / Rust matcher.rs)", (
   );
   const hasRust = fs.existsSync(rustBin);
 
-  const pythonExec = path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3");
-  const hasPython = fs.existsSync(pythonExec) && fs.existsSync(path.resolve(process.cwd(), "python-services/ocr/matcher.py"));
-
   function runMatcher(target: string, extracted: string): {
     score: number;
     zone: string;
     status: string;
   } {
-    // 1. Prioritize Ultra-Fast Rust Native Fuzzy Matcher
-    if (hasRust) {
-      const output = execFileSync(
-        rustBin,
-        ["--match-target", target, "--match-text", extracted],
-        { encoding: "utf8" }
-      );
-      return JSON.parse(output.trim());
+    if (!hasRust) {
+      throw new Error("Rust Native Vision Engine binary is not built (npm run rust:build).");
     }
-
-    // 2. Fallback to Legacy Python Matcher if present
-    if (hasPython) {
-      const script = `
-import sys, json
-sys.path.append("python-services/ocr")
-from matcher import calculate_similarity
-score, zone, status = calculate_similarity(${JSON.stringify(target)}, ${JSON.stringify(extracted)})
-print(json.dumps({"score": score, "zone": zone, "status": status}))
-      `;
-      const output = execSync(`${pythonExec} -c '${script}'`, {
-        encoding: "utf8",
-      });
-      return JSON.parse(output.trim());
-    }
-
-    throw new Error("Neither Rust Native Engine nor Python OCR matcher is available.");
+    const output = execFileSync(
+      rustBin,
+      ["--match-target", target, "--match-text", extracted],
+      { encoding: "utf8" }
+    );
+    return JSON.parse(output.trim());
   }
 
   it("should classify identical name as GREEN zone (APPROVED)", () => {

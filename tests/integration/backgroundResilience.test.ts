@@ -204,7 +204,7 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
           detectServicePorts: vi.fn().mockResolvedValue([
             { name: "PostgreSQL", port: 5432, serviceType: "POSTGRES", status: "UP", latencyMs: 2 },
             { name: "Redis", port: 6379, serviceType: "REDIS", status: "UP", latencyMs: 1 },
-            { name: "Python OCR", port: 8001, serviceType: "PYTHON_OCR", status: "UP", latencyMs: 5 },
+            { name: "Rust Native Vision Engine", port: 8001, serviceType: "RUST_OCR", status: "UP", latencyMs: 5 },
             { name: "Web Server", port: 3000, serviceType: "WEB_SERVER", status: "UP", latencyMs: 3 },
           ]),
           listAppProcesses: vi.fn().mockResolvedValue([

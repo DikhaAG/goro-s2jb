@@ -18,7 +18,7 @@ export interface ServiceItem {
 
 interface ServiceStatusGridProps {
   services: ServiceItem[];
-  onRestartWorker: (workerType: "import" | "ocr" | "python" | "rust") => void;
+  onRestartWorker: (workerType: "import" | "ocr" | "rust") => void;
   onViewLogs: (logFileName: string) => void;
   isRestarting?: boolean;
 }
@@ -36,7 +36,6 @@ export function ServiceStatusGrid({
       case "REDIS":
         return <Cpu className="w-5 h-5 text-rose-500" />;
       case "RUST_OCR":
-      case "PYTHON_OCR":
         return <Eye className="w-5 h-5 text-emerald-600" />;
       case "WEB_SERVER":
         return <Globe className="w-5 h-5 text-[#006877]" />;
@@ -74,7 +73,7 @@ export function ServiceStatusGrid({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {services.map((svc) => {
-        const isVisionEngine = svc.serviceType === "RUST_OCR" || svc.serviceType === "PYTHON_OCR";
+        const isVisionEngine = svc.serviceType === "RUST_OCR";
         const canRestart = isVisionEngine;
         const associatedLog = isVisionEngine
           ? "ocr_service.log"
@@ -170,9 +169,9 @@ export function ServiceStatusGrid({
                 <button
                   type="button"
                   disabled={isRestarting}
-                  onClick={() => onRestartWorker(svc.serviceType === "RUST_OCR" ? "rust" : "python")}
+                  onClick={() => onRestartWorker("rust")}
                   className="min-h-[44px] text-xs px-3 py-2 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#334155] font-bold transition-all focus-utility-ring flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title="Mulai ulang layanan vision engine (Rust native / fallback)"
+                  title="Mulai ulang Rust Native Vision Engine"
                 >
                   <RotateCw className={`w-3.5 h-3.5 ${isRestarting ? "animate-spin text-[#006877]" : "text-[#64748b]"}`} />
                   <span>Restart Engine</span>

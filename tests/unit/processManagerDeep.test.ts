@@ -23,7 +23,7 @@ function createFakeHostProbe(processes: ManagedProcess[] = []): HostProbePort {
     detectServicePorts: vi.fn().mockResolvedValue([
       { name: "PostgreSQL Database", port: 5432, serviceType: "POSTGRES", status: "UP", latencyMs: 5 },
       { name: "Redis Broker", port: 6379, serviceType: "REDIS", status: "UP", latencyMs: 1 },
-      { name: "Python OCR", port: 8001, serviceType: "PYTHON_OCR", status: "UP", latencyMs: 12 },
+      { name: "Rust Native Vision Engine", port: 8001, serviceType: "RUST_OCR", status: "UP", latencyMs: 12 },
       { name: "Next.js Web", port: 3000, serviceType: "WEB_SERVER", status: "UP", latencyMs: 2 },
     ]),
     listAppProcesses: vi.fn().mockResolvedValue(processes),

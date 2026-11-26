@@ -101,7 +101,7 @@ export default function SystemProcessesPage() {
     terminateMutation.mutate({ pid, reason, force });
   };
 
-  const handleRestartWorker = (workerType: "import" | "ocr" | "python" | "rust") => {
+  const handleRestartWorker = (workerType: "import" | "ocr" | "rust") => {
     restartMutation.mutate({ workerType });
   };
 

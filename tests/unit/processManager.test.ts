@@ -43,12 +43,6 @@ describe("processManager Utility Suite", () => {
       expect(res.isSafeToKill).toBe(true);
     });
 
-    it("should classify python uvicorn as safe to kill", () => {
-      const res = classifyServiceType("python -m uvicorn main:app --port 8001");
-      expect(res.serviceType).toBe("PYTHON_OCR");
-      expect(res.isSafeToKill).toBe(true);
-    });
-
     it("should protect core database services from accidental termination", () => {
       const redis = classifyServiceType("/opt/homebrew/opt/redis/bin/redis-server");
       expect(redis.serviceType).toBe("REDIS");

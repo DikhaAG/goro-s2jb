@@ -22,8 +22,8 @@ describe("Integrated Observability & Health-Check Suite (AC-5)", () => {
     expect(data.services.bullmq.status).toBe("up");
     expect(typeof data.services.bullmq.ocr_waiting).toBe("number");
 
-    expect(data.services.python_ocr.status).toBe("up");
-    expect(typeof data.services.python_ocr.latency_ms).toBe("number");
+    expect(data.services.vision_engine.status).toBe("up");
+    expect(typeof data.services.vision_engine.latency_ms).toBe("number");
 
     expect(data.services.storage.status).toBe("up");
     expect(data.services.storage.writable).toBe(true);

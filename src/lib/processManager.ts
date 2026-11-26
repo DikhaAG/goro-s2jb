@@ -12,7 +12,7 @@ const execAsync = promisify(exec);
 const PROJECT_ROOT = path.resolve(process.cwd());
 const LOGS_DIR = path.resolve(PROJECT_ROOT, "logs");
 
-export type WorkerControlTarget = "import" | "ocr" | "python" | "rust";
+export type WorkerControlTarget = "import" | "ocr" | "rust";
 
 export interface TailLogResult {
   fileName: string;
@@ -167,12 +167,7 @@ export function createOsProcessControl(
       const targets = currentProcs.filter((p) => {
         if (workerType === "import" && p.serviceType === "IMPORT_WORKER") return true;
         if (workerType === "ocr" && p.serviceType === "OCR_WORKER") return true;
-        if (
-          (workerType === "python" || workerType === "rust") &&
-          (p.serviceType === "PYTHON_OCR" || p.serviceType === "RUST_OCR")
-        ) {
-          return true;
-        }
+        if (workerType === "rust" && p.serviceType === "RUST_OCR") return true;
         return false;
       });
 
@@ -222,8 +217,7 @@ export function createOsProcessControl(
         };
       }
 
-      if (workerType === "python" || workerType === "rust") {
-        const logFd = fs.openSync(path.join(LOGS_DIR, "ocr_service.log"), "a");
+      if (workerType === "rust") {
         const rustBin = path.join(
           PROJECT_ROOT,
           "rust-services",
@@ -233,45 +227,24 @@ export function createOsProcessControl(
           isWindows ? "goro-engine.exe" : "goro-engine"
         );
 
-        if (fs.existsSync(rustBin)) {
-          const child = spawn(rustBin, ["--host", "127.0.0.1", "--port", "8001"], {
-            cwd: PROJECT_ROOT,
-            detached: true,
-            stdio: ["ignore", logFd, logFd],
-            shell: isWindows,
-          });
-          child.unref();
+        if (!fs.existsSync(rustBin)) {
           return {
-            success: true,
-            message: `Rust Native Vision Engine berhasil dimulai ulang (PID baru: ${child.pid}).`,
-            newPid: child.pid,
+            success: false,
+            message: "Binary Rust Native Vision Engine belum ada. Jalankan `npm run rust:build` terlebih dahulu.",
           };
         }
 
-        const ocrDir = path.join(PROJECT_ROOT, "python-services", "ocr");
-        const pythonCandidates = [
-          path.join(ocrDir, "venv", "Scripts", "python.exe"),
-          path.join(ocrDir, "venv", "bin", "python"),
-          path.join(ocrDir, "venv", "bin", "python3"),
-        ];
-        const pythonBin =
-          pythonCandidates.find((p) => fs.existsSync(p)) ||
-          (isWindows ? "python" : "python3");
-
-        const child = spawn(
-          pythonBin,
-          ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8001", "--log-level", "info"],
-          {
-            cwd: ocrDir,
-            detached: true,
-            stdio: ["ignore", logFd, logFd],
-            shell: isWindows,
-          }
-        );
+        const logFd = fs.openSync(path.join(LOGS_DIR, "ocr_service.log"), "a");
+        const child = spawn(rustBin, ["--host", "127.0.0.1", "--port", "8001"], {
+          cwd: PROJECT_ROOT,
+          detached: true,
+          stdio: ["ignore", logFd, logFd],
+          shell: isWindows,
+        });
         child.unref();
         return {
           success: true,
-          message: `Microservice Python OCR (Fallback) berhasil dimulai ulang (PID baru: ${child.pid}).`,
+          message: `Rust Native Vision Engine berhasil dimulai ulang (PID baru: ${child.pid}).`,
           newPid: child.pid,
         };
       }

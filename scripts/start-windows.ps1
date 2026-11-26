@@ -145,20 +145,11 @@ foreach ($p in $TessStandardPaths) {
 # 1. Menjalankan Microservice OCR (Port 8001) - Prioritas: Rust Native Engine
 Write-Host "`n[1/4] Menjalankan Microservice Vision & OCR (Port 8001)..." -ForegroundColor Yellow
 $RustExe = Join-Path $ProjectDir "rust-services\goro-engine\target\release\goro-engine.exe"
-$OcrDir = Join-Path $ProjectDir "python-services\ocr"
-$PythonExe = Join-Path $OcrDir "venv\Scripts\python.exe"
 
 if (Test-Path $RustExe) {
     $RustCmd = "$TessPrefixScript`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - Rust Native OCR Engine (Port 8001)'; Set-Location '$ProjectDir'; & '$RustExe' --host 127.0.0.1 --port 8001"
     Start-Process powershell -ArgumentList "-NoExit", "-Command", $RustCmd
     Write-Host "✓ Jendela Rust Native OCR Engine berhasil dibuka." -ForegroundColor Green
-} elseif (Test-Path $OcrDir) {
-    if (-not (Test-Path $PythonExe)) {
-        $PythonExe = "python"
-    }
-    $PyCmd = "$TessPrefixScript`$Host.UI.RawUI.WindowTitle = 'GORO S2JB - Python OCR Microservice (Port 8001)'; Set-Location '$OcrDir'; & '$PythonExe' -m uvicorn main:app --host 127.0.0.1 --port 8001"
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", $PyCmd
-    Write-Host "✓ Jendela Python OCR Microservice (Fallback) berhasil dibuka." -ForegroundColor Green
 } else {
     Write-Host "⚠️ Binary Rust belum dikompilasi. Jalankan: npm run rust:build atau npm run setup:all" -ForegroundColor Red
 }
