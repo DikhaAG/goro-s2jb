@@ -1,8 +1,58 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { systemTelemetry } from "@/server/services/systemTelemetry";
+import { systemTelemetry, type CoreHealthProbe } from "@/server/services/systemTelemetry";
 
-export async function GET() {
+function formatCoreDep(dep: { status: "up" | "down"; latencyMs?: number; error?: string }) {
+  return {
+    status: dep.status,
+    ...(dep.latencyMs !== undefined ? { latency_ms: dep.latencyMs } : {}),
+    ...(dep.error ? { error: dep.error } : {}),
+  };
+}
+
+function logHealthOutcome(probe: CoreHealthProbe, services: Record<string, unknown>) {
+  const healthLogPayload = {
+    module: "HEALTH",
+    durationMs: probe.executionMs,
+    metadata: { overallStatus: probe.status, services },
+  };
+
+  if (!probe.isCriticalUp) {
+    logger.error("Health check unhealthy", healthLogPayload);
+  } else if (probe.status !== "healthy") {
+    logger.warn("Health check degraded", healthLogPayload);
+  } else if (process.env.LOG_HEALTH_CHECKS === "true") {
+    // Healthy 15s container polls are suppressed by default to prevent daily log bloat.
+    logger.info("Health check executed", healthLogPayload);
+  }
+}
+
+export async function GET(): Promise<NextResponse>;
+export async function GET(request: Request): Promise<NextResponse>;
+export async function GET(request?: Request): Promise<NextResponse> {
+  const scope = request
+    ? new URL(request.url, "http://localhost").searchParams.get("scope")
+    : null;
+
+  if (scope === "ping") {
+    const probe = await systemTelemetry.getHealth("ping");
+    const services = {
+      database: formatCoreDep(probe.database),
+      redis: formatCoreDep(probe.redis),
+    };
+    logHealthOutcome(probe, services);
+
+    return NextResponse.json(
+      {
+        status: probe.status,
+        timestamp: probe.timestamp,
+        execution_ms: probe.executionMs,
+        services,
+      },
+      { status: probe.isCriticalUp ? 200 : 503 }
+    );
+  }
+
   const probe = await systemTelemetry.getHealth("full");
 
   const dlMetrics = probe.downloader!;
@@ -17,16 +67,8 @@ export async function GET() {
     bridgeTotal > 0 ? (bridgeMetrics.cliFallbackCount / bridgeTotal) * 100 : 0;
 
   const services = {
-    database: {
-      status: probe.database.status,
-      ...(probe.database.latencyMs !== undefined ? { latency_ms: probe.database.latencyMs } : {}),
-      ...(probe.database.error ? { error: probe.database.error } : {}),
-    },
-    redis: {
-      status: probe.redis.status,
-      ...(probe.redis.latencyMs !== undefined ? { latency_ms: probe.redis.latencyMs } : {}),
-      ...(probe.redis.error ? { error: probe.redis.error } : {}),
-    },
+    database: formatCoreDep(probe.database),
+    redis: formatCoreDep(probe.redis),
     bullmq: probe.bullmq
       ? {
           status: probe.bullmq.status,
@@ -41,13 +83,7 @@ export async function GET() {
         }
       : { status: "down" as const },
     python_ocr: probe.visionEngine
-      ? {
-          status: probe.visionEngine.status,
-          ...(probe.visionEngine.latencyMs !== undefined
-            ? { latency_ms: probe.visionEngine.latencyMs }
-            : {}),
-          ...(probe.visionEngine.error ? { error: probe.visionEngine.error } : {}),
-        }
+      ? formatCoreDep(probe.visionEngine)
       : { status: "down" as const },
     storage: probe.storage
       ? {
@@ -92,30 +128,15 @@ export async function GET() {
     },
   };
 
-  const overallStatus = probe.status;
-  const statusCode = probe.isCriticalUp ? 200 : 503;
-  const healthLogPayload = {
-    module: "HEALTH",
-    durationMs: probe.executionMs,
-    metadata: { overallStatus, services },
-  };
-
-  if (!probe.isCriticalUp) {
-    logger.error("Health check unhealthy", healthLogPayload);
-  } else if (overallStatus !== "healthy") {
-    logger.warn("Health check degraded", healthLogPayload);
-  } else if (process.env.LOG_HEALTH_CHECKS === "true") {
-    // Healthy 15s container polls are suppressed by default to prevent daily log bloat.
-    logger.info("Health check executed", healthLogPayload);
-  }
+  logHealthOutcome(probe, services);
 
   return NextResponse.json(
     {
-      status: overallStatus,
+      status: probe.status,
       timestamp: probe.timestamp,
       execution_ms: probe.executionMs,
       services,
     },
-    { status: statusCode }
+    { status: probe.isCriticalUp ? 200 : 503 }
   );
 }

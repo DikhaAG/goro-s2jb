@@ -1,81 +1,18 @@
 import { exec, spawn } from "child_process";
 import { promisify } from "util";
-import net from "net";
-import os from "os";
 import fs from "fs";
 import path from "path";
+import {
+  createDefaultHostProbe,
+  type HostProbePort,
+} from "@/server/services/systemTelemetry";
 
 const execAsync = promisify(exec);
 
-export type ServiceType =
-  | "POSTGRES"
-  | "REDIS"
-  | "PYTHON_OCR"
-  | "RUST_OCR"
-  | "IMPORT_WORKER"
-  | "OCR_WORKER"
-  | "WEB_SERVER"
-  | "CLI_TASK"
-  | "OTHER";
+const PROJECT_ROOT = path.resolve(process.cwd());
+const LOGS_DIR = path.resolve(PROJECT_ROOT, "logs");
 
-export interface ServicePortInfo {
-  name: string;
-  port: number;
-  serviceType: ServiceType;
-  status: "UP" | "DOWN" | "DEGRADED";
-  latencyMs?: number;
-  recentLatencies?: number[];
-  averageLatencyMs?: number;
-  pid?: number;
-  processCommand?: string;
-  error?: string;
-}
-
-const portLatencyHistory = new Map<number, number[]>();
-
-export function recordPortLatency(port: number, latencyMs: number): void {
-  const list = portLatencyHistory.get(port) || [];
-  list.push(Math.max(0, latencyMs));
-  if (list.length > 5) {
-    list.splice(0, list.length - 5);
-  }
-  portLatencyHistory.set(port, list);
-}
-
-export function getPortLatencyHistory(port: number): number[] {
-  return [...(portLatencyHistory.get(port) || [])];
-}
-
-export function resetPortLatencyHistory(): void {
-  portLatencyHistory.clear();
-}
-
-export interface ManagedProcess {
-  pid: number;
-  ppid: number;
-  cpuPercent: number;
-  memPercent: number;
-  rssKb: number;
-  status: string;
-  elapsedTime: string;
-  command: string;
-  serviceType: ServiceType;
-  isSafeToKill: boolean;
-}
-
-export interface SystemResources {
-  cpuCount: number;
-  cpuModel: string;
-  totalMemBytes: number;
-  freeMemBytes: number;
-  usedMemBytes: number;
-  memUsagePercent: number;
-  processUptimeSeconds: number;
-  systemUptimeSeconds: number;
-  nodeMemory: NodeJS.MemoryUsage;
-  platform: string;
-  arch: string;
-}
+export type WorkerControlTarget = "import" | "ocr" | "python" | "rust";
 
 export interface TailLogResult {
   fileName: string;
@@ -85,747 +22,296 @@ export interface TailLogResult {
   lastModified: string;
 }
 
-const PROJECT_ROOT = path.resolve(process.cwd());
-const LOGS_DIR = path.resolve(PROJECT_ROOT, "logs");
+export interface ProcessControlPort {
+  tailLogFile(fileName: string, lineCount?: number): Promise<TailLogResult>;
+  terminateProcess(
+    pid: number,
+    force?: boolean
+  ): Promise<{ success: boolean; pid: number; signal: string }>;
+  restartWorker(
+    workerType: WorkerControlTarget
+  ): Promise<{ success: boolean; message: string; newPid?: number }>;
+  cleanOrphanProcesses(): Promise<{
+    killedPids: number[];
+    count: number;
+    errors: string[];
+  }>;
+}
+
+type ProcessInspectionPort = Pick<
+  HostProbePort,
+  "listAppProcesses" | "isOrphanOrZombieProcess"
+>;
 
 /**
- * Checks TCP socket connectivity to determine latency and reachability of a service port.
+ * OS process-control and log-tailing adapter sitting behind ProcessControlPort.
+ * Uses HostProbePort solely to enforce PID safety guards before signaling processes.
  */
-export async function checkPortConnectivity(
-  port: number,
-  host: string = "127.0.0.1",
-  timeoutMs: number = 800
-): Promise<{ isReachable: boolean; latencyMs: number }> {
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    const socket = new net.Socket();
-
-    let resolved = false;
-
-    const cleanup = () => {
-      socket.removeAllListeners();
-      socket.destroy();
-    };
-
-    socket.setTimeout(timeoutMs);
-
-    socket.once("connect", () => {
-      if (resolved) return;
-      resolved = true;
-      const latencyMs = Date.now() - startTime;
-      recordPortLatency(port, latencyMs);
-      cleanup();
-      resolve({ isReachable: true, latencyMs });
-    });
-
-    socket.once("timeout", () => {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      resolve({ isReachable: false, latencyMs: timeoutMs });
-    });
-
-    socket.once("error", () => {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      resolve({ isReachable: false, latencyMs: 0 });
-    });
-
-    socket.connect(port, host);
-  });
-}
-
-/**
- * Finds the process PID currently binding a given network port using lsof.
- */
-export async function getPidForPort(port: number): Promise<number | null> {
-  try {
-    if (process.platform === "win32") {
-      const { stdout } = await execAsync(`netstat -ano -p tcp | findstr :${port}`);
-      const lines = stdout.trim().split("\n");
-      for (const line of lines) {
-        if (line.includes("LISTENING")) {
-          const parts = line.trim().split(/\s+/);
-          const pid = parseInt(parts[parts.length - 1], 10);
-          if (!isNaN(pid) && pid > 0) return pid;
-        }
-      }
-      return null;
-    }
-
-    const { stdout } = await execAsync(`lsof -ti :${port} -sTCP:LISTEN 2>/dev/null || lsof -ti :${port} 2>/dev/null`);
-    const pids = stdout
-      .trim()
-      .split("\n")
-      .map((p) => parseInt(p.trim(), 10))
-      .filter((n) => !isNaN(n) && n > 0);
-    return pids.length > 0 ? pids[0] : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Parses host and port from a service connection URL (e.g. DATABASE_URL, REDIS_URL,
- * OCR_SERVICE_URL), normalizing wildcard bind hosts to defaultHost.
- */
-export function resolveServiceEndpoint(
-  rawUrl: string | undefined,
-  defaultHost: string,
-  defaultPort: number
-): { host: string; port: number } {
-  if (!rawUrl || !rawUrl.trim()) {
-    return { host: defaultHost, port: defaultPort };
-  }
-
-  try {
-    const parsed = new URL(rawUrl.trim());
-    const hostname = parsed.hostname?.trim();
-    const host =
-      !hostname || hostname === "0.0.0.0" || hostname === "::"
-        ? defaultHost
-        : hostname;
-
-    let port = defaultPort;
-    if (parsed.port) {
-      const parsedPort = parseInt(parsed.port, 10);
-      if (!isNaN(parsedPort) && parsedPort > 0 && parsedPort <= 65535) {
-        port = parsedPort;
-      }
-    } else if (parsed.protocol === "https:") {
-      port = 443;
-    } else if (parsed.protocol === "http:") {
-      port = 80;
-    }
-
-    return { host, port };
-  } catch {
-    return { host: defaultHost, port: defaultPort };
-  }
-}
-
-function isLoopbackHost(host: string): boolean {
-  const normalized = host.trim().toLowerCase();
-  return (
-    normalized === "127.0.0.1" ||
-    normalized === "localhost" ||
-    normalized === "::1"
-  );
-}
-
-/**
- * Inspects all 4 core services to determine endpoint reachability, latency, and local PID.
- */
-export async function detectServicePorts(): Promise<ServicePortInfo[]> {
-  const isWindows = process.platform === "win32";
-  const rustBin = path.resolve(
-    PROJECT_ROOT,
-    "rust-services",
-    "goro-engine",
-    "target",
-    "release",
-    isWindows ? "goro-engine.exe" : "goro-engine"
-  );
-  const pgEndpoint = resolveServiceEndpoint(process.env.DATABASE_URL, "127.0.0.1", 5432);
-  const redisEndpoint = resolveServiceEndpoint(process.env.REDIS_URL, "127.0.0.1", 6379);
-  const ocrEndpoint = resolveServiceEndpoint(process.env.OCR_SERVICE_URL, "127.0.0.1", 8001);
-  const parsedWebPort = parseInt(process.env.PORT || "3000", 10);
-  const webPort = !isNaN(parsedWebPort) && parsedWebPort > 0 ? parsedWebPort : 3000;
-
-  const defaultOcrIsRust =
-    fs.existsSync(rustBin) || ocrEndpoint.host.toLowerCase() === "ocr-engine";
-
-  const serviceDefs: Array<{
-    name: string;
-    host: string;
-    port: number;
-    serviceType: ServiceType;
-  }> = [
-    {
-      name: "PostgreSQL Database",
-      host: pgEndpoint.host,
-      port: pgEndpoint.port,
-      serviceType: "POSTGRES",
-    },
-    {
-      name: "Redis In-Memory Broker",
-      host: redisEndpoint.host,
-      port: redisEndpoint.port,
-      serviceType: "REDIS",
-    },
-    {
-      name: defaultOcrIsRust ? "Rust Native Vision Engine" : "Vision & OCR Engine",
-      host: ocrEndpoint.host,
-      port: ocrEndpoint.port,
-      serviceType: defaultOcrIsRust ? "RUST_OCR" : "PYTHON_OCR",
-    },
-    {
-      name: "Next.js Web Application",
-      host: "127.0.0.1",
-      port: webPort,
-      serviceType: "WEB_SERVER",
-    },
-  ];
-
-  const results: ServicePortInfo[] = await Promise.all(
-    serviceDefs.map(async (svc) => {
-      const conn = await checkPortConnectivity(svc.port, svc.host);
-      const pid = isLoopbackHost(svc.host) ? await getPidForPort(svc.port) : null;
-
-      const recentLatencies = getPortLatencyHistory(svc.port);
-      let averageLatencyMs: number | undefined;
-      if (recentLatencies.length > 0) {
-        const sum = recentLatencies.reduce((a, b) => a + b, 0);
-        averageLatencyMs = Math.round(sum / recentLatencies.length);
-      } else if (conn.isReachable) {
-        averageLatencyMs = conn.latencyMs;
-      }
-
-      let status: "UP" | "DOWN" | "DEGRADED" = "DOWN";
-      if (conn.isReachable) {
-        status = (averageLatencyMs && averageLatencyMs > 300) || conn.latencyMs > 300 ? "DEGRADED" : "UP";
-      }
-
-      let processCommand: string | undefined;
-      let finalName = svc.name;
-      let finalType = svc.serviceType;
-
-      if (pid) {
-        try {
-          let processCommandText = "";
-          if (process.platform === "win32") {
-            const { stdout } = await execAsync(
-              `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"ProcessId = ${pid}\\").CommandLine"`
-            );
-            processCommandText = stdout.trim();
-          } else {
-            const { stdout } = await execAsync(`ps -p ${pid} -o command= 2>/dev/null`);
-            processCommandText = stdout.trim();
-          }
-          processCommand = processCommandText || undefined;
-          if (svc.port === ocrEndpoint.port) {
-            if (processCommand?.toLowerCase().includes("goro-engine")) {
-              finalName = "Rust Native Vision Engine (goro-engine)";
-              finalType = "RUST_OCR";
-            } else if (processCommand?.toLowerCase().includes("uvicorn") || processCommand?.toLowerCase().includes("python")) {
-              finalName = "Python OCR Microservice (Fallback)";
-              finalType = "PYTHON_OCR";
-            }
-          }
-        } catch {
-          // ignore error fetching command
-        }
-      }
-
-      return {
-        name: finalName,
-        port: svc.port,
-        serviceType: finalType,
-        status,
-        latencyMs: conn.isReachable ? conn.latencyMs : undefined,
-        recentLatencies,
-        averageLatencyMs,
-        pid: pid || undefined,
-        processCommand,
-      };
-    })
-  );
-
-  return results;
-}
-
-/**
- * Classifies an OS process based on command string into an application ServiceType.
- */
-export function classifyServiceType(command: string): { serviceType: ServiceType; isSafeToKill: boolean } {
-  const lower = command.toLowerCase();
-
-  if (lower.includes("importworker.ts") || lower.includes("worker:import")) {
-    return { serviceType: "IMPORT_WORKER", isSafeToKill: true };
-  }
-  if (lower.includes("ocrworker.ts") || lower.includes("worker:ocr")) {
-    return { serviceType: "OCR_WORKER", isSafeToKill: true };
-  }
-  if (lower.includes("goro-engine")) {
-    return { serviceType: "RUST_OCR", isSafeToKill: true };
-  }
-  if (lower.includes("uvicorn") && lower.includes("main:app")) {
-    return { serviceType: "PYTHON_OCR", isSafeToKill: true };
-  }
-  if (lower.includes("scripts/start-mac.sh") || lower.includes("scripts/start-windows.ps1")) {
-    return { serviceType: "CLI_TASK", isSafeToKill: true };
-  }
-  if (lower.includes("next dev") || lower.includes("next-server") || lower.includes("next start")) {
-    // Killing the web server itself through its own API will drop the connection immediately
-    return { serviceType: "WEB_SERVER", isSafeToKill: false };
-  }
-  if (lower.includes("redis-server")) {
-    return { serviceType: "REDIS", isSafeToKill: false };
-  }
-  if (lower.includes("postgres")) {
-    return { serviceType: "POSTGRES", isSafeToKill: false };
-  }
-  if (lower.includes("goro-s2jb")) {
-    return { serviceType: "CLI_TASK", isSafeToKill: true };
-  }
-
-  return { serviceType: "OTHER", isSafeToKill: false };
-}
-
-function isRelatedProcessCommand(command: string): boolean {
-  return (
-    command.includes("goro-s2jb") ||
-    command.includes("goro-engine") ||
-    command.includes("importWorker.ts") ||
-    command.includes("ocrWorker.ts") ||
-    command.includes("worker:import") ||
-    command.includes("worker:ocr") ||
-    (command.includes("uvicorn") && command.includes("main:app")) ||
-    command.includes("redis-server") ||
-    command.includes("postgres")
-  );
-}
-
-function buildManagedProcess(
-  pid: number,
-  ppid: number,
-  cpuPercent: number,
-  memPercent: number,
-  rssKb: number,
-  status: string,
-  elapsedTime: string,
-  command: string,
-  currentPid: number
-): ManagedProcess {
-  const { serviceType, isSafeToKill } = classifyServiceType(command);
-  const safe = isSafeToKill && pid !== currentPid && pid > 100;
+export function createOsProcessControl(
+  hostProbe: ProcessInspectionPort = createDefaultHostProbe()
+): ProcessControlPort {
   return {
-    pid,
-    ppid,
-    cpuPercent,
-    memPercent,
-    rssKb,
-    status,
-    elapsedTime,
-    command,
-    serviceType,
-    isSafeToKill: safe,
-  };
-}
+    async tailLogFile(fileName: string, lineCount: number = 100): Promise<TailLogResult> {
+      if (
+        !fileName ||
+        fileName.includes("..") ||
+        fileName.includes("/") ||
+        fileName.includes("\\")
+      ) {
+        throw new Error("Akses tidak sah ke berkas di luar direktori logs/.");
+      }
 
-/**
- * Lists running processes on the host operating system filtered specifically for GORO S2JB ecosystem.
- */
-export async function listAppProcesses(): Promise<ManagedProcess[]> {
-  try {
-    if (process.platform === "win32") {
+      const sanitized = path.basename(fileName);
+      const targetPath = path.resolve(LOGS_DIR, sanitized);
+
+      if (!targetPath.startsWith(LOGS_DIR)) {
+        throw new Error("Akses tidak sah ke berkas di luar direktori logs/.");
+      }
+
+      if (!fs.existsSync(targetPath)) {
+        return {
+          fileName: sanitized,
+          lines: [
+            `[SISTEM] Berkas log ${sanitized} belum terbentuk atau belum ada entri tercatat.`,
+          ],
+          totalLines: 0,
+          sizeBytes: 0,
+          lastModified: new Date().toISOString(),
+        };
+      }
+
+      const stats = fs.statSync(targetPath);
+      const maxLines = Math.max(1, Math.min(lineCount, 500));
+
       try {
-        const psCmd = `powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and ($_.CommandLine -like '*goro*' -or $_.CommandLine -like '*node*' -or $_.CommandLine -like '*python*' -or $_.CommandLine -like '*redis*' -or $_.CommandLine -like '*postgres*') } | Select-Object ProcessId, ParentProcessId, CommandLine | ConvertTo-Json -Compress"`;
-        const { stdout } = await execAsync(psCmd);
-        if (!stdout.trim()) return [];
+        const content = fs.readFileSync(targetPath, "utf-8");
+        const allLines = content.split("\n");
+        const recentLines = allLines.slice(-maxLines);
 
-        const parsed = JSON.parse(stdout.trim());
-        const rawList = Array.isArray(parsed) ? parsed : [parsed];
-        const processes: ManagedProcess[] = [];
-        const currentPid = process.pid;
+        return {
+          fileName: sanitized,
+          lines: recentLines,
+          totalLines: allLines.length,
+          sizeBytes: stats.size,
+          lastModified: stats.mtime.toISOString(),
+        };
+      } catch (err: any) {
+        return {
+          fileName: sanitized,
+          lines: [`[ERROR] Gagal membaca berkas log: ${err?.message || "Kesalahan I/O"}`],
+          totalLines: 0,
+          sizeBytes: stats.size,
+          lastModified: stats.mtime.toISOString(),
+        };
+      }
+    },
 
-        for (const item of rawList) {
-          const pid = Number(item.ProcessId);
-          const ppid = Number(item.ParentProcessId) || 0;
-          const command = String(item.CommandLine || "");
-          if (!command || isNaN(pid) || pid <= 0 || !isRelatedProcessCommand(command)) {
-            continue;
-          }
+    async terminateProcess(
+      pid: number,
+      force: boolean = false
+    ): Promise<{ success: boolean; pid: number; signal: string }> {
+      if (pid <= 100) {
+        throw new Error(
+          "DILARANG KERAS: Tidak dapat menghentikan proses vital sistem operasi (PID <= 100)."
+        );
+      }
 
-          processes.push(
-            buildManagedProcess(pid, ppid, 0, 0, 0, "RUNNING", "N/A", command, currentPid)
-          );
+      if (pid === process.pid) {
+        throw new Error("DILARANG: Tidak dapat menghentikan proses server web sendiri.");
+      }
+
+      if (pid === process.ppid) {
+        throw new Error("DILARANG: Tidak dapat menghentikan parent proses server web.");
+      }
+
+      const runningProcesses = await hostProbe.listAppProcesses();
+      const target = runningProcesses.find((p) => p.pid === pid);
+
+      if (!target) {
+        throw new Error(`Proses dengan PID ${pid} tidak ditemukan atau tidak aktif.`);
+      }
+
+      if (!target.isSafeToKill) {
+        throw new Error(
+          `Proses ${target.serviceType} (PID ${pid}) dilindungi dan tidak diizinkan untuk dihentikan.`
+        );
+      }
+
+      if (process.platform === "win32") {
+        try {
+          await execAsync(`taskkill /PID ${pid} /T /F`);
+          return { success: true, pid, signal: "TASKKILL_F" };
+        } catch {
+          return { success: true, pid, signal: "ALREADY_EXITED" };
         }
-
-        return processes;
-      } catch (winErr) {
-        console.error("Error querying Windows processes:", winErr);
-        return [];
       }
-    }
 
-    const processes: ManagedProcess[] = [];
-    const currentPid = process.pid;
+      const signal = force ? "SIGKILL" : "SIGTERM";
 
-    try {
-      // Format: PID, PPID, %CPU, %MEM, RSS (KB), STAT, ETIME, COMMAND
-      const { stdout } = await execAsync(
-        "ps -axo pid,ppid,pcpu,pmem,rss,stat,etime,command 2>/dev/null"
-      );
-      const lines = stdout.trim().split("\n");
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const match = line.match(
-          /^(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/
-        );
-        if (!match) continue;
-
-        const command = match[8];
-        if (!isRelatedProcessCommand(command)) continue;
-
-        processes.push(
-          buildManagedProcess(
-            parseInt(match[1], 10),
-            parseInt(match[2], 10),
-            parseFloat(match[3]),
-            parseFloat(match[4]),
-            parseInt(match[5], 10),
-            match[6],
-            match[7],
-            command,
-            currentPid
-          )
-        );
+      try {
+        process.kill(pid, signal);
+        return { success: true, pid, signal };
+      } catch (err: any) {
+        if (err.code === "ESRCH") {
+          return { success: true, pid, signal: "ALREADY_EXITED" };
+        }
+        throw new Error(`Gagal mengirim sinyal ${signal} ke PID ${pid}: ${err.message}`);
       }
-    } catch {
-      // BusyBox/minimal Alpine fallback without procps -axo extensions
-      const { stdout } = await execAsync("ps -o pid,ppid,stat,args 2>/dev/null");
-      const lines = stdout.trim().split("\n");
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
+    },
 
-        const match = line.match(/^(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/);
-        if (!match) continue;
+    async restartWorker(
+      workerType: WorkerControlTarget
+    ): Promise<{ success: boolean; message: string; newPid?: number }> {
+      const currentProcs = await hostProbe.listAppProcesses();
 
-        const command = match[4];
-        if (!isRelatedProcessCommand(command)) continue;
+      const targets = currentProcs.filter((p) => {
+        if (workerType === "import" && p.serviceType === "IMPORT_WORKER") return true;
+        if (workerType === "ocr" && p.serviceType === "OCR_WORKER") return true;
+        if (
+          (workerType === "python" || workerType === "rust") &&
+          (p.serviceType === "PYTHON_OCR" || p.serviceType === "RUST_OCR")
+        ) {
+          return true;
+        }
+        return false;
+      });
 
-        processes.push(
-          buildManagedProcess(
-            parseInt(match[1], 10),
-            parseInt(match[2], 10),
-            0,
-            0,
-            0,
-            match[3],
-            "N/A",
-            command,
-            currentPid
-          )
-        );
+      for (const proc of targets) {
+        try {
+          process.kill(proc.pid, "SIGTERM");
+        } catch {
+          // ignore if already exited
+        }
       }
-    }
 
-    // Sort by CPU usage descending
-    return processes.sort((a, b) => b.cpuPercent - a.cpuPercent);
-  } catch {
-    return [];
-  }
-}
+      await new Promise((r) => setTimeout(r, 800));
 
-/**
- * Returns overall hardware and operating system telemetry.
- */
-export function getSystemResources(): SystemResources {
-  const cpus = os.cpus();
-  const totalMem = os.totalmem();
-  const freeMem = os.freemem();
-  const usedMem = totalMem - freeMem;
-  const memUsagePercent = Math.round((usedMem / totalMem) * 10000) / 100;
+      fs.mkdirSync(LOGS_DIR, { recursive: true });
+      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+      const isWindows = process.platform === "win32";
 
-  return {
-    cpuCount: cpus.length,
-    cpuModel: cpus[0]?.model || "Unknown CPU",
-    totalMemBytes: totalMem,
-    freeMemBytes: freeMem,
-    usedMemBytes: usedMem,
-    memUsagePercent,
-    processUptimeSeconds: Math.floor(process.uptime()),
-    systemUptimeSeconds: Math.floor(os.uptime()),
-    nodeMemory: process.memoryUsage(),
-    platform: os.platform(),
-    arch: os.arch(),
-  };
-}
-
-/**
- * Safely reads the last N lines of a log file located within the project's logs/ directory.
- * Includes strict path traversal protection.
- */
-export async function tailLogFile(fileName: string, lineCount: number = 100): Promise<TailLogResult> {
-  // Path traversal guard
-  if (!fileName || fileName.includes("..") || fileName.includes("/") || fileName.includes("\\")) {
-    throw new Error("Akses tidak sah ke berkas di luar direktori logs/.");
-  }
-
-  const sanitized = path.basename(fileName);
-  const targetPath = path.resolve(LOGS_DIR, sanitized);
-
-  if (!targetPath.startsWith(LOGS_DIR)) {
-    throw new Error("Akses tidak sah ke berkas di luar direktori logs/.");
-  }
-
-  if (!fs.existsSync(targetPath)) {
-    return {
-      fileName: sanitized,
-      lines: [`[SISTEM] Berkas log ${sanitized} belum terbentuk atau belum ada entri tercatat.`],
-      totalLines: 0,
-      sizeBytes: 0,
-      lastModified: new Date().toISOString(),
-    };
-  }
-
-  const stats = fs.statSync(targetPath);
-  const maxLines = Math.max(1, Math.min(lineCount, 500));
-
-  try {
-    const content = fs.readFileSync(targetPath, "utf-8");
-    const allLines = content.split("\n");
-    const recentLines = allLines.slice(-maxLines);
-
-    return {
-      fileName: sanitized,
-      lines: recentLines,
-      totalLines: allLines.length,
-      sizeBytes: stats.size,
-      lastModified: stats.mtime.toISOString(),
-    };
-  } catch (err: any) {
-    return {
-      fileName: sanitized,
-      lines: [`[ERROR] Gagal membaca berkas log: ${err?.message || "Kesalahan I/O"}`],
-      totalLines: 0,
-      sizeBytes: stats.size,
-      lastModified: stats.mtime.toISOString(),
-    };
-  }
-}
-
-/**
- * Terminates a background process safely with whitelist validation and signal selection.
- */
-export async function terminateProcess(
-  pid: number,
-  force: boolean = false
-): Promise<{ success: boolean; pid: number; signal: string }> {
-  if (pid <= 100) {
-    throw new Error("DILARANG KERAS: Tidak dapat menghentikan proses vital sistem operasi (PID <= 100).");
-  }
-
-  if (pid === process.pid) {
-    throw new Error("DILARANG: Tidak dapat menghentikan proses server web sendiri.");
-  }
-
-  if (pid === process.ppid) {
-    throw new Error("DILARANG: Tidak dapat menghentikan parent proses server web.");
-  }
-
-  const runningProcesses = await listAppProcesses();
-  const target = runningProcesses.find((p) => p.pid === pid);
-
-  if (!target) {
-    throw new Error(`Proses dengan PID ${pid} tidak ditemukan atau tidak aktif.`);
-  }
-
-  if (!target.isSafeToKill) {
-    throw new Error(`Proses ${target.serviceType} (PID ${pid}) dilindungi dan tidak diizinkan untuk dihentikan.`);
-  }
-
-  if (process.platform === "win32") {
-    try {
-      await execAsync(`taskkill /PID ${pid} /T /F`);
-      return { success: true, pid, signal: "TASKKILL_F" };
-    } catch (err: any) {
-      return { success: true, pid, signal: "ALREADY_EXITED" };
-    }
-  }
-
-  const signal = force ? "SIGKILL" : "SIGTERM";
-
-  try {
-    process.kill(pid, signal);
-    return { success: true, pid, signal };
-  } catch (err: any) {
-    // If permission issue or process already exited
-    if (err.code === "ESRCH") {
-      return { success: true, pid, signal: "ALREADY_EXITED" };
-    }
-    throw new Error(`Gagal mengirim sinyal ${signal} ke PID ${pid}: ${err.message}`);
-  }
-}
-
-/**
- * Restarts or launches an application worker in background.
- */
-export async function restartWorker(
-  workerType: "import" | "ocr" | "python" | "rust"
-): Promise<{ success: boolean; message: string; newPid?: number }> {
-  const currentProcs = await listAppProcesses();
-
-  // 1. Terminate existing instances
-  const targets = currentProcs.filter((p) => {
-    if (workerType === "import" && p.serviceType === "IMPORT_WORKER") return true;
-    if (workerType === "ocr" && p.serviceType === "OCR_WORKER") return true;
-    if (
-      (workerType === "python" || workerType === "rust") &&
-      (p.serviceType === "PYTHON_OCR" || p.serviceType === "RUST_OCR")
-    ) {
-      return true;
-    }
-    return false;
-  });
-
-  for (const proc of targets) {
-    try {
-      process.kill(proc.pid, "SIGTERM");
-    } catch {
-      // ignore if already exited
-    }
-  }
-
-  // Brief delay to allow sockets to release
-  await new Promise((r) => setTimeout(r, 800));
-
-  // 2. Spawn new instance
-  fs.mkdirSync(LOGS_DIR, { recursive: true });
-  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
-  const isWindows = process.platform === "win32";
-
-  if (workerType === "import") {
-    const logFd = fs.openSync(path.join(LOGS_DIR, "worker_import.log"), "a");
-    const child = spawn(npmCmd, ["run", "worker:import"], {
-      cwd: PROJECT_ROOT,
-      detached: true,
-      stdio: ["ignore", logFd, logFd],
-      shell: isWindows,
-    });
-    child.unref();
-    return {
-      success: true,
-      message: `Worker Impor berhasil dimulai ulang (PID baru: ${child.pid}).`,
-      newPid: child.pid,
-    };
-  }
-
-  if (workerType === "ocr") {
-    const logFd = fs.openSync(path.join(LOGS_DIR, "worker_ocr.log"), "a");
-    const child = spawn(npmCmd, ["run", "worker:ocr"], {
-      cwd: PROJECT_ROOT,
-      detached: true,
-      stdio: ["ignore", logFd, logFd],
-      shell: isWindows,
-    });
-    child.unref();
-    return {
-      success: true,
-      message: `Worker OCR berhasil dimulai ulang (PID baru: ${child.pid}).`,
-      newPid: child.pid,
-    };
-  }
-
-  if (workerType === "python" || workerType === "rust") {
-    const logFd = fs.openSync(path.join(LOGS_DIR, "ocr_service.log"), "a");
-    const rustBin = path.join(
-      PROJECT_ROOT,
-      "rust-services",
-      "goro-engine",
-      "target",
-      "release",
-      isWindows ? "goro-engine.exe" : "goro-engine"
-    );
-
-    // Prioritize high-performance Rust Native Engine if compiled
-    if (fs.existsSync(rustBin)) {
-      const child = spawn(
-        rustBin,
-        ["--host", "127.0.0.1", "--port", "8001"],
-        {
+      if (workerType === "import") {
+        const logFd = fs.openSync(path.join(LOGS_DIR, "worker_import.log"), "a");
+        const child = spawn(npmCmd, ["run", "worker:import"], {
           cwd: PROJECT_ROOT,
           detached: true,
           stdio: ["ignore", logFd, logFd],
           shell: isWindows,
-        }
-      );
-      child.unref();
-      return {
-        success: true,
-        message: `Rust Native Vision Engine berhasil dimulai ulang (PID baru: ${child.pid}).`,
-        newPid: child.pid,
-      };
-    }
-
-    const ocrDir = path.join(PROJECT_ROOT, "python-services", "ocr");
-    const pythonCandidates = [
-      path.join(ocrDir, "venv", "Scripts", "python.exe"),
-      path.join(ocrDir, "venv", "bin", "python"),
-      path.join(ocrDir, "venv", "bin", "python3"),
-    ];
-    const pythonBin =
-      pythonCandidates.find((p) => fs.existsSync(p)) || (isWindows ? "python" : "python3");
-
-    const child = spawn(
-      pythonBin,
-      ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8001", "--log-level", "info"],
-      {
-        cwd: ocrDir,
-        detached: true,
-        stdio: ["ignore", logFd, logFd],
-        shell: isWindows,
+        });
+        child.unref();
+        return {
+          success: true,
+          message: `Worker Impor berhasil dimulai ulang (PID baru: ${child.pid}).`,
+          newPid: child.pid,
+        };
       }
-    );
-    child.unref();
-    return {
-      success: true,
-      message: `Microservice Python OCR (Fallback) berhasil dimulai ulang (PID baru: ${child.pid}).`,
-      newPid: child.pid,
-    };
-  }
 
-  throw new Error(`Tipe worker tidak dikenal: ${workerType}`);
-}
+      if (workerType === "ocr") {
+        const logFd = fs.openSync(path.join(LOGS_DIR, "worker_ocr.log"), "a");
+        const child = spawn(npmCmd, ["run", "worker:ocr"], {
+          cwd: PROJECT_ROOT,
+          detached: true,
+          stdio: ["ignore", logFd, logFd],
+          shell: isWindows,
+        });
+        child.unref();
+        return {
+          success: true,
+          message: `Worker OCR berhasil dimulai ulang (PID baru: ${child.pid}).`,
+          newPid: child.pid,
+        };
+      }
 
-/**
- * Canonical orphan/zombie predicate shared between process cleanup and Peringatan Anomali.
- */
-export function isOrphanOrZombieProcess(proc: ManagedProcess): boolean {
-  const isDetachedCli = proc.serviceType === "CLI_TASK" && proc.isSafeToKill;
-  const isDefunct = proc.status.includes("Z");
-  const isOrphanWorker =
-    (proc.serviceType === "IMPORT_WORKER" || proc.serviceType === "OCR_WORKER") &&
-    (proc.ppid === 1 || proc.status.includes("Z"));
-  return isDetachedCli || isDefunct || isOrphanWorker;
-}
+      if (workerType === "python" || workerType === "rust") {
+        const logFd = fs.openSync(path.join(LOGS_DIR, "ocr_service.log"), "a");
+        const rustBin = path.join(
+          PROJECT_ROOT,
+          "rust-services",
+          "goro-engine",
+          "target",
+          "release",
+          isWindows ? "goro-engine.exe" : "goro-engine"
+        );
 
-/**
- * Scans and cleans orphan or hanging background processes matching start-mac.sh or detached workers.
- */
-export async function cleanOrphanProcesses(
-  providedProcs?: ManagedProcess[]
-): Promise<{ killedPids: number[]; count: number; errors: string[] }> {
-  const currentProcs = providedProcs || (await listAppProcesses());
-  const killedPids: number[] = [];
-  const errors: string[] = [];
-
-  for (const proc of currentProcs) {
-    // Protection guard: never kill vital OS processes or web server
-    if (proc.pid <= 100 || proc.pid === process.pid || proc.pid === process.ppid) {
-      continue;
-    }
-
-    if (isOrphanOrZombieProcess(proc)) {
-      try {
-        if (process.platform === "win32") {
-          await execAsync(`taskkill /PID ${proc.pid} /T /F`);
-        } else {
-          process.kill(proc.pid, "SIGTERM");
+        if (fs.existsSync(rustBin)) {
+          const child = spawn(rustBin, ["--host", "127.0.0.1", "--port", "8001"], {
+            cwd: PROJECT_ROOT,
+            detached: true,
+            stdio: ["ignore", logFd, logFd],
+            shell: isWindows,
+          });
+          child.unref();
+          return {
+            success: true,
+            message: `Rust Native Vision Engine berhasil dimulai ulang (PID baru: ${child.pid}).`,
+            newPid: child.pid,
+          };
         }
-        killedPids.push(proc.pid);
-      } catch (err: any) {
-        if (err.code !== "ESRCH") {
-          errors.push(`Gagal menghentikan PID ${proc.pid}: ${err.message}`);
+
+        const ocrDir = path.join(PROJECT_ROOT, "python-services", "ocr");
+        const pythonCandidates = [
+          path.join(ocrDir, "venv", "Scripts", "python.exe"),
+          path.join(ocrDir, "venv", "bin", "python"),
+          path.join(ocrDir, "venv", "bin", "python3"),
+        ];
+        const pythonBin =
+          pythonCandidates.find((p) => fs.existsSync(p)) ||
+          (isWindows ? "python" : "python3");
+
+        const child = spawn(
+          pythonBin,
+          ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8001", "--log-level", "info"],
+          {
+            cwd: ocrDir,
+            detached: true,
+            stdio: ["ignore", logFd, logFd],
+            shell: isWindows,
+          }
+        );
+        child.unref();
+        return {
+          success: true,
+          message: `Microservice Python OCR (Fallback) berhasil dimulai ulang (PID baru: ${child.pid}).`,
+          newPid: child.pid,
+        };
+      }
+
+      throw new Error(`Tipe worker tidak dikenal: ${workerType}`);
+    },
+
+    async cleanOrphanProcesses(): Promise<{
+      killedPids: number[];
+      count: number;
+      errors: string[];
+    }> {
+      const currentProcs = await hostProbe.listAppProcesses();
+      const killedPids: number[] = [];
+      const errors: string[] = [];
+
+      for (const proc of currentProcs) {
+        if (proc.pid <= 100 || proc.pid === process.pid || proc.pid === process.ppid) {
+          continue;
+        }
+
+        if (hostProbe.isOrphanOrZombieProcess(proc)) {
+          try {
+            if (process.platform === "win32") {
+              await execAsync(`taskkill /PID ${proc.pid} /T /F`);
+            } else {
+              process.kill(proc.pid, "SIGTERM");
+            }
+            killedPids.push(proc.pid);
+          } catch (err: any) {
+            if (err.code !== "ESRCH") {
+              errors.push(`Gagal menghentikan PID ${proc.pid}: ${err.message}`);
+            }
+          }
         }
       }
-    }
-  }
 
-  return { killedPids, count: killedPids.length, errors };
+      return { killedPids, count: killedPids.length, errors };
+    },
+  };
 }
+
+export const defaultProcessControl = createOsProcessControl();

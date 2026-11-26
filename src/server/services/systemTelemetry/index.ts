@@ -35,6 +35,20 @@ import type {
 } from "./types";
 
 export { createInMemoryTelemetryStore, createRedisTelemetryStore } from "./store";
+export {
+  checkPortConnectivity,
+  classifyServiceType,
+  createDefaultHostProbe,
+  createDefaultVisionEngineProbe,
+  detectServicePorts,
+  getPortLatencyHistory,
+  getSystemResources,
+  isOrphanOrZombieProcess,
+  listAppProcesses,
+  recordPortLatency,
+  resetPortLatencyHistory,
+  resolveServiceEndpoint,
+} from "./probes";
 export type * from "./types";
 
 const WINDOW_MS = 60 * 1000;

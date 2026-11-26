@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
@@ -29,14 +30,27 @@ export function HomePageClient() {
   const canAccessMigration =
     sessionQuery.data?.role === "PEGAWAI" || sessionQuery.data?.role === "SUPER_ADMIN";
 
-  const healthQuery = trpc.health.ping.useQuery(undefined, {
+  const healthQuery = useQuery<{
+    status: "healthy" | "degraded";
+    timestamp: string;
+    execution_ms: number;
+    services: {
+      database: { status: "up" | "down"; latency_ms?: number };
+      redis: { status: "up" | "down"; latency_ms?: number };
+    };
+  }>({
+    queryKey: ["system-health-ping"],
+    queryFn: async () => {
+      const res = await fetch("/api/health?scope=ping");
+      return res.json();
+    },
     refetchInterval: 10000,
   });
 
   const unitsQuery = trpc.master.getUnits.useQuery();
   const versionsQuery = trpc.master.getVersions.useQuery();
 
-  const isHealthy = healthQuery.data?.status === "HEALTHY";
+  const isHealthy = healthQuery.data?.status === "healthy";
 
   return (
     <AppShell pageTitle="Beranda">
@@ -199,14 +213,14 @@ export function HomePageClient() {
               <div className="text-xs text-[#64748b] mt-0.5">
                 Latensi:{" "}
                 <span className="text-[#15803d] font-semibold">
-                  {healthQuery.data?.services?.database?.latencyMs ?? 0} ms
+                  {healthQuery.data?.services?.database?.latency_ms ?? 0} ms
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-[#15803d] font-medium pt-2 border-t border-[#f1f5f9]">
               <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
               <span>
-                {healthQuery.data?.services?.database?.status === "UP"
+                {healthQuery.data?.services?.database?.status === "up"
                   ? "Tersambung (goro_s2jb)"
                   : "Mengecek koneksi..."}
               </span>
@@ -230,14 +244,14 @@ export function HomePageClient() {
               <div className="text-xs text-[#64748b] mt-0.5">
                 Detak Jantung:{" "}
                 <span className="text-[#15803d] font-semibold">
-                  {healthQuery.data?.services?.redis?.latencyMs ?? 0} ms
+                  {healthQuery.data?.services?.redis?.latency_ms ?? 0} ms
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-[#15803d] font-medium pt-2 border-t border-[#f1f5f9]">
               <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
               <span>
-                {healthQuery.data?.services?.redis?.status === "UP"
+                {healthQuery.data?.services?.redis?.status === "up"
                   ? "Siap Memproses Job"
                   : "Mengecek antrean..."}
               </span>

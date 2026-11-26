@@ -216,4 +216,22 @@ describe("GET /api/health logging suppression and OCR timeout budget", () => {
     expect(body.services.python_ocr.status).toBe("down");
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("serves lightweight ?scope=ping without running OCR or leaking storage/bridge internals", async () => {
+    const fetchSpy = global.fetch as ReturnType<typeof vi.fn>;
+    fetchSpy.mockClear();
+
+    const res = await GET(new Request("http://localhost:3000/api/health?scope=ping"));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.status).toBe("healthy");
+    expect(body.services.database).toMatchObject({ status: "up" });
+    expect(body.services.redis).toMatchObject({ status: "up" });
+    expect(body.services.storage).toBeUndefined();
+    expect(body.services.python_ocr).toBeUndefined();
+    expect(body.services.network_downloader).toBeUndefined();
+    expect(body.services.ocr_bridge).toBeUndefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });

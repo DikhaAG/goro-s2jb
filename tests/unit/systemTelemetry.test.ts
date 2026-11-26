@@ -11,9 +11,9 @@ import { migrationRouter } from "@/server/routers/migration";
 import {
   createInMemoryTelemetryStore,
   createSystemTelemetry,
+  isOrphanOrZombieProcess,
   systemTelemetry,
 } from "@/server/services/systemTelemetry";
-import { isOrphanOrZombieProcess } from "@/lib/processManager";
 
 function createFakeQueue(overrides: Partial<{
   counts: Record<string, number>;

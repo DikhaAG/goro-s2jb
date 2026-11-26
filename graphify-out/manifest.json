@@ -1416,9 +1416,9 @@
     "semantic_hash": ""
   },
   "src/app/api/health/route.ts": {
-    "mtime": 1795679439.993846,
-    "seen": 1795679472.627257,
-    "ast_hash": "2cf98c35af49e91d839ac51a8717c807",
+    "mtime": 1795681050.141689,
+    "seen": 1795681165.888878,
+    "ast_hash": "b2eadf9983ffd6456b0aab71aad69c55",
     "semantic_hash": ""
   },
   "src/app/api/trpc/[trpc]/route.ts": {
@@ -1536,9 +1536,9 @@
     "semantic_hash": ""
   },
   "src/components/home/HomePageClient.tsx": {
-    "mtime": 1793900284.3376584,
-    "seen": 1793900805.7832599,
-    "ast_hash": "e0e7684ed187cfde3e6cb07f9884ab54",
+    "mtime": 1795680895.1085696,
+    "seen": 1795681165.890121,
+    "ast_hash": "0cfbf0f90c5a41d43da19c2fb009a65a",
     "semantic_hash": ""
   },
   "src/components/layout/AppShell.tsx": {
@@ -1848,9 +1848,9 @@
     "semantic_hash": ""
   },
   "src/lib/processManager.ts": {
-    "mtime": 1795678815.8447826,
-    "seen": 1795679412.5946722,
-    "ast_hash": "ff33fa0b26012e05d5cd7962dbb50022",
+    "mtime": 1795680963.3351102,
+    "seen": 1795681165.893599,
+    "ast_hash": "0dcd54575c2d308e93e505f673eef22d",
     "semantic_hash": ""
   },
   "src/lib/rateLimit.ts": {
@@ -1926,21 +1926,15 @@
     "semantic_hash": ""
   },
   "src/server/routers/_app.ts": {
-    "mtime": 1795676818.2454531,
-    "seen": 1795677045.568477,
-    "ast_hash": "df3e28af3b12a7c3d9833cd0dab1f175",
+    "mtime": 1795680891.6937957,
+    "seen": 1795681165.89424,
+    "ast_hash": "8ec7266f9075c0a59317c9204438cdf2",
     "semantic_hash": ""
   },
   "src/server/routers/auth.ts": {
     "mtime": 1793180541.8744402,
     "seen": 1793661150.067431,
     "ast_hash": "93e1e4506b7d5162089798d749945402",
-    "semantic_hash": ""
-  },
-  "src/server/routers/health.ts": {
-    "mtime": 1795678824.3739624,
-    "seen": 1795679412.59551,
-    "ast_hash": "38eaf50cd02aef2aa23903ffbbc5363a",
     "semantic_hash": ""
   },
   "src/server/routers/intake.ts": {
@@ -1974,9 +1968,9 @@
     "semantic_hash": ""
   },
   "src/server/routers/systemProcesses.ts": {
-    "mtime": 1795678825.2940795,
-    "seen": 1795679412.5957382,
-    "ast_hash": "08bedece2d836b8924b33c7c8bd25ed5",
+    "mtime": 1795680969.723038,
+    "seen": 1795681165.89456,
+    "ast_hash": "b18ab9af16d3af03181d67c2840273b7",
     "semantic_hash": ""
   },
   "src/server/routers/user.ts": {
@@ -2166,9 +2160,9 @@
     "semantic_hash": ""
   },
   "tests/trpc_master.test.ts": {
-    "mtime": 1793158055.4328814,
-    "seen": 1793661150.0675142,
-    "ast_hash": "cdc81681bc573e092cadec4522590fe0",
+    "mtime": 1795681004.2381425,
+    "seen": 1795681165.8968499,
+    "ast_hash": "3831c264126bacbd3b45e105a050095f",
     "semantic_hash": ""
   },
   "tests/unit/adminUserManagement.test.ts": {
@@ -2244,9 +2238,9 @@
     "semantic_hash": ""
   },
   "tests/unit/processManager.test.ts": {
-    "mtime": 1794457608.2395902,
-    "seen": 1794461812.0338361,
-    "ast_hash": "50cbf3bce4dbd8ea513b2d60da58cc2a",
+    "mtime": 1795681007.4241636,
+    "seen": 1795681165.8982568,
+    "ast_hash": "813e977da38e6b95c5dd09ebcc01bf16",
     "semantic_hash": ""
   },
   "tests/unit/reportCalculations.test.ts": {
@@ -2262,9 +2256,9 @@
     "semantic_hash": ""
   },
   "tests/unit/systemProcessesRouter.test.ts": {
-    "mtime": 1793325175.5523705,
-    "seen": 1793661150.0675468,
-    "ast_hash": "c20da2295714eee6f99e5644a9fc3773",
+    "mtime": 1795681009.2890356,
+    "seen": 1795681165.8985379,
+    "ast_hash": "3e68ac1d84325e707ab9fef1b84ea883",
     "semantic_hash": ""
   },
   "tests/unit/triageHotkeys.test.ts": {
@@ -5022,9 +5016,9 @@
     "semantic_hash": ""
   },
   "tests/unit/processManagerDeep.test.ts": {
-    "mtime": 1793773781.89988,
-    "seen": 1793775091.577255,
-    "ast_hash": "f0652c6f6dbbdf24d3fb49c9265d6704",
+    "mtime": 1795681008.4148562,
+    "seen": 1795681165.898259,
+    "ast_hash": "4228e3fbca42ea7c310f5e3f5544497f",
     "semantic_hash": ""
   },
   "src/components/admin/system/NetworkCdnMetricsCard.tsx": {
@@ -5046,9 +5040,9 @@
     "semantic_hash": ""
   },
   "tests/integration/backgroundResilience.test.ts": {
-    "mtime": 1795680213.1599796,
-    "seen": 1795680366.352098,
-    "ast_hash": "af4660a354866d1c2a232f8520f4ca92",
+    "mtime": 1795681025.4030092,
+    "seen": 1795681165.89588,
+    "ast_hash": "c38bb2d023220557bf863dc6ade5129d",
     "semantic_hash": ""
   },
   "docs/runbooks/background_services_recovery.md": {
@@ -5304,9 +5298,9 @@
     "semantic_hash": ""
   },
   "tests/unit/healthRoute.test.ts": {
-    "mtime": 1794462000.5267024,
-    "seen": 1794466164.059075,
-    "ast_hash": "6aac3636110a1f30d91e1ece53bed7b4",
+    "mtime": 1795681023.3994563,
+    "seen": 1795681165.897631,
+    "ast_hash": "649191b63eab5b4788cafc8e305ab14e",
     "semantic_hash": ""
   },
   "tests/unit/ocrBridgeResilience.test.ts": {
@@ -5424,21 +5418,21 @@
     "semantic_hash": ""
   },
   "src/server/services/systemTelemetry/alerts.ts": {
-    "mtime": 1795678762.9358494,
-    "seen": 1795679412.596215,
-    "ast_hash": "7f1d550cfb2a8d62bf45ac981b2cf628",
+    "mtime": 1795680956.708427,
+    "seen": 1795681165.895351,
+    "ast_hash": "6697817cd67628ae0c81e4a71af25cf8",
     "semantic_hash": ""
   },
   "src/server/services/systemTelemetry/index.ts": {
-    "mtime": 1795679345.4101124,
-    "seen": 1795679412.5962172,
-    "ast_hash": "457fa36047205050bab09fef6084b70f",
+    "mtime": 1795680957.795382,
+    "seen": 1795681165.895353,
+    "ast_hash": "218d43648013d26e033b2068279d8764",
     "semantic_hash": ""
   },
   "src/server/services/systemTelemetry/probes.ts": {
-    "mtime": 1795679281.6636314,
-    "seen": 1795679412.5962188,
-    "ast_hash": "47caaded82e5afa879bfc61253a03d3b",
+    "mtime": 1795680953.2258039,
+    "seen": 1795681165.895355,
+    "ast_hash": "fc909226f2ff3912f80ac2430443ee2e",
     "semantic_hash": ""
   },
   "src/server/services/systemTelemetry/store.ts": {
@@ -5448,15 +5442,15 @@
     "semantic_hash": ""
   },
   "src/server/services/systemTelemetry/types.ts": {
-    "mtime": 1795678988.1012595,
-    "seen": 1795679412.596222,
-    "ast_hash": "6895596b744e4bb248a813c9de05f7ff",
+    "mtime": 1795680952.003894,
+    "seen": 1795681165.895417,
+    "ast_hash": "75dd2447f02e916d96f923f83c27799e",
     "semantic_hash": ""
   },
   "tests/unit/systemTelemetry.test.ts": {
-    "mtime": 1795679346.8661437,
-    "seen": 1795679412.599335,
-    "ast_hash": "99e79dc033a2f30484ac753aba1fecd0",
+    "mtime": 1795681005.1887789,
+    "seen": 1795681165.89854,
+    "ast_hash": "254c5b41fbe9a8c61783761a0248dadf",
     "semantic_hash": ""
   },
   "src/server/services/evidenceAcquisition.ts": {

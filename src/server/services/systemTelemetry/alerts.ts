@@ -77,7 +77,7 @@ export async function computeAnomalyAlerts(
       code: "CORE_PORT_DOWN",
       severity: "CRITICAL",
       message: `Layanan inti tidak dapat dihubungi atau port TCP tertutup: ${downNames}.`,
-      source: "processManager.detectServicePorts",
+      source: "systemTelemetry.hostProbe.detectServicePorts",
       timestamp: isoNow,
       metadata: {
         downPorts: downServices.map((s) => s.port),
@@ -99,7 +99,7 @@ export async function computeAnomalyAlerts(
       code: "WORKER_MEMORY_HIGH",
       severity: "WARNING",
       message: `Penggunaan memori tinggi terdeteksi (${resources.memUsagePercent}% sistem terpakai). Terdapat ${highMemProcs.length} proses melebihi batas 500 MB.`,
-      source: "processManager.getSystemResources",
+      source: "systemTelemetry.hostProbe.getSystemResources",
       timestamp: isoNow,
       metadata: {
         systemMemPercent: resources.memUsagePercent,
@@ -118,7 +118,7 @@ export async function computeAnomalyAlerts(
       code: "ORPHAN_PROCESS_DETECTED",
       severity: "WARNING",
       message: `Terdeteksi ${orphanProcs.length} proses detached atau zombie yang tidak terikat terminal aktif.`,
-      source: "processManager.listAppProcesses",
+      source: "systemTelemetry.hostProbe.listAppProcesses",
       timestamp: isoNow,
       metadata: {
         orphanPids: orphanProcs.map((p) => p.pid),

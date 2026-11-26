@@ -5,11 +5,11 @@ import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification"
 import {
   createInMemoryTelemetryStore,
   createSystemTelemetry,
+  isOrphanOrZombieProcess,
   systemTelemetry,
 } from "@/server/services/systemTelemetry";
 import * as auditService from "@/server/services/auditService";
 import { migrationRouter } from "@/server/routers/migration";
-import * as processManagerModule from "@/lib/processManager";
 import { Role } from "@prisma/client";
 
 vi.mock("@/server/queues/ocrQueue", () => ({
@@ -194,73 +194,90 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
 
   describe("4. Proactive Alert Engine (Zero False Positive & Anomaly Detection)", () => {
     it("should report zero alerts and NORMAL operational status under healthy baseline conditions", async () => {
-      vi.spyOn(processManagerModule, "detectServicePorts").mockResolvedValue([
-        { name: "PostgreSQL", port: 5432, serviceType: "POSTGRES", status: "UP", latencyMs: 2 },
-        { name: "Redis", port: 6379, serviceType: "REDIS", status: "UP", latencyMs: 1 },
-        { name: "Python OCR", port: 8001, serviceType: "PYTHON_OCR", status: "UP", latencyMs: 5 },
-        { name: "Web Server", port: 3000, serviceType: "WEB_SERVER", status: "UP", latencyMs: 3 },
-      ]);
-
-      vi.spyOn(processManagerModule, "listAppProcesses").mockResolvedValue([
-        {
-          pid: 501,
-          ppid: 1,
-          command: "node worker.js",
-          cpuPercent: 1.2,
-          memPercent: 1.5,
-          rssKb: 120 * 1024,
-          status: "RUNNING",
-          elapsedTime: "10:00",
-          serviceType: "WEB_SERVER",
-          isSafeToKill: true,
+      const telemetry = createSystemTelemetry({
+        store: createInMemoryTelemetryStore(),
+        queues: {
+          import: { getJobs: vi.fn().mockResolvedValue([]) },
+          ocr: { getJobs: vi.fn().mockResolvedValue([]) },
         },
-      ]);
-
-      vi.spyOn(processManagerModule, "getSystemResources").mockReturnValue({
-        cpuCount: 8,
-        cpuModel: "Mock CPU",
-        totalMemBytes: 16 * 1024 * 1024 * 1024,
-        freeMemBytes: 12 * 1024 * 1024 * 1024,
-        usedMemBytes: 4 * 1024 * 1024 * 1024,
-        memUsagePercent: 25,
-        processUptimeSeconds: 600,
-        systemUptimeSeconds: 3600,
-        nodeMemory: {} as any,
-        platform: "darwin",
-        arch: "arm64",
+        hostProbe: {
+          detectServicePorts: vi.fn().mockResolvedValue([
+            { name: "PostgreSQL", port: 5432, serviceType: "POSTGRES", status: "UP", latencyMs: 2 },
+            { name: "Redis", port: 6379, serviceType: "REDIS", status: "UP", latencyMs: 1 },
+            { name: "Python OCR", port: 8001, serviceType: "PYTHON_OCR", status: "UP", latencyMs: 5 },
+            { name: "Web Server", port: 3000, serviceType: "WEB_SERVER", status: "UP", latencyMs: 3 },
+          ]),
+          listAppProcesses: vi.fn().mockResolvedValue([
+            {
+              pid: 501,
+              ppid: 1,
+              command: "node worker.js",
+              cpuPercent: 1.2,
+              memPercent: 1.5,
+              rssKb: 120 * 1024,
+              status: "RUNNING",
+              elapsedTime: "10:00",
+              serviceType: "WEB_SERVER",
+              isSafeToKill: true,
+            },
+          ]),
+          getSystemResources: vi.fn().mockReturnValue({
+            cpuCount: 8,
+            cpuModel: "Mock CPU",
+            totalMemBytes: 16 * 1024 * 1024 * 1024,
+            freeMemBytes: 12 * 1024 * 1024 * 1024,
+            usedMemBytes: 4 * 1024 * 1024 * 1024,
+            memUsagePercent: 25,
+            processUptimeSeconds: 600,
+            systemUptimeSeconds: 3600,
+            nodeMemory: {} as any,
+            platform: "darwin",
+            arch: "arm64",
+          }),
+          isOrphanOrZombieProcess,
+        },
       });
 
-      const alerts = await systemTelemetry.evaluateAlerts("admin", { force: true });
+      const alerts = await telemetry.evaluateAlerts("admin", { force: true });
       expect(alerts).toHaveLength(0);
 
-      const operatorSummary = await systemTelemetry.evaluateAlerts("operator");
+      const operatorSummary = await telemetry.evaluateAlerts("operator");
       expect(operatorSummary.hasActiveAlert).toBe(false);
       expect(operatorSummary.status).toBe("NORMAL");
       expect(operatorSummary.userMessage).toContain("beroperasi normal");
     });
 
     it("should proactively detect anomalies and flag CRITICAL alert when core database port is down", async () => {
-      vi.spyOn(processManagerModule, "detectServicePorts").mockResolvedValue([
-        { name: "PostgreSQL", port: 5432, serviceType: "POSTGRES", status: "DOWN", latencyMs: 0 },
-        { name: "Redis", port: 6379, serviceType: "REDIS", status: "UP", latencyMs: 1 },
-      ]);
-
-      vi.spyOn(processManagerModule, "listAppProcesses").mockResolvedValue([]);
-      vi.spyOn(processManagerModule, "getSystemResources").mockReturnValue({
-        cpuCount: 4,
-        cpuModel: "Mock CPU",
-        totalMemBytes: 8 * 1024 * 1024 * 1024,
-        freeMemBytes: 6 * 1024 * 1024 * 1024,
-        usedMemBytes: 2 * 1024 * 1024 * 1024,
-        memUsagePercent: 25,
-        processUptimeSeconds: 300,
-        systemUptimeSeconds: 1000,
-        nodeMemory: {} as any,
-        platform: "linux",
-        arch: "x64",
+      const telemetry = createSystemTelemetry({
+        store: createInMemoryTelemetryStore(),
+        queues: {
+          import: { getJobs: vi.fn().mockResolvedValue([]) },
+          ocr: { getJobs: vi.fn().mockResolvedValue([]) },
+        },
+        hostProbe: {
+          detectServicePorts: vi.fn().mockResolvedValue([
+            { name: "PostgreSQL", port: 5432, serviceType: "POSTGRES", status: "DOWN", latencyMs: 0 },
+            { name: "Redis", port: 6379, serviceType: "REDIS", status: "UP", latencyMs: 1 },
+          ]),
+          listAppProcesses: vi.fn().mockResolvedValue([]),
+          getSystemResources: vi.fn().mockReturnValue({
+            cpuCount: 4,
+            cpuModel: "Mock CPU",
+            totalMemBytes: 8 * 1024 * 1024 * 1024,
+            freeMemBytes: 6 * 1024 * 1024 * 1024,
+            usedMemBytes: 2 * 1024 * 1024 * 1024,
+            memUsagePercent: 25,
+            processUptimeSeconds: 300,
+            systemUptimeSeconds: 1000,
+            nodeMemory: {} as any,
+            platform: "linux",
+            arch: "x64",
+          }),
+          isOrphanOrZombieProcess,
+        },
       });
 
-      const alerts = await systemTelemetry.evaluateAlerts("admin", { force: true });
+      const alerts = await telemetry.evaluateAlerts("admin", { force: true });
       expect(alerts.length).toBeGreaterThan(0);
 
       const portAlert = alerts.find((a) => a.code === "CORE_PORT_DOWN");
@@ -268,7 +285,7 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
       expect(portAlert?.severity).toBe("CRITICAL");
       expect(portAlert?.message).toContain("PostgreSQL (Port 5432)");
 
-      const operatorSummary = await systemTelemetry.evaluateAlerts("operator");
+      const operatorSummary = await telemetry.evaluateAlerts("operator");
       expect(operatorSummary.hasActiveAlert).toBe(true);
       expect(operatorSummary.status).toBe("CRITICAL");
     });

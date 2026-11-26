@@ -1,11 +1,16 @@
 import fs from "fs";
+import net from "net";
+import os from "os";
 import path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
-import * as processManager from "@/lib/processManager";
-import {
+import type {
   HostProbePort,
+  ManagedProcess,
   NetworkTrafficHistorySnapshot,
+  ServicePortInfo,
+  ServiceType,
+  SystemResources,
   TrafficTimeRange,
   VisionEngineProbePort,
   VisionEngineProbeResult,
@@ -13,6 +18,503 @@ import {
 
 const execAsync = promisify(exec);
 const OCR_HEALTH_TIMEOUT_MS = 3500;
+const PROJECT_ROOT = path.resolve(process.cwd());
+
+const portLatencyHistory = new Map<number, number[]>();
+
+export function recordPortLatency(port: number, latencyMs: number): void {
+  const list = portLatencyHistory.get(port) || [];
+  list.push(Math.max(0, latencyMs));
+  if (list.length > 5) {
+    list.splice(0, list.length - 5);
+  }
+  portLatencyHistory.set(port, list);
+}
+
+export function getPortLatencyHistory(port: number): number[] {
+  return [...(portLatencyHistory.get(port) || [])];
+}
+
+export function resetPortLatencyHistory(): void {
+  portLatencyHistory.clear();
+}
+
+/**
+ * Checks TCP socket connectivity to determine latency and reachability of a service port.
+ */
+export async function checkPortConnectivity(
+  port: number,
+  host: string = "127.0.0.1",
+  timeoutMs: number = 800
+): Promise<{ isReachable: boolean; latencyMs: number }> {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    const socket = new net.Socket();
+    let resolved = false;
+
+    const cleanup = () => {
+      socket.removeAllListeners();
+      socket.destroy();
+    };
+
+    socket.setTimeout(timeoutMs);
+
+    socket.once("connect", () => {
+      if (resolved) return;
+      resolved = true;
+      const latencyMs = Date.now() - startTime;
+      recordPortLatency(port, latencyMs);
+      cleanup();
+      resolve({ isReachable: true, latencyMs });
+    });
+
+    socket.once("timeout", () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      resolve({ isReachable: false, latencyMs: timeoutMs });
+    });
+
+    socket.once("error", () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      resolve({ isReachable: false, latencyMs: 0 });
+    });
+
+    socket.connect(port, host);
+  });
+}
+
+/**
+ * Finds the process PID currently binding a given network port using lsof/netstat.
+ */
+export async function getPidForPort(port: number): Promise<number | null> {
+  try {
+    if (process.platform === "win32") {
+      const { stdout } = await execAsync(`netstat -ano -p tcp | findstr :${port}`);
+      const lines = stdout.trim().split("\n");
+      for (const line of lines) {
+        if (line.includes("LISTENING")) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(pid) && pid > 0) return pid;
+        }
+      }
+      return null;
+    }
+
+    const { stdout } = await execAsync(
+      `lsof -ti :${port} -sTCP:LISTEN 2>/dev/null || lsof -ti :${port} 2>/dev/null`
+    );
+    const pids = stdout
+      .trim()
+      .split("\n")
+      .map((p) => parseInt(p.trim(), 10))
+      .filter((n) => !isNaN(n) && n > 0);
+    return pids.length > 0 ? pids[0] : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parses host and port from a service connection URL (e.g. DATABASE_URL, REDIS_URL,
+ * OCR_SERVICE_URL), normalizing wildcard bind hosts to defaultHost.
+ */
+export function resolveServiceEndpoint(
+  rawUrl: string | undefined,
+  defaultHost: string,
+  defaultPort: number
+): { host: string; port: number } {
+  if (!rawUrl || !rawUrl.trim()) {
+    return { host: defaultHost, port: defaultPort };
+  }
+
+  try {
+    const parsed = new URL(rawUrl.trim());
+    const hostname = parsed.hostname?.trim();
+    const host =
+      !hostname || hostname === "0.0.0.0" || hostname === "::"
+        ? defaultHost
+        : hostname;
+
+    let port = defaultPort;
+    if (parsed.port) {
+      const parsedPort = parseInt(parsed.port, 10);
+      if (!isNaN(parsedPort) && parsedPort > 0 && parsedPort <= 65535) {
+        port = parsedPort;
+      }
+    } else if (parsed.protocol === "https:") {
+      port = 443;
+    } else if (parsed.protocol === "http:") {
+      port = 80;
+    }
+
+    return { host, port };
+  } catch {
+    return { host: defaultHost, port: defaultPort };
+  }
+}
+
+function isLoopbackHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase();
+  return (
+    normalized === "127.0.0.1" ||
+    normalized === "localhost" ||
+    normalized === "::1"
+  );
+}
+
+/**
+ * Inspects all 4 core services to determine endpoint reachability, latency, and local PID.
+ */
+export async function detectServicePorts(): Promise<ServicePortInfo[]> {
+  const isWindows = process.platform === "win32";
+  const rustBin = path.resolve(
+    PROJECT_ROOT,
+    "rust-services",
+    "goro-engine",
+    "target",
+    "release",
+    isWindows ? "goro-engine.exe" : "goro-engine"
+  );
+  const pgEndpoint = resolveServiceEndpoint(process.env.DATABASE_URL, "127.0.0.1", 5432);
+  const redisEndpoint = resolveServiceEndpoint(process.env.REDIS_URL, "127.0.0.1", 6379);
+  const ocrEndpoint = resolveServiceEndpoint(process.env.OCR_SERVICE_URL, "127.0.0.1", 8001);
+  const parsedWebPort = parseInt(process.env.PORT || "3000", 10);
+  const webPort = !isNaN(parsedWebPort) && parsedWebPort > 0 ? parsedWebPort : 3000;
+
+  const defaultOcrIsRust =
+    fs.existsSync(rustBin) || ocrEndpoint.host.toLowerCase() === "ocr-engine";
+
+  const serviceDefs: Array<{
+    name: string;
+    host: string;
+    port: number;
+    serviceType: ServiceType;
+  }> = [
+    {
+      name: "PostgreSQL Database",
+      host: pgEndpoint.host,
+      port: pgEndpoint.port,
+      serviceType: "POSTGRES",
+    },
+    {
+      name: "Redis In-Memory Broker",
+      host: redisEndpoint.host,
+      port: redisEndpoint.port,
+      serviceType: "REDIS",
+    },
+    {
+      name: defaultOcrIsRust ? "Rust Native Vision Engine" : "Vision & OCR Engine",
+      host: ocrEndpoint.host,
+      port: ocrEndpoint.port,
+      serviceType: defaultOcrIsRust ? "RUST_OCR" : "PYTHON_OCR",
+    },
+    {
+      name: "Next.js Web Application",
+      host: "127.0.0.1",
+      port: webPort,
+      serviceType: "WEB_SERVER",
+    },
+  ];
+
+  const results: ServicePortInfo[] = await Promise.all(
+    serviceDefs.map(async (svc) => {
+      const conn = await checkPortConnectivity(svc.port, svc.host);
+      const pid = isLoopbackHost(svc.host) ? await getPidForPort(svc.port) : null;
+
+      const recentLatencies = getPortLatencyHistory(svc.port);
+      let averageLatencyMs: number | undefined;
+      if (recentLatencies.length > 0) {
+        const sum = recentLatencies.reduce((a, b) => a + b, 0);
+        averageLatencyMs = Math.round(sum / recentLatencies.length);
+      } else if (conn.isReachable) {
+        averageLatencyMs = conn.latencyMs;
+      }
+
+      let status: "UP" | "DOWN" | "DEGRADED" = "DOWN";
+      if (conn.isReachable) {
+        status =
+          (averageLatencyMs && averageLatencyMs > 300) || conn.latencyMs > 300
+            ? "DEGRADED"
+            : "UP";
+      }
+
+      let processCommand: string | undefined;
+      let finalName = svc.name;
+      let finalType = svc.serviceType;
+
+      if (pid) {
+        try {
+          let processCommandText = "";
+          if (process.platform === "win32") {
+            const { stdout } = await execAsync(
+              `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"ProcessId = ${pid}\\").CommandLine"`
+            );
+            processCommandText = stdout.trim();
+          } else {
+            const { stdout } = await execAsync(`ps -p ${pid} -o command= 2>/dev/null`);
+            processCommandText = stdout.trim();
+          }
+          processCommand = processCommandText || undefined;
+          if (svc.port === ocrEndpoint.port) {
+            if (processCommand?.toLowerCase().includes("goro-engine")) {
+              finalName = "Rust Native Vision Engine (goro-engine)";
+              finalType = "RUST_OCR";
+            } else if (
+              processCommand?.toLowerCase().includes("uvicorn") ||
+              processCommand?.toLowerCase().includes("python")
+            ) {
+              finalName = "Python OCR Microservice (Fallback)";
+              finalType = "PYTHON_OCR";
+            }
+          }
+        } catch {
+          // ignore error fetching command
+        }
+      }
+
+      return {
+        name: finalName,
+        port: svc.port,
+        serviceType: finalType,
+        status,
+        latencyMs: conn.isReachable ? conn.latencyMs : undefined,
+        recentLatencies,
+        averageLatencyMs,
+        pid: pid || undefined,
+        processCommand,
+      };
+    })
+  );
+
+  return results;
+}
+
+/**
+ * Classifies an OS process based on command string into an application ServiceType.
+ */
+export function classifyServiceType(command: string): {
+  serviceType: ServiceType;
+  isSafeToKill: boolean;
+} {
+  const lower = command.toLowerCase();
+
+  if (lower.includes("importworker.ts") || lower.includes("worker:import")) {
+    return { serviceType: "IMPORT_WORKER", isSafeToKill: true };
+  }
+  if (lower.includes("ocrworker.ts") || lower.includes("worker:ocr")) {
+    return { serviceType: "OCR_WORKER", isSafeToKill: true };
+  }
+  if (lower.includes("goro-engine")) {
+    return { serviceType: "RUST_OCR", isSafeToKill: true };
+  }
+  if (lower.includes("uvicorn") && lower.includes("main:app")) {
+    return { serviceType: "PYTHON_OCR", isSafeToKill: true };
+  }
+  if (lower.includes("scripts/start-mac.sh") || lower.includes("scripts/start-windows.ps1")) {
+    return { serviceType: "CLI_TASK", isSafeToKill: true };
+  }
+  if (lower.includes("next dev") || lower.includes("next-server") || lower.includes("next start")) {
+    return { serviceType: "WEB_SERVER", isSafeToKill: false };
+  }
+  if (lower.includes("redis-server")) {
+    return { serviceType: "REDIS", isSafeToKill: false };
+  }
+  if (lower.includes("postgres")) {
+    return { serviceType: "POSTGRES", isSafeToKill: false };
+  }
+  if (lower.includes("goro-s2jb")) {
+    return { serviceType: "CLI_TASK", isSafeToKill: true };
+  }
+
+  return { serviceType: "OTHER", isSafeToKill: false };
+}
+
+function isRelatedProcessCommand(command: string): boolean {
+  return (
+    command.includes("goro-s2jb") ||
+    command.includes("goro-engine") ||
+    command.includes("importWorker.ts") ||
+    command.includes("ocrWorker.ts") ||
+    command.includes("worker:import") ||
+    command.includes("worker:ocr") ||
+    (command.includes("uvicorn") && command.includes("main:app")) ||
+    command.includes("redis-server") ||
+    command.includes("postgres")
+  );
+}
+
+function buildManagedProcess(
+  pid: number,
+  ppid: number,
+  cpuPercent: number,
+  memPercent: number,
+  rssKb: number,
+  status: string,
+  elapsedTime: string,
+  command: string,
+  currentPid: number
+): ManagedProcess {
+  const { serviceType, isSafeToKill } = classifyServiceType(command);
+  const safe = isSafeToKill && pid !== currentPid && pid > 100;
+  return {
+    pid,
+    ppid,
+    cpuPercent,
+    memPercent,
+    rssKb,
+    status,
+    elapsedTime,
+    command,
+    serviceType,
+    isSafeToKill: safe,
+  };
+}
+
+/**
+ * Lists running processes on the host operating system filtered specifically for GORO S2JB ecosystem.
+ */
+export async function listAppProcesses(): Promise<ManagedProcess[]> {
+  try {
+    if (process.platform === "win32") {
+      try {
+        const psCmd = `powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and ($_.CommandLine -like '*goro*' -or $_.CommandLine -like '*node*' -or $_.CommandLine -like '*python*' -or $_.CommandLine -like '*redis*' -or $_.CommandLine -like '*postgres*') } | Select-Object ProcessId, ParentProcessId, CommandLine | ConvertTo-Json -Compress"`;
+        const { stdout } = await execAsync(psCmd);
+        if (!stdout.trim()) return [];
+
+        const parsed = JSON.parse(stdout.trim());
+        const rawList = Array.isArray(parsed) ? parsed : [parsed];
+        const processes: ManagedProcess[] = [];
+        const currentPid = process.pid;
+
+        for (const item of rawList) {
+          const pid = Number(item.ProcessId);
+          const ppid = Number(item.ParentProcessId) || 0;
+          const command = String(item.CommandLine || "");
+          if (!command || isNaN(pid) || pid <= 0 || !isRelatedProcessCommand(command)) {
+            continue;
+          }
+
+          processes.push(
+            buildManagedProcess(pid, ppid, 0, 0, 0, "RUNNING", "N/A", command, currentPid)
+          );
+        }
+
+        return processes;
+      } catch (winErr) {
+        console.error("Error querying Windows processes:", winErr);
+        return [];
+      }
+    }
+
+    const processes: ManagedProcess[] = [];
+    const currentPid = process.pid;
+
+    try {
+      const { stdout } = await execAsync(
+        "ps -axo pid,ppid,pcpu,pmem,rss,stat,etime,command 2>/dev/null"
+      );
+      const lines = stdout.trim().split("\n");
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const match = line.match(
+          /^(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/
+        );
+        if (!match) continue;
+
+        const command = match[8];
+        if (!isRelatedProcessCommand(command)) continue;
+
+        processes.push(
+          buildManagedProcess(
+            parseInt(match[1], 10),
+            parseInt(match[2], 10),
+            parseFloat(match[3]),
+            parseFloat(match[4]),
+            parseInt(match[5], 10),
+            match[6],
+            match[7],
+            command,
+            currentPid
+          )
+        );
+      }
+    } catch {
+      const { stdout } = await execAsync("ps -o pid,ppid,stat,args 2>/dev/null");
+      const lines = stdout.trim().split("\n");
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const match = line.match(/^(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/);
+        if (!match) continue;
+
+        const command = match[4];
+        if (!isRelatedProcessCommand(command)) continue;
+
+        processes.push(
+          buildManagedProcess(
+            parseInt(match[1], 10),
+            parseInt(match[2], 10),
+            0,
+            0,
+            0,
+            match[3],
+            "N/A",
+            command,
+            currentPid
+          )
+        );
+      }
+    }
+
+    return processes.sort((a, b) => b.cpuPercent - a.cpuPercent);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Returns overall hardware and operating system telemetry.
+ */
+export function getSystemResources(): SystemResources {
+  const cpus = os.cpus();
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+  const memUsagePercent = Math.round((usedMem / totalMem) * 10000) / 100;
+
+  return {
+    cpuCount: cpus.length,
+    cpuModel: cpus[0]?.model || "Unknown CPU",
+    totalMemBytes: totalMem,
+    freeMemBytes: freeMem,
+    usedMemBytes: usedMem,
+    memUsagePercent,
+    processUptimeSeconds: Math.floor(process.uptime()),
+    systemUptimeSeconds: Math.floor(os.uptime()),
+    nodeMemory: process.memoryUsage(),
+    platform: os.platform(),
+    arch: os.arch(),
+  };
+}
+
+/**
+ * Canonical orphan/zombie predicate shared between OS process cleanup and Peringatan Anomali.
+ */
+export function isOrphanOrZombieProcess(proc: ManagedProcess): boolean {
+  const isDetachedCli = proc.serviceType === "CLI_TASK" && proc.isSafeToKill;
+  const isDefunct = proc.status.includes("Z");
+  const isOrphanWorker =
+    (proc.serviceType === "IMPORT_WORKER" || proc.serviceType === "OCR_WORKER") &&
+    (proc.ppid === 1 || proc.status.includes("Z"));
+  return isDetachedCli || isDefunct || isOrphanWorker;
+}
 
 export function createDefaultVisionEngineProbe(): VisionEngineProbePort {
   return {
@@ -99,10 +601,10 @@ export function createDefaultVisionEngineProbe(): VisionEngineProbePort {
 
 export function createDefaultHostProbe(): HostProbePort {
   return {
-    detectServicePorts: () => processManager.detectServicePorts(),
-    listAppProcesses: () => processManager.listAppProcesses(),
-    getSystemResources: () => processManager.getSystemResources(),
-    isOrphanOrZombieProcess: (proc) => processManager.isOrphanOrZombieProcess(proc),
+    detectServicePorts,
+    listAppProcesses,
+    getSystemResources,
+    isOrphanOrZombieProcess,
   };
 }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { appRouter } from "@/server/routers/_app";
 import { createContext } from "@/server/context";
+import { GET as getHealth } from "@/app/api/health/route";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
 
@@ -17,13 +18,18 @@ describe("tRPC v11 API Routers (Health, Master, Auth)", () => {
     redis.disconnect();
   });
 
-  it("health.ping returns HEALTHY status with DB and Redis metrics", async () => {
-    const res = await caller.health.ping();
-    expect(res.status).toBe("HEALTHY");
-    expect(res.services.database.status).toBe("UP");
-    expect(res.services.redis.status).toBe("UP");
-    expect(res.services.database.latencyMs).toBeGreaterThanOrEqual(0);
-    expect(res.services.redis.latencyMs).toBeGreaterThanOrEqual(0);
+  it("GET /api/health?scope=ping returns healthy status with DB and Redis metrics", async () => {
+    const response = await getHealth(
+      new Request("http://localhost:3000/api/health?scope=ping")
+    );
+    const res = await response.json();
+    expect(response.status).toBe(200);
+    expect(res.status).toBe("healthy");
+    expect(res.services.database.status).toBe("up");
+    expect(res.services.redis.status).toBe("up");
+    expect(res.services.database.latency_ms).toBeGreaterThanOrEqual(0);
+    expect(res.services.redis.latency_ms).toBeGreaterThanOrEqual(0);
+    expect(res.services.storage).toBeUndefined();
   });
 
   it("master.getUnits returns all seeded UP3s with their child ULPs", async () => {

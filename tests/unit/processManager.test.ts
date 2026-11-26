@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createOsProcessControl } from "@/lib/processManager";
 import {
   classifyServiceType,
   getSystemResources,
-  tailLogFile,
-  terminateProcess,
   checkPortConnectivity,
   resolveServiceEndpoint,
   detectServicePorts,
   resetPortLatencyHistory,
-} from "@/lib/processManager";
+} from "@/server/services/systemTelemetry";
 import fs from "fs";
 import net from "net";
 import path from "path";
+
+const processControl = createOsProcessControl();
 
 describe("processManager Utility Suite", () => {
   beforeEach(() => {
@@ -82,13 +83,13 @@ describe("processManager Utility Suite", () => {
 
   describe("3. tailLogFile & Security Path Traversal Guard", () => {
     it("should block path traversal attempts outside logs directory", async () => {
-      await expect(tailLogFile("../package.json")).rejects.toThrow(
+      await expect(processControl.tailLogFile("../package.json")).rejects.toThrow(
         "Akses tidak sah ke berkas di luar direktori logs/."
       );
     });
 
     it("should handle non-existent log file gracefully", async () => {
-      const result = await tailLogFile("non_existent_service.log");
+      const result = await processControl.tailLogFile("non_existent_service.log");
       expect(result.fileName).toBe("non_existent_service.log");
       expect(result.totalLines).toBe(0);
       expect(result.lines[0]).toContain("belum terbentuk");
@@ -100,7 +101,7 @@ describe("processManager Utility Suite", () => {
       fs.writeFileSync(testLogPath, "Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n");
 
       try {
-        const result = await tailLogFile("test_unit.log", 3);
+        const result = await processControl.tailLogFile("test_unit.log", 3);
         expect(result.fileName).toBe("test_unit.log");
         expect(result.lines.length).toBeLessThanOrEqual(4);
         expect(result.lines).toContain("Line 5");
@@ -114,12 +115,12 @@ describe("processManager Utility Suite", () => {
 
   describe("4. terminateProcess Guardrails", () => {
     it("should reject termination of essential OS processes with PID <= 100", async () => {
-      await expect(terminateProcess(1)).rejects.toThrow("DILARANG KERAS: Tidak dapat menghentikan proses vital sistem operasi");
-      await expect(terminateProcess(50)).rejects.toThrow("DILARANG KERAS: Tidak dapat menghentikan proses vital sistem operasi");
+      await expect(processControl.terminateProcess(1)).rejects.toThrow("DILARANG KERAS: Tidak dapat menghentikan proses vital sistem operasi");
+      await expect(processControl.terminateProcess(50)).rejects.toThrow("DILARANG KERAS: Tidak dapat menghentikan proses vital sistem operasi");
     });
 
     it("should reject terminating self process PID", async () => {
-      await expect(terminateProcess(process.pid)).rejects.toThrow(
+      await expect(processControl.terminateProcess(process.pid)).rejects.toThrow(
         "DILARANG: Tidak dapat menghentikan proses server web sendiri."
       );
     });

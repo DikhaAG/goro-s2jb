@@ -1,5 +1,55 @@
-import type { ManagedProcess, ServicePortInfo, SystemResources } from "@/lib/processManager";
 import type { EngineBridgeMetrics } from "@/server/services/evidenceVerification/types";
+
+export type ServiceType =
+  | "POSTGRES"
+  | "REDIS"
+  | "PYTHON_OCR"
+  | "RUST_OCR"
+  | "IMPORT_WORKER"
+  | "OCR_WORKER"
+  | "WEB_SERVER"
+  | "CLI_TASK"
+  | "OTHER";
+
+export interface ServicePortInfo {
+  name: string;
+  port: number;
+  serviceType: ServiceType;
+  status: "UP" | "DOWN" | "DEGRADED";
+  latencyMs?: number;
+  recentLatencies?: number[];
+  averageLatencyMs?: number;
+  pid?: number;
+  processCommand?: string;
+  error?: string;
+}
+
+export interface ManagedProcess {
+  pid: number;
+  ppid: number;
+  cpuPercent: number;
+  memPercent: number;
+  rssKb: number;
+  status: string;
+  elapsedTime: string;
+  command: string;
+  serviceType: ServiceType;
+  isSafeToKill: boolean;
+}
+
+export interface SystemResources {
+  cpuCount: number;
+  cpuModel: string;
+  totalMemBytes: number;
+  freeMemBytes: number;
+  usedMemBytes: number;
+  memUsagePercent: number;
+  processUptimeSeconds: number;
+  systemUptimeSeconds: number;
+  nodeMemory: NodeJS.MemoryUsage;
+  platform: string;
+  arch: string;
+}
 
 export type QueueKey = "import" | "ocr";
 export type TrafficTimeRange = "HOUR" | "DAY" | "MONTH" | "YEAR";
