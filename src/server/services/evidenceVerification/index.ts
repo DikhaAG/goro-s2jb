@@ -1,9 +1,7 @@
-import fs from "fs";
 import prisma from "@/lib/prisma";
-import { resolveEvidencePath } from "@/lib/storage";
 import { OcrProcessingStatus, ValidationStatus } from "@prisma/client";
 import { ocrQueue } from "@/server/queues/ocrQueue";
-import { isExternalUrl, streamEvidenceImageBuffer } from "../evidenceDownloader";
+import { acquireForVerification, isExternalUrl } from "../evidenceAcquisition";
 import {
   classifyVerificationOutcome,
   DEFAULT_DUPLICATE_HASH_THRESHOLD,
@@ -164,7 +162,6 @@ export async function verifyEvidence(
 ): Promise<VerifyEvidenceResult> {
   const db = deps.prismaClient ?? prisma;
   const visionEngine = deps.visionEngine ?? rustVisionEngineAdapter;
-  const streamExternal = deps.streamExternalEvidence ?? streamEvidenceImageBuffer;
   const notifyReports = deps.onReportApproved ?? defaultNotifyReportsUpdated;
   const isFinalAttempt = input.isFinalAttempt ?? true;
 
@@ -196,8 +193,6 @@ export async function verifyEvidence(
   const usesExternalStream =
     existingReview.source === "MIGRATION" || isExternalUrl(normalizedPath);
 
-  let ocrInput: string | Buffer;
-
   if (usesExternalStream) {
     await db.ratingReview
       .update({
@@ -205,45 +200,45 @@ export async function verifyEvidence(
         data: { ocrStatus: OcrProcessingStatus.DOWNLOADING },
       })
       .catch(() => {});
+  }
 
-    const streamResult = await streamExternal(normalizedPath);
-    if (!streamResult.success || !streamResult.buffer) {
-      const errorMsg = streamResult.error || "Gagal streaming";
+  const acquired = await acquireForVerification(normalizedPath, {
+    streamExternal: deps.streamExternalEvidence,
+  });
+
+  if (!acquired.ok) {
+    if (acquired.kind === "external_error") {
       if (!isFinalAttempt) {
         throw new TransientVerificationError(
-          `Streaming Eviden Ulasan gagal sementara: ${errorMsg}`
+          `Streaming Eviden Ulasan gagal sementara: ${acquired.error}`
         );
       }
 
       await markReviewVerificationFailed(
         db,
         input.reviewId,
-        `OCR Gagal: Tautan gambar Google Drive tidak dapat dialirkan (${errorMsg})`
+        `OCR Gagal: Tautan gambar Google Drive tidak dapat dialirkan (${acquired.error})`
       );
       return {
         success: false,
         reviewId: input.reviewId,
         ocrStatus: OcrProcessingStatus.FAILED,
-        error: streamResult.error,
+        error: acquired.error,
       };
     }
 
-    ocrInput = streamResult.buffer;
-  } else {
-    const { safeAbsolutePath, isAllowed } = resolveEvidencePath(normalizedPath);
-    if (!isAllowed || !fs.existsSync(safeAbsolutePath)) {
-      const missingErr = `Berkas lokal Eviden Ulasan tidak ditemukan: ${normalizedPath}`;
-      await markReviewVerificationFailed(db, input.reviewId, `OCR Gagal: ${missingErr}`);
-      return {
-        success: false,
-        reviewId: input.reviewId,
-        ocrStatus: OcrProcessingStatus.FAILED,
-        permanentFailure: true,
-        error: missingErr,
-      };
-    }
-    ocrInput = safeAbsolutePath;
+    await markReviewVerificationFailed(db, input.reviewId, `OCR Gagal: ${acquired.error}`);
+    return {
+      success: false,
+      reviewId: input.reviewId,
+      ocrStatus: OcrProcessingStatus.FAILED,
+      permanentFailure: true,
+      error: acquired.error,
+    };
   }
+
+  const ocrInput: string | Buffer =
+    acquired.kind === "buffer" ? acquired.buffer : acquired.absolutePath;
 
   await db.ratingReview
     .update({

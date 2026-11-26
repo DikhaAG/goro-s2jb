@@ -1,10 +1,28 @@
 import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { importQueue } from "../queues/importQueue";
 import { systemTelemetry } from "../services/systemTelemetry";
-import { TRPCError } from "@trpc/server";
 import { logAuditEvent } from "@/server/services/auditService";
-import fs from "fs";
+import { migrationBatch } from "@/server/services/migrationBatch";
+
+async function resolveAdminQueue(role: string | undefined, queueName: "import" | "ocr", forbiddenMessage: string) {
+  if (role !== "SUPER_ADMIN") {
+    throw new TRPCError({ code: "FORBIDDEN", message: forbiddenMessage });
+  }
+  if (queueName === "import") {
+    return importQueue;
+  }
+  const { ocrQueue } = await import("../queues/ocrQueue");
+  return ocrQueue;
+}
+
+function batchDeps(ctx: { prisma: any; redis?: any }) {
+  return {
+    prisma: ctx.prisma,
+    ...(ctx.redis ? { redis: ctx.redis } : {}),
+  };
+}
 
 export const migrationRouter = router({
   startMigration: operatorProcedure
@@ -17,210 +35,35 @@ export const migrationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      try {
-        // 1. Create MigrationBatch record with filePath saved for recovery
-        const batch = await ctx.prisma.migrationBatch.create({
-          data: {
-            fileName: input.fileName,
-            fileSize: input.fileSize,
-            filePath: input.filePath,
-            targetType: input.targetType,
-            status: "PENDING",
-            uploadedById: ctx.user?.id || null,
-          },
-        });
-
-        // 2. Dispatch to BullMQ importQueue
-        await importQueue.add("process-bulk-import", {
-          importBatchId: batch.id,
-          filePath: input.filePath,
-          userId: ctx.user?.id || "admin_migration",
-          startRowNumber: 0,
-        });
-
-        return {
-          success: true,
-          batchId: batch.id,
-          message: "Berkas berhasil dijadwalkan untuk proses migrasi massal di latar belakang",
-        };
-      } catch (err: any) {
-        console.error("Failed to start migration:", err);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: err.message || "Gagal memulai migrasi berkas historis",
-        });
-      }
+      return migrationBatch.start(ctx.user, input, batchDeps(ctx));
     }),
 
   getActiveOrInterruptedBatch: operatorProcedure.query(async ({ ctx }) => {
-    const userId = ctx.user?.id;
-    // Check if user has any active (PROCESSING, PENDING) or interrupted (PAUSED) batch
-    const batch = await ctx.prisma.migrationBatch.findFirst({
-      where: {
-        ...(userId ? { uploadedById: userId } : {}),
-        status: { in: ["PROCESSING", "PENDING", "PAUSED"] },
-      },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        errors: {
-          take: 5,
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    });
-
-    return batch;
+    return migrationBatch.getActiveOrInterrupted(ctx.user, batchDeps(ctx));
   }),
 
   resumeMigration: operatorProcedure
     .input(z.object({ batchId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const batch = await ctx.prisma.migrationBatch.findUnique({
-        where: { id: input.batchId },
-      });
-
-      if (!batch) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data batch migrasi tidak ditemukan",
-        });
-      }
-
-      if (batch.status === "COMPLETED") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Batch migrasi ini telah selesai",
-        });
-      }
-
-      if (!batch.filePath || !fs.existsSync(batch.filePath)) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Berkas sumber migrasi di server tidak ditemukan atau telah kedaluwarsa",
-        });
-      }
-
-      // Update status to PROCESSING
-      await ctx.prisma.migrationBatch.update({
-        where: { id: batch.id },
-        data: {
-          status: "PROCESSING",
-        },
-      });
-
-      // Dispatch to BullMQ with startRowNumber = batch.lastProcessedRow
-      await importQueue.add("process-bulk-import", {
-        importBatchId: batch.id,
-        filePath: batch.filePath,
-        userId: ctx.user?.id || batch.uploadedById || "admin_migration",
-        startRowNumber: batch.lastProcessedRow,
-      });
-
-      return {
-        success: true,
-        batchId: batch.id,
-        resumedFromRow: batch.lastProcessedRow,
-        message: `Migrasi dilanjutkan dari baris ke-${batch.lastProcessedRow}`,
-      };
+      return migrationBatch.resume(ctx.user, input.batchId, batchDeps(ctx));
     }),
 
   pauseMigration: operatorProcedure
     .input(z.object({ batchId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const batch = await ctx.prisma.migrationBatch.findUnique({
-        where: { id: input.batchId },
-      });
-
-      if (!batch) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data batch migrasi tidak ditemukan",
-        });
-      }
-
-      await ctx.prisma.migrationBatch.update({
-        where: { id: batch.id },
-        data: {
-          status: "PAUSED",
-        },
-      });
-
-      return {
-        success: true,
-        message: "Migrasi dijeda",
-      };
+      return migrationBatch.pause(ctx.user, input.batchId, batchDeps(ctx));
     }),
 
   cancelBatch: operatorProcedure
     .input(z.object({ batchId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const batch = await ctx.prisma.migrationBatch.findUnique({
-        where: { id: input.batchId },
-      });
-
-      if (!batch) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data batch migrasi tidak ditemukan",
-        });
-      }
-
-      // Check RBAC permissions: Only SUPER_ADMIN or the batch creator can cancel
-      const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
-      const isOwner = batch.uploadedById === ctx.user?.id;
-      if (!isSuperAdmin && !isOwner) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda tidak memiliki wewenang untuk membatalkan batch migrasi ini.",
-        });
-      }
-
-      // 1. Set cancel token in Redis with 1 hour TTL so workers can abort immediately
-      try {
-        const { redis } = await import("@/lib/redis");
-        await redis.set(`migration:cancel:${batch.id}`, "1", "EX", 3600);
-      } catch (err) {
-        console.warn("Failed to set Redis cancel key:", err);
-      }
-
-      // 2. Update status in database to CANCELLED
-      await ctx.prisma.migrationBatch.update({
-        where: { id: batch.id },
-        data: {
-          status: "CANCELLED",
-          completedAt: new Date(),
-          errorMessage: `Dibatalkan oleh ${ctx.user?.name || "pengguna"}`,
-        },
-      });
-
-      return {
-        success: true,
-        batchId: batch.id,
-        message: "Proses migrasi berhasil dihentikan dan dibatalkan.",
-      };
+      return migrationBatch.cancel(ctx.user, input.batchId, batchDeps(ctx));
     }),
 
   getBatchStatus: operatorProcedure
     .input(z.object({ batchId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const batch = await ctx.prisma.migrationBatch.findUnique({
-        where: { id: input.batchId },
-        include: {
-          errors: {
-            take: 20,
-            orderBy: { rowNumber: "asc" },
-          },
-        },
-      });
-
-      if (!batch) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data batch migrasi tidak ditemukan",
-        });
-      }
-
-      return batch;
+      return migrationBatch.getStatus(ctx.user, input.batchId, batchDeps(ctx));
     }),
 
   getMonitorBatches: operatorProcedure
@@ -236,78 +79,11 @@ export const migrationRouter = router({
         .default({})
     )
     .query(async ({ ctx, input }) => {
-      const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
-      const userId = ctx.user?.id;
-
-      // Filter by uploadedById if role is PEGAWAI (RBAC isolation)
-      const whereClause: any = {};
-      if (!isSuperAdmin) {
-        whereClause.uploadedById = userId;
-      }
-
-      if (input.status !== "ALL") {
-        whereClause.status = input.status;
-      }
-
-      const skip = (input.page - 1) * input.pageSize;
-
-      const [batches, totalCount] = await Promise.all([
-        ctx.prisma.migrationBatch.findMany({
-          where: whereClause,
-          skip,
-          take: input.pageSize,
-          orderBy: { createdAt: "desc" },
-          include: {
-            uploadedBy: {
-              select: {
-                id: true,
-                name: true,
-                username: true,
-                email: true,
-                role: true,
-              },
-            },
-            _count: {
-              select: { errors: true },
-            },
-          },
-        }),
-        ctx.prisma.migrationBatch.count({
-          where: whereClause,
-        }),
-      ]);
-
-      return {
-        batches,
-        total: totalCount,
-        page: input.page,
-        pageSize: input.pageSize,
-        totalPages: Math.ceil(totalCount / input.pageSize),
-        isSuperAdmin,
-      };
+      return migrationBatch.list(ctx.user, input, batchDeps(ctx));
     }),
 
-  getWorkerLiveMetrics: operatorProcedure.query(async ({ ctx }) => {
-    const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
-    const snapshot = await systemTelemetry.getWorkerTelemetry("live");
-    return {
-      isSuperAdmin,
-      ...snapshot,
-    };
-  }),
-
   listBatches: operatorProcedure.query(async ({ ctx }) => {
-    const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
-    return ctx.prisma.migrationBatch.findMany({
-      where: isSuperAdmin ? {} : { uploadedById: ctx.user?.id },
-      take: 100,
-      orderBy: { createdAt: "desc" },
-      include: {
-        _count: {
-          select: { errors: true },
-        },
-      },
-    });
+    return migrationBatch.listRecent(ctx.user, batchDeps(ctx));
   }),
 
   getBatchErrorLogs: operatorProcedure
@@ -319,26 +95,7 @@ export const migrationRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const skip = (input.page - 1) * input.pageSize;
-      const [errors, total] = await Promise.all([
-        ctx.prisma.migrationErrorLog.findMany({
-          where: { batchId: input.batchId },
-          skip,
-          take: input.pageSize,
-          orderBy: { rowNumber: "asc" },
-        }),
-        ctx.prisma.migrationErrorLog.count({
-          where: { batchId: input.batchId },
-        }),
-      ]);
-
-      return {
-        errors,
-        total,
-        page: input.page,
-        pageSize: input.pageSize,
-        totalPages: Math.ceil(total / input.pageSize),
-      };
+      return migrationBatch.listErrors(ctx.user, input, batchDeps(ctx));
     }),
 
   getBatchDetails: operatorProcedure
@@ -350,151 +107,19 @@ export const migrationRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
-      const batch = await ctx.prisma.migrationBatch.findUnique({
-        where: { id: input.batchId },
-        include: {
-          uploadedBy: {
-            select: { id: true, name: true, username: true, role: true },
-          },
-          _count: {
-            select: { errors: true, reviews: true },
-          },
-        },
-      });
-
-      if (!batch) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data batch migrasi tidak ditemukan",
-        });
-      }
-
-      if (!isSuperAdmin && batch.uploadedById && batch.uploadedById !== ctx.user?.id) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda tidak memiliki akses ke rincian batch ini",
-        });
-      }
-
-      // Timing calculations
-      const startedAtTime = batch.startedAt ? new Date(batch.startedAt).getTime() : new Date(batch.createdAt).getTime();
-      const completedAtTime = batch.completedAt ? new Date(batch.completedAt).getTime() : null;
-      const ingestDurationMs = completedAtTime
-        ? Math.max(0, completedAtTime - startedAtTime)
-        : batch.status === "PROCESSING"
-        ? Math.max(0, Date.now() - startedAtTime)
-        : null;
-
-      // Aggregates for reviews in this batch
-      const [
-        reviewsAgg,
-        ocrCompletedCount,
-        ocrProcessingCount,
-        ocrQueuedCount,
-        ocrFailedCount,
-        autoApprovedCount,
-        duplicateCount,
-      ] = await Promise.all([
-        ctx.prisma.ratingReview.aggregate({
-          where: { migrationBatchId: input.batchId },
-          _avg: { confidenceScore: true },
-        }),
-        ctx.prisma.ratingReview.count({
-          where: { migrationBatchId: input.batchId, ocrStatus: "COMPLETED" },
-        }),
-        ctx.prisma.ratingReview.count({
-          where: { migrationBatchId: input.batchId, ocrStatus: { in: ["DOWNLOADING", "PROCESSING"] } },
-        }),
-        ctx.prisma.ratingReview.count({
-          where: { migrationBatchId: input.batchId, ocrStatus: "QUEUED" },
-        }),
-        ctx.prisma.ratingReview.count({
-          where: { migrationBatchId: input.batchId, ocrStatus: "FAILED" },
-        }),
-        ctx.prisma.ratingReview.count({
-          where: { migrationBatchId: input.batchId, validationStatus: "APPROVED" },
-        }),
-        ctx.prisma.ratingReview.count({
-          where: { migrationBatchId: input.batchId, isDuplicate: true },
-        }),
-      ]);
-
-      // Paginated individual rows with timing computation
-      const skip = (input.rowsPage - 1) * input.rowsPageSize;
-      const [rows, totalRowsCount] = await Promise.all([
-        ctx.prisma.ratingReview.findMany({
-          where: { migrationBatchId: input.batchId },
-          skip,
-          take: input.rowsPageSize,
-          orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            playstoreReviewerName: true,
-            entryDate: true,
-            timestamp: true,
-            confidenceScore: true,
-            ocrStatus: true,
-            validationStatus: true,
-            isDuplicate: true,
-            reviewRemarks: true,
-            createdAt: true,
-            updatedAt: true,
-            verifiedAt: true,
-            up3: { select: { name: true } },
-            ulp: { select: { name: true } },
-            appVersion: { select: { version: true } },
-          },
-        }),
-        ctx.prisma.ratingReview.count({
-          where: { migrationBatchId: input.batchId },
-        }),
-      ]);
-
-      // Calculate row-level processing time
-      const mappedRows = rows.map((r, idx) => {
-        const ingestTime = new Date(r.createdAt).getTime();
-        const ocrFinishedTime = new Date(r.updatedAt).getTime();
-        // Time taken from database creation to OCR / validation completion
-        const rowProcessTimeMs = Math.max(0, ocrFinishedTime - ingestTime);
-
-        return {
-          ...r,
-          rowSequence: skip + idx + 1,
-          rowProcessTimeMs,
-        };
-      });
-
-      // Sample average row duration from completed items
-      const completedRows = mappedRows.filter((r) => r.ocrStatus === "COMPLETED");
-      const avgOcrRowMs =
-        completedRows.length > 0
-          ? Math.round(completedRows.reduce((sum, r) => sum + r.rowProcessTimeMs, 0) / completedRows.length)
-          : 0;
-
-      return {
-        batch,
-        timings: {
-          totalDurationMs: ingestDurationMs,
-          ingestDurationMs,
-          ocrCompletedCount,
-          ocrProcessingCount,
-          ocrQueuedCount,
-          ocrFailedCount,
-          autoApprovedCount,
-          duplicateCount,
-          avgOcrRowMs,
-          averageConfidence: reviewsAgg._avg.confidenceScore ? Math.round(reviewsAgg._avg.confidenceScore * 10) / 10 : 0,
-        },
-        rows: mappedRows,
-        rowsPagination: {
-          page: input.rowsPage,
-          pageSize: input.rowsPageSize,
-          total: totalRowsCount,
-          totalPages: Math.ceil(totalRowsCount / input.rowsPageSize),
-        },
-      };
+      return migrationBatch.getDetails(ctx.user, input, batchDeps(ctx));
     }),
+
+  // --- Telemetri Sistem delegates ---
+
+  getWorkerLiveMetrics: operatorProcedure.query(async ({ ctx }) => {
+    const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
+    const snapshot = await systemTelemetry.getWorkerTelemetry("live");
+    return {
+      isSuperAdmin,
+      ...snapshot,
+    };
+  }),
 
   getDetailedWorkerStatus: operatorProcedure.query(async ({ ctx }) => {
     const isSuperAdmin = ctx.user?.role === "SUPER_ADMIN";
@@ -507,6 +132,18 @@ export const migrationRouter = router({
     };
   }),
 
+  getNetworkTrafficHistory: operatorProcedure
+    .input(
+      z.object({
+        timeRange: z.enum(["HOUR", "DAY", "MONTH", "YEAR"]).default("HOUR"),
+      })
+    )
+    .query(async ({ input }) => {
+      return systemTelemetry.getTrafficHistory(input.timeRange);
+    }),
+
+  // --- Cross-queue BullMQ operational controls ---
+
   getQueueJobs: operatorProcedure
     .input(
       z.object({
@@ -516,7 +153,7 @@ export const migrationRouter = router({
         pageSize: z.number().int().min(1).max(50).default(10),
       })
     )
-    .query(async ({ ctx, input }) => {
+    .query(async ({ input }) => {
       const { ocrQueue } = await import("../queues/ocrQueue");
       const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
 
@@ -528,7 +165,6 @@ export const migrationRouter = router({
 
       const start = (input.page - 1) * input.pageSize;
       const end = start + input.pageSize - 1;
-
       const statusesToQuery: any[] = isWaitingQuery ? ["waiting", "prioritized"] : [input.status];
       const rawJobs = await targetQueue.getJobs(statusesToQuery, start, end, true);
 
@@ -557,15 +193,11 @@ export const migrationRouter = router({
   pauseQueue: operatorProcedure
     .input(z.object({ queueName: z.enum(["import", "ocr"]) }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== "SUPER_ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Super Admin yang berwenang menjeda antrean worker sistem.",
-        });
-      }
-
-      const { ocrQueue } = await import("../queues/ocrQueue");
-      const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
+      const targetQueue = await resolveAdminQueue(
+        ctx.user?.role,
+        input.queueName,
+        "Hanya Super Admin yang berwenang menjeda antrean worker sistem."
+      );
       await targetQueue.pause();
 
       await logAuditEvent({
@@ -588,15 +220,11 @@ export const migrationRouter = router({
   resumeQueue: operatorProcedure
     .input(z.object({ queueName: z.enum(["import", "ocr"]) }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== "SUPER_ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Super Admin yang berwenang melanjutkan antrean worker sistem.",
-        });
-      }
-
-      const { ocrQueue } = await import("../queues/ocrQueue");
-      const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
+      const targetQueue = await resolveAdminQueue(
+        ctx.user?.role,
+        input.queueName,
+        "Hanya Super Admin yang berwenang melanjutkan antrean worker sistem."
+      );
       await targetQueue.resume();
 
       await logAuditEvent({
@@ -624,15 +252,11 @@ export const migrationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== "SUPER_ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Super Admin yang berwenang mencoba ulang job worker.",
-        });
-      }
-
-      const { ocrQueue } = await import("../queues/ocrQueue");
-      const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
+      const targetQueue = await resolveAdminQueue(
+        ctx.user?.role,
+        input.queueName,
+        "Hanya Super Admin yang berwenang mencoba ulang job worker."
+      );
       const job = await targetQueue.getJob(input.jobId);
 
       if (!job) {
@@ -670,15 +294,11 @@ export const migrationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== "SUPER_ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Super Admin yang berwenang menghapus job worker.",
-        });
-      }
-
-      const { ocrQueue } = await import("../queues/ocrQueue");
-      const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
+      const targetQueue = await resolveAdminQueue(
+        ctx.user?.role,
+        input.queueName,
+        "Hanya Super Admin yang berwenang menghapus job worker."
+      );
       const job = await targetQueue.getJob(input.jobId);
 
       if (!job) {
@@ -711,15 +331,11 @@ export const migrationRouter = router({
   retryAllFailedJobs: operatorProcedure
     .input(z.object({ queueName: z.enum(["import", "ocr"]) }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== "SUPER_ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Super Admin yang berwenang mencoba ulang seluruh job gagal.",
-        });
-      }
-
-      const { ocrQueue } = await import("../queues/ocrQueue");
-      const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
+      const targetQueue = await resolveAdminQueue(
+        ctx.user?.role,
+        input.queueName,
+        "Hanya Super Admin yang berwenang mencoba ulang seluruh job gagal."
+      );
       const failedJobs = await targetQueue.getJobs(["failed"], 0, 100);
 
       await Promise.all(failedJobs.map((j) => j.retry().catch(() => {})));
@@ -751,15 +367,11 @@ export const migrationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user?.role !== "SUPER_ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Super Admin yang berwenang membersihkan riwayat antrean.",
-        });
-      }
-
-      const { ocrQueue } = await import("../queues/ocrQueue");
-      const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
+      const targetQueue = await resolveAdminQueue(
+        ctx.user?.role,
+        input.queueName,
+        "Hanya Super Admin yang berwenang membersihkan riwayat antrean."
+      );
       await targetQueue.clean(0, 1000, input.type);
 
       await logAuditEvent({
@@ -778,15 +390,5 @@ export const migrationRouter = router({
         success: true,
         message: `Riwayat job ${input.type} pada ${input.queueName.toUpperCase()} berhasil dibersihkan.`,
       };
-    }),
-
-  getNetworkTrafficHistory: operatorProcedure
-    .input(
-      z.object({
-        timeRange: z.enum(["HOUR", "DAY", "MONTH", "YEAR"]).default("HOUR"),
-      })
-    )
-    .query(async ({ input }) => {
-      return systemTelemetry.getTrafficHistory(input.timeRange);
     }),
 });

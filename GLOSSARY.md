@@ -20,9 +20,19 @@ _Avoid_: Capture, screen, foto galeri
 
 ### Verifikasi Eviden
 
+**Akuisisi Eviden**:
+Pengambilan dan validasi format berkas **Eviden Ulasan** dari penyimpanan lokal maupun tautan eksternal Google Drive dengan pengamanan host dan pemeriksaan *magic bytes*.
+_Avoid_: Downloader, proxy gambar, fetch gdrive
+
 **Verifikasi Eviden**:
 Penilaian otomatis atas Eviden Ulasan untuk mencocokkan nama pengulas, mendeteksi indikasi duplikasi, dan menetapkan kelayakan awal ke dalam tiga zona kepercayaan (Hijau, Kuning, Merah).
 _Avoid_: Proses OCR saja, validasi AI, cek gambar
+
+### Migrasi Historis
+
+**Batch Migrasi**:
+Satuan unggahan arsip spreadsheet historis beserta siklus hidup pemrosesan bertahap (*checkpoint*), deduplikasi baris, dan catatan galatnya ke dalam data ulasan.
+_Avoid_: Bulk job, raw import, antrean impor mentah
 
 ### Triase & Manajemen Ulasan
 

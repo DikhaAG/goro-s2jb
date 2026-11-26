@@ -7,7 +7,7 @@ import {
   calculateTextSimilarity,
   calculateReviewerSimilarity,
 } from "@/lib/similarity";
-import { extractGoogleDriveFileId, isExternalUrl } from "../evidenceDownloader";
+import { extractGoogleDriveFileId, isExternalUrl } from "../evidenceAcquisition";
 import { OcrResultPayload } from "@/types";
 import { AntiFraudCheckResult, BatchDuplicateQuery } from "./types";
 

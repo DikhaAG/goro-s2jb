@@ -1,6 +1,10 @@
 import prisma from "@/lib/prisma";
-import { downloadEvidenceImage, isExternalUrl } from "@/server/services/evidenceDownloader";
-import { ocrQueue } from "@/server/queues/ocrQueue";
+import { saveEvidenceFile } from "@/lib/storage";
+import {
+  extractGoogleDriveFileId,
+  streamExternalEvidence,
+} from "@/server/services/evidenceAcquisition";
+import { enqueueEvidenceVerification } from "@/server/services/evidenceVerification";
 
 async function repairImportedEvidence() {
   console.log("🔍 Scanning for RatingReview records with external evidenceImagePath (e.g. Google Drive)...");
@@ -31,36 +35,47 @@ async function repairImportedEvidence() {
     console.log(`Current external URL: ${review.evidenceImagePath}`);
 
     try {
-      const dlResult = await downloadEvidenceImage(review.evidenceImagePath, review.entryDate);
+      const streamResult = await streamExternalEvidence(review.evidenceImagePath);
 
-      if (dlResult.success && dlResult.relativePath) {
-        console.log(`✅ Downloaded successfully to local path: ${dlResult.relativePath}`);
+      if (streamResult.success && streamResult.buffer) {
+        const mimeType = streamResult.mimeType || "image/jpeg";
+        const ext =
+          mimeType === "image/png"
+            ? ".png"
+            : mimeType === "image/webp"
+            ? ".webp"
+            : ".jpg";
+        const driveId = extractGoogleDriveFileId(review.evidenceImagePath);
+        const filename = driveId ? `gdrive_${driveId}${ext}` : `imported_${Date.now()}${ext}`;
+        const saved = await saveEvidenceFile(
+          streamResult.buffer,
+          filename,
+          mimeType,
+          review.entryDate
+        );
 
-        // Update database with local path
+        console.log(`✅ Saved locally to: ${saved.relativePath}`);
+
         await prisma.ratingReview.update({
           where: { id: review.id },
           data: {
-            evidenceImagePath: dlResult.relativePath,
+            evidenceImagePath: saved.relativePath,
           },
         });
 
-        // Enqueue to OCR queue for pHash and text extraction
-        const job = await ocrQueue.add(
-          "process-ocr",
+        const enqueued = await enqueueEvidenceVerification(
           {
             reviewId: review.id,
-            evidenceImagePath: dlResult.relativePath,
+            evidenceImagePath: saved.relativePath,
             expectedReviewerName: review.playstoreReviewerName,
           },
-          {
-            priority: 2,
-          }
+          { priority: 2 }
         );
 
-        console.log(`🚀 Dispatched to OCR Queue (Job ID: ${job.id})`);
+        console.log(`🚀 Dispatched to OCR Queue (Job ID: ${enqueued.jobIds[0] || "queued"})`);
         repairedCount++;
       } else {
-        console.error(`❌ Failed to download: ${dlResult.error}`);
+        console.error(`❌ Failed to acquire: ${streamResult.error}`);
         await prisma.ratingReview.update({
           where: { id: review.id },
           data: {
@@ -83,6 +98,5 @@ repairImportedEvidence()
   .catch(console.error)
   .finally(async () => {
     await prisma.$disconnect();
-    // Do not force process.exit immediately so queue jobs flush
     setTimeout(() => process.exit(0), 1000);
   });

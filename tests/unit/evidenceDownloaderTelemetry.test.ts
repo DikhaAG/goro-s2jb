@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  streamEvidenceImageBuffer,
+  streamExternalEvidence,
   extractGoogleDriveFileId,
   getCandidateImageUrls,
-} from "@/server/services/evidenceDownloader";
+} from "@/server/services/evidenceAcquisition";
 import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
 import { systemTelemetry } from "@/server/services/systemTelemetry";
 import { GET as healthRouteGet } from "@/app/api/health/route";
@@ -49,7 +49,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
         return Promise.reject(new Error("Unexpected URL"));
       });
 
-      const result = await streamEvidenceImageBuffer(
+      const result = await streamExternalEvidence(
         "https://drive.google.com/file/d/1A2B3C4D5E6F7G8H9I0J/view?usp=sharing"
       );
 
@@ -91,7 +91,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
         return Promise.reject(new Error("Unexpected endpoint"));
       });
 
-      const result = await streamEvidenceImageBuffer(
+      const result = await streamExternalEvidence(
         "https://drive.google.com/open?id=failoverTestFileId"
       );
 
@@ -116,7 +116,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
         arrayBuffer: () => Promise.resolve(Buffer.from("<html>Error Page</html>").buffer),
       });
 
-      const result = await streamEvidenceImageBuffer(
+      const result = await streamExternalEvidence(
         "https://drive.google.com/file/d/privateOrDeletedFileId/view"
       );
 
@@ -140,7 +140,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
         arrayBuffer: () => Promise.resolve(corruptedBytes.buffer),
       });
 
-      const result = await streamEvidenceImageBuffer(
+      const result = await streamExternalEvidence(
         "https://drive.google.com/file/d/corruptedBinaryFileId/view"
       );
 
@@ -168,7 +168,7 @@ describe("Evidence Downloader & Network Telemetry Suite (Task 20.1)", () => {
         });
       });
 
-      await streamEvidenceImageBuffer("https://lh3.googleusercontent.com/d/healthCheckSample");
+      await streamExternalEvidence("https://lh3.googleusercontent.com/d/healthCheckSample");
 
       const response = await healthRouteGet();
       const body = await response.json();

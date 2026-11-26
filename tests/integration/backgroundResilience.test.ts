@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EventEmitter } from "events";
-import { streamEvidenceImageBuffer } from "@/server/services/evidenceDownloader";
+import { streamExternalEvidence } from "@/server/services/evidenceAcquisition";
 import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
 import {
   createInMemoryTelemetryStore,
@@ -135,7 +135,7 @@ describe("Background Services Resilience & Chaos Integration Suite (Task 20.5)",
         return Promise.reject(new Error("Unknown route"));
       });
 
-      const result = await streamEvidenceImageBuffer(
+      const result = await streamExternalEvidence(
         "https://drive.google.com/file/d/1X9Y8Z7W6V5U4T3S2R1Q/view"
       );
 

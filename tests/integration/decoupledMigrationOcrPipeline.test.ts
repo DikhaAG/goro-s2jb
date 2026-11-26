@@ -3,13 +3,12 @@ import path from "path";
 import fs from "fs";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
-import { parseCsvStream, RawReviewRow } from "@/lib/parsers/csvStreamParser";
+import { streamSpreadsheetRows, type RawReviewRow } from "@/server/services/migrationBatch";
 import {
-  downloadEvidenceImage,
-  streamEvidenceImageBuffer,
+  streamExternalEvidence,
   extractGoogleDriveFileId,
   isExternalUrl,
-} from "@/server/services/evidenceDownloader";
+} from "@/server/services/evidenceAcquisition";
 import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
 import prismaClient from "@/lib/prisma";
 
@@ -80,7 +79,8 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       const parsedRows: RawReviewRow[] = [];
       const errorRows: any[] = [];
 
-      const result = await parseCsvStream(CSV_FILE_PATH, {
+      const result = await streamSpreadsheetRows(CSV_FILE_PATH, {
+        ext: ".csv",
         batchSize: 50,
         onBatch: async (batch) => {
           parsedRows.push(...batch);
@@ -107,7 +107,8 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
     it("should perform zero-blocking bulk database insertion for Tier 1 metadata ingestion", async () => {
       const rowsToInsert: RawReviewRow[] = [];
 
-      await parseCsvStream(CSV_FILE_PATH, {
+      await streamSpreadsheetRows(CSV_FILE_PATH, {
+        ext: ".csv",
         batchSize: 10,
         onBatch: async (batch) => {
           if (rowsToInsert.length < 10) {
@@ -173,37 +174,25 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
       expect(isExternalUrl("evidence/2026/10/local.jpg")).toBe(false);
     });
 
-    it("should download and stream a real Google Drive image, validating magic bytes and caching", async () => {
+    it("should stream a real Google Drive image into memory without persisting to disk", async () => {
       const gdriveUrl = "https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC"; // Mika evidence
-      const downloadResult = await downloadEvidenceImage(gdriveUrl);
+      const streamRes = await streamExternalEvidence(gdriveUrl);
 
-      expect(downloadResult.success).toBe(true);
-      expect(downloadResult.absolutePath).toBeDefined();
-      expect(fs.existsSync(downloadResult.absolutePath!)).toBe(true);
+      expect(streamRes.success).toBe(true);
+      expect(streamRes.buffer).toBeInstanceOf(Buffer);
+      expect(streamRes.buffer!.length).toBeGreaterThan(1000);
 
-      // Verify file magic bytes for valid JPEG/PNG
-      const buffer = fs.readFileSync(downloadResult.absolutePath!);
-      expect(buffer.length).toBeGreaterThan(1000);
-
+      const buffer = streamRes.buffer!;
       const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
       const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
       expect(isJpeg || isPng).toBe(true);
-
-      // Verify local caching: Second download of the same URL should return instantly (< 5ms)
-      const cacheStartTime = Date.now();
-      const cachedResult = await downloadEvidenceImage(gdriveUrl);
-      const cacheDuration = Date.now() - cacheStartTime;
-
-      expect(cachedResult.success).toBe(true);
-      expect(cachedResult.absolutePath).toBe(downloadResult.absolutePath);
-      expect(cacheDuration).toBeLessThan(20);
     });
   });
 
   describe("Tier 2: Vision Core OCR & Play Store Reviewer Name Fuzzy Validation", () => {
     it("should stream Google Drive image in-memory and verify match for reviewer Mika with GREEN APPROVED status without disk persistence", async () => {
       const mikaUrl = "https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC";
-      const streamRes = await streamEvidenceImageBuffer(mikaUrl);
+      const streamRes = await streamExternalEvidence(mikaUrl);
       expect(streamRes.success).toBe(true);
       expect(streamRes.buffer).toBeDefined();
 
@@ -222,7 +211,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
 
     it("should stream Google Drive image in-memory and verify match for reviewer Eta with GREEN APPROVED status", async () => {
       const etaUrl = "https://drive.google.com/open?id=1--6-2bJppAlOrXKfNgkP9IzUmagITwk8";
-      const streamRes = await streamEvidenceImageBuffer(etaUrl);
+      const streamRes = await streamExternalEvidence(etaUrl);
       expect(streamRes.success).toBe(true);
       expect(streamRes.buffer).toBeDefined();
 
@@ -239,10 +228,10 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
 
     it("should accurately reject mismatched screenshot with RED REJECTED status", async () => {
       // Testing with a name that is completely absent from Mika's screenshot
-      const dl = await downloadEvidenceImage("https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC");
-      expect(dl.success).toBe(true);
+      const streamRes = await streamExternalEvidence("https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC");
+      expect(streamRes.success).toBe(true);
 
-      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(dl.absolutePath!, "NamaPengulasTidakAdaSamaSekali12345");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(streamRes.buffer!, "NamaPengulasTidakAdaSamaSekali12345");
 
       expect(ocrResult.success).toBe(true);
       expect(ocrResult.similarity_score).toBeLessThan(70);
@@ -252,9 +241,10 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
 
     it("should detect duplicate evidence using 64-bit perceptual hashing and soft-flag without data loss", async () => {
       const mikaUrl = "https://drive.google.com/open?id=1xj8_zEjqD29por3pv3Ji0m_ASveH_FBC";
-      const dl = await downloadEvidenceImage(mikaUrl);
+      const streamRes = await streamExternalEvidence(mikaUrl);
+      expect(streamRes.success).toBe(true);
 
-      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(dl.absolutePath!, "Mika");
+      const ocrResult = await rustVisionEngineAdapter.extractAndMatch(streamRes.buffer!, "Mika");
       expect(ocrResult.phash).toBeTruthy();
 
       // Create primary review record with this phash
@@ -266,7 +256,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
           playstoreReviewerName: "Mika",
           entryDate: new Date("2026-07-02"),
           timestamp: new Date(),
-          evidenceImagePath: dl.relativePath!,
+          evidenceImagePath: mikaUrl,
           evidenceImageHash: ocrResult.phash,
           validationStatus: "APPROVED",
         },
@@ -282,7 +272,7 @@ describe("Decoupled Two-Tier Zero-Blocking Migration & OCR Validation Pipeline",
           playstoreReviewerName: "Mika Peniru",
           entryDate: new Date("2026-07-03"),
           timestamp: new Date(),
-          evidenceImagePath: dl.relativePath!,
+          evidenceImagePath: mikaUrl,
           validationStatus: "PENDING",
         },
       });
