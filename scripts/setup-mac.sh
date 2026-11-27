@@ -91,6 +91,17 @@ else
     echo -e "${GREEN}✓ File .env sudah tersedia.${NC}"
 fi
 
+# BETTER_AUTH_SECRET wajib ada; isi dengan nilai acak bila masih kosong.
+if ! grep -qE '^BETTER_AUTH_SECRET="?[^"[:space:]]+' .env; then
+    SECRET="$(openssl rand -base64 32)"
+    if grep -q '^BETTER_AUTH_SECRET=' .env; then
+        sed -i.bak "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=\"${SECRET}\"|" .env && rm -f .env.bak
+    else
+        echo "BETTER_AUTH_SECRET=\"${SECRET}\"" >> .env
+    fi
+    echo -e "${GREEN}✓ BETTER_AUTH_SECRET acak dibuat di .env.${NC}"
+fi
+
 # 3. Instalasi Dependensi Node.js
 echo -e "\n${BLUE}[4/6] Memasang Dependensi Node.js (npm install)...${NC}"
 npm install

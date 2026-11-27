@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { shouldUseSecureCookie } from "@/lib/auth-constants";
-import { POST as postLogout } from "@/app/api/auth/logout/route";
 
 describe("Dynamic Cookie Secure Attribute Detection (shouldUseSecureCookie)", () => {
   afterEach(() => {
@@ -92,32 +91,6 @@ describe("Dynamic Cookie Secure Attribute Detection (shouldUseSecureCookie)", ()
 
     vi.stubEnv("BETTER_AUTH_URL", "https://goro.pln.co.id");
     expect(shouldUseSecureCookie()).toBe(true);
-  });
-
-  it("should omit Secure on logout Set-Cookie for plain HTTP and include Secure for HTTPS proxy", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("COOKIE_SECURE", "");
-
-    const httpReq = new NextRequest("http://103.79.237.38:3020/api/auth/logout", {
-      method: "POST",
-    });
-    const httpRes = await postLogout(httpReq);
-    expect(httpRes.status).toBe(200);
-    const httpCookies = httpRes.headers.get("set-cookie") || "";
-    expect(httpCookies).toContain("goro_session_token=;");
-    expect(httpCookies).not.toContain("Secure");
-
-    const httpsProxyReq = new NextRequest("http://localhost:3000/api/auth/logout", {
-      method: "POST",
-      headers: {
-        "x-forwarded-proto": "https",
-      },
-    });
-    const httpsRes = await postLogout(httpsProxyReq);
-    expect(httpsRes.status).toBe(200);
-    const httpsCookies = httpsRes.headers.get("set-cookie") || "";
-    expect(httpsCookies).toContain("goro_session_token=;");
-    expect(httpsCookies).toContain("Secure");
   });
 });
 

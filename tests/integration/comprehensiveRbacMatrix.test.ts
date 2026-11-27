@@ -1,13 +1,15 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
 import { proxy } from "@/proxy";
 import { isRouteAllowed, getRequiredRoleForRoute, isPublicRoute } from "@/lib/rbac";
-import { signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
 import { GET as getExcelExport } from "@/app/api/export/excel/route";
 import { GET as getPdfExport } from "@/app/api/export/pdf/route";
 import { POST as postUpload } from "@/app/api/upload/route";
 import { GET as getUploadsFile } from "@/app/api/uploads/[...path]/route";
+
+vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 
 describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () => {
   let fieldToken: string;

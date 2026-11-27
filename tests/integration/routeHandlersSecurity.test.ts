@@ -1,15 +1,16 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
-import { signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
 import { POST as postUpload } from "@/app/api/upload/route";
 import { GET as getUploadsFile } from "@/app/api/uploads/[...path]/route";
 import { GET as getExcelExport } from "@/app/api/export/excel/route";
 import { GET as getPdfExport } from "@/app/api/export/pdf/route";
 import { GET as getHealth } from "@/app/api/health/route";
-import { POST as postLogout } from "@/app/api/auth/logout/route";
 
 import prisma from "@/lib/prisma";
+
+vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 
 describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", () => {
   let fieldToken: string;
@@ -245,21 +246,6 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
     it("should allow authenticated health checks", async () => {
       const res = await getHealth();
       expect([200, 503]).toContain(res.status);
-    });
-  });
-
-  describe("6. POST /api/auth/logout (Session Termination)", () => {
-    it("should terminate session and clear auth cookies", async () => {
-      const req = createRequest("http://localhost:3000/api/auth/logout", "POST", fieldToken);
-      const res = await postLogout(req);
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.success).toBe(true);
-
-      const setCookieHeader = res.headers.get("set-cookie") || "";
-      expect(setCookieHeader).toContain(`${SESSION_COOKIE_NAME}=;`);
-      expect(setCookieHeader).toContain("Max-Age=0");
     });
   });
 });

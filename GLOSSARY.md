@@ -50,5 +50,15 @@ _Avoid_: Log saja, metrik mentah, monitoring UI
 Sinyal gangguan operasional hasil evaluasi Telemetri Sistem yang memisahkan detail teknis bagi administrator dari ringkasan aman bagi operator.
 _Avoid_: Error log, notifikasi umum, status kesehatan mentah
 
+### Keamanan Akses
+
+**Sesi Pengguna**:
+Status masuk pengguna yang dapat dicabut, dengan masa berlaku tetap per peran (7 hari untuk Petugas Lapangan, 24 jam untuk peran lain), dan berakhir saat logout atau saat akun dinonaktifkan.
+_Avoid_: Token, JWT, cookie
+
+**Penguncian Login**:
+Pemblokiran sementara upaya masuk setelah 5 kegagalan untuk pasangan username+IP yang sama dalam 15 menit.
+_Avoid_: Rate limit, throttle, ban
+
 
 

@@ -1,21 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { jwtVerify } from "jose";
-import { Role } from "@prisma/client";
-import { SESSION_COOKIE_NAME, getDefaultRedirectForRole } from "@/lib/auth-constants";
+import { getDefaultRedirectForRole } from "@/lib/auth-constants";
 import { isRouteAllowed, getRequiredRoleForRoute, isPublicRoute } from "@/lib/rbac";
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "goro-s2jb-command-center-secret-key-pln-2026-production-secured"
-);
-
-export interface EdgeSessionUser {
-  id: string;
-  username: string;
-  role: Role;
-  name: string;
-  up3Id?: string | null;
-  ulpId?: string | null;
-}
+import { session } from "@/server/session/live";
 
 /**
  * Declarative operational alias rewrite mapping.
@@ -30,31 +16,11 @@ const REWRITE_MAP: Readonly<Record<string, string>> = Object.freeze({
 });
 
 /**
- * Verifies JWT session token at the Edge Runtime using Web Crypto API.
- */
-export async function verifyTokenEdge(token: string): Promise<EdgeSessionUser | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    if (!payload.id || !payload.role || !payload.username) return null;
-    return {
-      id: payload.id as string,
-      username: payload.username as string,
-      role: payload.role as Role,
-      name: (payload.name as string) || (payload.username as string),
-      up3Id: (payload.up3Id as string | null) || null,
-      ulpId: (payload.ulpId as string | null) || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Next.js Edge Network Proxy (Layer 1 Security Boundary).
+ * Next.js Proxy (Layer 1 Security Boundary, Node runtime).
  *
- * Enforces edge-level perimeter defense:
+ * Enforces perimeter defense for pages (API routes are excluded by the matcher):
  * 1. Bypasses static assets and internal Next.js build files.
- * 2. Authenticates session token via cryptographically signed JWT.
+ * 2. Resolves the Sesi Pengguna through the Session module.
  * 3. Sanitizes downstream request headers (prevents header spoofing).
  * 4. Redirects authenticated users attempting to access guest-only routes (/login).
  * 5. Strictly protects the root dashboard (/) from unauthenticated visitors.
@@ -74,9 +40,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
-  // 2. Read session cookie and verify token at the edge
-  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const user = sessionCookie ? await verifyTokenEdge(sessionCookie) : null;
+  // 2. Resolve the Sesi Pengguna
+  const user = await session.getUser(request.headers);
 
   // 3. Prevent client header spoofing by sanitizing internal context headers
   const requestHeaders = new Headers(request.headers);

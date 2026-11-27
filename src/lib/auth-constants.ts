@@ -1,8 +1,5 @@
 import { Role } from "@prisma/client";
 
-export const SESSION_COOKIE_NAME = "goro_session_token";
-export const USER_ID_COOKIE_NAME = "goro_user_id";
-
 /**
  * Determines session duration based on PRD security specifications:
  * - Petugas Lapangan: 7 days (604,800s) for field convenience

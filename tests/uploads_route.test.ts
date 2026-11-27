@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { GET } from "@/app/api/uploads/[...path]/route";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
-import { signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { signSessionToken, SESSION_COOKIE_NAME } from "./helpers/fakeSession";
+
+vi.mock("@/server/session/live", async () => (await import("./helpers/fakeSession")).liveSessionModule());
 
 describe("Secure Uploads Route Handler (/api/uploads/[...path])", () => {
   let validAuthCookie: string;

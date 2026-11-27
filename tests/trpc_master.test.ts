@@ -5,7 +5,7 @@ import { GET as getHealth } from "@/app/api/health/route";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
 
-describe("tRPC v11 API Routers (Health, Master, Auth)", () => {
+describe("tRPC v11 API Routers (Health, Master)", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
 
   beforeAll(async () => {
@@ -52,25 +52,5 @@ describe("tRPC v11 API Routers (Health, Master, Auth)", () => {
     const v5279 = versions.find((v) => v.version === "V5.2.79");
     expect(v5279).toBeDefined();
     expect(v5279?.isActive).toBe(true);
-  });
-
-  it("auth.login authenticates seeded field officer correctly", async () => {
-    const loginRes = await caller.auth.login({
-      username: "petugas_rivai",
-      password: "password123",
-    });
-
-    expect(loginRes.username).toBe("petugas_rivai");
-    expect(loginRes.role).toBe("PETUGAS_LAPANGAN");
-    expect(loginRes.ulp?.code).toBe("ULP_RIV");
-  });
-
-  it("auth.login rejects invalid password", async () => {
-    await expect(
-      caller.auth.login({
-        username: "petugas_rivai",
-        password: "wrongpassword",
-      })
-    ).rejects.toThrow("Kata sandi salah");
   });
 });

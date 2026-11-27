@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
 import { proxy } from "@/proxy";
-import { signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
+
+vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 
 describe("Task 12.1: Layer 1 Edge Proxy Penetration Test Suite", () => {
   let fieldToken: string;

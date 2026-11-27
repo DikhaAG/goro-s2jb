@@ -13,11 +13,11 @@ test("Next loads src/proxy.ts for protected routes", async ({ request, baseURL }
 
 // API routes enforce their own auth; the proxy must let anonymous calls reach them.
 test("proxy leaves /api routes to their own auth", async ({ request }) => {
-  const response = await request.post("/api/auth/login", {
-    data: { username: "nobody", password: "wrong" },
+  const response = await request.post("/api/auth/sign-in/username", {
+    data: { username: "e2e_nobody", password: "wrong-password" },
     maxRedirects: 0,
   });
 
   expect(response.status()).toBe(401);
-  expect(await response.json()).toHaveProperty("error");
+  expect(await response.json()).toMatchObject({ code: "INVALID_CREDENTIALS" });
 });

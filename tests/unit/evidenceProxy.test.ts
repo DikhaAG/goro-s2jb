@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
 import { GET } from "@/app/api/evidence/proxy/[reviewId]/route";
-import { SESSION_COOKIE_NAME, signSessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, signSessionToken } from "../helpers/fakeSession";
 import prisma from "@/lib/prisma";
+
+vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 
 describe("Smart Evidence Streaming Proxy (GET /api/evidence/proxy/[reviewId])", () => {
   const originalFetch = global.fetch;

@@ -4,13 +4,12 @@ import path from "path";
 import crypto from "crypto";
 import { Role } from "@prisma/client";
 import { BASE_UPLOAD_DIR } from "@/lib/storage";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { session } from "@/server/session/live";
 
 export async function POST(req: NextRequest) {
   try {
     // 1. Layer 3 Authentication Guard: Verify active JWT session
-    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-    const user = token ? await verifySessionToken(token) : null;
+    const user = await session.getUser(req.headers);
 
     if (!user) {
       return NextResponse.json(

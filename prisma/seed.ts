@@ -1,7 +1,7 @@
 import { PrismaClient, Role, ValidationStatus } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import * as crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/goro_s2jb?schema=public',
@@ -9,9 +9,8 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// Helper simple hash for seeding (in real auth we use bcrypt/argon2)
 function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password + '_goro_salt_2026').digest('hex');
+  return bcrypt.hashSync(password, 10);
 }
 
 async function main() {
@@ -153,7 +152,6 @@ async function main() {
       name: 'Ahmad Surveyor Lapangan',
       email: 'petugas_rivai@goro.pln.co.id',
       displayUsername: 'petugas_rivai',
-      passwordHash: defaultPassword,
       role: Role.PETUGAS_LAPANGAN,
       up3Id: createdUp3s['UP3_PLG'],
       ulpId: createdUlps['ULP_RIV'],
@@ -163,7 +161,6 @@ async function main() {
       name: 'Budi Operator Triase',
       email: 'pegawai_operator@goro.pln.co.id',
       displayUsername: 'pegawai_operator',
-      passwordHash: defaultPassword,
       role: Role.PEGAWAI,
       up3Id: createdUp3s['UP3_PLG'],
     },
@@ -172,7 +169,6 @@ async function main() {
       name: 'Ir. Hendra Manager UID S2JB',
       email: 'manager_s2jb@goro.pln.co.id',
       displayUsername: 'manager_s2jb',
-      passwordHash: defaultPassword,
       role: Role.MANAGER,
     },
     {
@@ -180,7 +176,6 @@ async function main() {
       name: 'Super Administrator GORO',
       email: 'superadmin@goro.pln.co.id',
       displayUsername: 'superadmin',
-      passwordHash: defaultPassword,
       role: Role.SUPER_ADMIN,
     },
   ];

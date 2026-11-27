@@ -2,8 +2,11 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Role } from "@prisma/client";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import { createContext } from "@/server/context";
-import { auth, hashPassword, signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { auth, hashPassword } from "@/lib/auth";
+import { createUserFactory, sessionCookieFor } from "../helpers/authUsers";
 import prisma from "@/lib/prisma";
+
+const sessionUsers = createUserFactory("it");
 
 function contextFor(headers: Record<string, string>) {
   const req = new Request("http://localhost:3000/api/trpc/auth.getSession", { headers });
@@ -28,6 +31,7 @@ describe("Sesi Pengguna: tRPC context only trusts a signed session", () => {
 
   afterAll(async () => {
     await prisma.user.delete({ where: { id: superAdminId } }).catch(() => {});
+    await sessionUsers.cleanup();
   });
 
   it("ignores a client-supplied x-user-id header", async () => {
@@ -40,17 +44,13 @@ describe("Sesi Pengguna: tRPC context only trusts a signed session", () => {
     expect(ctx.user).toBeNull();
   });
 
-  it("still resolves the user from a valid goro_session_token", async () => {
-    const token = await signSessionToken({
-      id: superAdminId,
-      username: "ignored_by_context",
-      name: "ignored_by_context",
-      role: Role.SUPER_ADMIN,
-      up3Id: null,
-      ulpId: null,
-    });
-    const ctx = await contextFor({ cookie: `${SESSION_COOKIE_NAME}=${token}` });
-    expect(ctx.user).toMatchObject({ id: superAdminId, role: Role.SUPER_ADMIN });
+  it("still resolves the user from a valid better-auth session cookie", async () => {
+    const admin = await sessionUsers.createUser({ role: Role.SUPER_ADMIN });
+    const cookie = await sessionCookieFor(admin.username);
+
+    const ctx = await contextFor({ cookie: cookie.get("cookie")! });
+
+    expect(ctx.user).toMatchObject({ id: admin.id, role: Role.SUPER_ADMIN });
   });
 });
 

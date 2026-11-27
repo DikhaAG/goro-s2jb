@@ -22,6 +22,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { signOut } from "@/lib/auth-client";
 
 interface GlobalSidebarProps {
   onClose?: () => void;
@@ -160,7 +161,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await signOut();
     } catch {
       // ignore network errors on logout
     } finally {

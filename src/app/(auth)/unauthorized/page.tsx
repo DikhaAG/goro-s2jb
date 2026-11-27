@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldX, LogOut, Home, ArrowLeft } from "lucide-react";
+import { signOut } from "@/lib/auth-client";
 
 function UnauthorizedContent() {
   const router = useRouter();
@@ -12,7 +13,7 @@ function UnauthorizedContent() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await signOut();
       router.push("/login");
       router.refresh();
     } catch {
