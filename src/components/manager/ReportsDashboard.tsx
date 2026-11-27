@@ -431,6 +431,23 @@ export function ReportsDashboard() {
               <Loader2 className="w-6 h-6 animate-spin text-[#00a2b9]" />
               <span className="text-xs text-[#64748b]">Memuat laporan bulanan kumulatif...</span>
             </div>
+          ) : monthlyQuery.isError ? (
+            <div className="p-6 bg-[#fef2f2] border border-[#fecaca] rounded-2xl text-center space-y-3">
+              <p className="text-sm font-semibold text-[#b91c1c]">
+                Gagal memuat laporan bulanan kumulatif.
+              </p>
+              <p className="text-xs text-[#7f1d1d]">
+                {monthlyQuery.error?.message || "Terjadi gangguan koneksi ke server laporan."}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => monthlyQuery.refetch()}
+                className="min-h-[44px] px-4 rounded-xl border-[#fca5a5] bg-white text-[#b91c1c] hover:bg-[#fef2f2] text-xs font-semibold"
+              >
+                Muat Ulang Laporan
+              </Button>
+            </div>
           ) : monthlyQuery.data ? (
             <>
             {monthlyQuery.data.defaultTargetDates.length > 0 && (
@@ -454,6 +471,23 @@ export function ReportsDashboard() {
             <div className="h-64 flex flex-col items-center justify-center space-y-2 bg-white border border-[#e2e8f0] rounded-2xl shadow-xs">
               <Loader2 className="w-6 h-6 animate-spin text-[#00a2b9]" />
               <span className="text-xs text-[#64748b]">Memuat laporan harian...</span>
+            </div>
+          ) : dailyQuery.isError ? (
+            <div className="p-6 bg-[#fef2f2] border border-[#fecaca] rounded-2xl text-center space-y-3">
+              <p className="text-sm font-semibold text-[#b91c1c]">
+                Gagal memuat laporan harian.
+              </p>
+              <p className="text-xs text-[#7f1d1d]">
+                {dailyQuery.error?.message || "Terjadi gangguan koneksi ke server laporan."}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => dailyQuery.refetch()}
+                className="min-h-[44px] px-4 rounded-xl border-[#fca5a5] bg-white text-[#b91c1c] hover:bg-[#fef2f2] text-xs font-semibold"
+              >
+                Muat Ulang Laporan
+              </Button>
             </div>
           ) : dailyQuery.data ? (
             <>

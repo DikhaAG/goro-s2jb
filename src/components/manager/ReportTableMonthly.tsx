@@ -1,8 +1,17 @@
 "use client";
 
-import React from "react";
-import type { Up3GroupMonthly } from "@/server/services/achievementReport";
+import React, { useMemo } from "react";
+import { createColumnHelper, type Row } from "@tanstack/react-table";
+import type { UlpMonthlyRow, Up3GroupMonthly } from "@/server/services/achievementReport";
 import { Badge } from "@/components/ui/badge";
+import {
+  calcReportPercentage,
+  calcReportStatus,
+  getEffectiveFooterTotals,
+  ReportDataTable,
+  sumSubRowField,
+  type ReportSummaryTotals,
+} from "./ReportDataTable";
 
 interface ReportTableMonthlyProps {
   groups: Up3GroupMonthly[];
@@ -16,148 +25,361 @@ interface ReportTableMonthlyProps {
   };
 }
 
+const columnHelper = createColumnHelper<UlpMonthlyRow>();
+
+function computeFilteredMonthlyTotals(rows: Row<UlpMonthlyRow>[]): ReportSummaryTotals {
+  const dailyTarget = sumSubRowField(rows, (r) => r.dailyTarget);
+  const cumulativeTarget = sumSubRowField(rows, (r) => r.cumulativeTarget);
+  const dailyRealization = sumSubRowField(rows, (r) => r.dailyRealization);
+  const cumulativeRealization = sumSubRowField(rows, (r) => r.cumulativeRealization);
+  return {
+    dailyTarget,
+    cumulativeTarget,
+    dailyRealization,
+    cumulativeRealization,
+    percentage: calcReportPercentage(cumulativeRealization, cumulativeTarget),
+    status: calcReportStatus(cumulativeRealization, cumulativeTarget),
+  };
+}
+
 export function ReportTableMonthly({ groups, grandTotal }: ReportTableMonthlyProps) {
-  let counter = 1;
+  const data = useMemo(() => groups.flatMap((group) => group.ulps), [groups]);
+
+  const normalizedGrandTotal = useMemo<ReportSummaryTotals>(
+    () => ({
+      dailyTarget: grandTotal.dailyTarget,
+      cumulativeTarget: grandTotal.cumulativeTarget,
+      dailyRealization: grandTotal.dailyRealization,
+      cumulativeRealization: grandTotal.cumulativeRealization,
+      percentage: grandTotal.cumulativePercentage,
+      status: grandTotal.status,
+    }),
+    [grandTotal]
+  );
+
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
+        id: "no",
+        header: "NO",
+        enableSorting: false,
+        enableHiding: false,
+        meta: {
+          align: "center",
+          headerClassName: "w-12",
+          label: "Nomor",
+        },
+        footer: () => null,
+      }),
+
+      columnHelper.accessor("up3Name", {
+        id: "up3Name",
+        header: "UP3",
+        enableHiding: false,
+        meta: {
+          align: "left",
+          label: "UP3",
+        },
+        cell: (info) => (
+          <span className="font-medium text-[#475569]">{info.getValue()}</span>
+        ),
+        footer: () => null,
+      }),
+
+      columnHelper.accessor("ulpName", {
+        id: "ulpName",
+        header: "NAMA ULP",
+        enableHiding: false,
+        meta: {
+          align: "left",
+          label: "Nama ULP",
+        },
+        cell: (info) => (
+          <span className="font-semibold text-[#0f172a]">{info.getValue()}</span>
+        ),
+        footer: ({ table }) => {
+          const { label } = getEffectiveFooterTotals(table, computeFilteredMonthlyTotals);
+          return (
+            <span className="text-[#006877] font-bold uppercase tracking-wider">
+              {label}
+            </span>
+          );
+        },
+      }),
+
+      columnHelper.accessor("dailyTarget", {
+        id: "dailyTarget",
+        header: "TARGET HARIAN",
+        aggregationFn: "sum",
+        meta: {
+          align: "right",
+          headerClassName: "w-32",
+          label: "Target Harian",
+        },
+        cell: (info) => (
+          <span className="font-mono text-[#64748b]">
+            {info.getValue().toLocaleString("id-ID")}
+          </span>
+        ),
+        aggregatedCell: (info) => (
+          <span className="font-mono text-[#475569]">
+            {Number(info.getValue() ?? 0).toLocaleString("id-ID")}
+          </span>
+        ),
+        footer: ({ table }) => {
+          const { totals } = getEffectiveFooterTotals(table, computeFilteredMonthlyTotals);
+          return (
+            <span className="font-mono text-[#475569]">
+              {totals.dailyTarget.toLocaleString("id-ID")}
+            </span>
+          );
+        },
+      }),
+
+      columnHelper.accessor("cumulativeTarget", {
+        id: "cumulativeTarget",
+        header: "TARGET KUMULATIF",
+        aggregationFn: "sum",
+        meta: {
+          align: "right",
+          headerClassName: "w-36",
+          label: "Target Kumulatif",
+        },
+        cell: (info) => (
+          <span className="font-mono text-[#0f172a]">
+            {info.getValue().toLocaleString("id-ID")}
+          </span>
+        ),
+        aggregatedCell: (info) => (
+          <span className="font-mono text-[#0f172a]">
+            {Number(info.getValue() ?? 0).toLocaleString("id-ID")}
+          </span>
+        ),
+        footer: ({ table }) => {
+          const { totals } = getEffectiveFooterTotals(table, computeFilteredMonthlyTotals);
+          return (
+            <span className="font-mono text-[#0f172a]">
+              {(totals.cumulativeTarget ?? 0).toLocaleString("id-ID")}
+            </span>
+          );
+        },
+      }),
+
+      columnHelper.accessor("dailyRealization", {
+        id: "dailyRealization",
+        header: "REALISASI HARIAN",
+        aggregationFn: "sum",
+        meta: {
+          align: "right",
+          headerClassName: "w-32",
+          label: "Realisasi Harian",
+        },
+        cell: (info) => (
+          <span className="font-mono text-[#64748b]">
+            {info.getValue().toLocaleString("id-ID")}
+          </span>
+        ),
+        aggregatedCell: (info) => (
+          <span className="font-mono text-[#475569]">
+            {Number(info.getValue() ?? 0).toLocaleString("id-ID")}
+          </span>
+        ),
+        footer: ({ table }) => {
+          const { totals } = getEffectiveFooterTotals(table, computeFilteredMonthlyTotals);
+          return (
+            <span className="font-mono text-[#475569]">
+              {totals.dailyRealization.toLocaleString("id-ID")}
+            </span>
+          );
+        },
+      }),
+
+      columnHelper.accessor("cumulativeRealization", {
+        id: "cumulativeRealization",
+        header: "REALISASI KUMULATIF",
+        aggregationFn: "sum",
+        meta: {
+          align: "right",
+          headerClassName: "w-36",
+          label: "Realisasi Kumulatif",
+        },
+        cell: (info) => (
+          <span className="font-mono font-bold text-[#0f172a]">
+            {info.getValue().toLocaleString("id-ID")}
+          </span>
+        ),
+        aggregatedCell: (info) => (
+          <span className="font-mono font-bold text-[#006877]">
+            {Number(info.getValue() ?? 0).toLocaleString("id-ID")}
+          </span>
+        ),
+        footer: ({ table }) => {
+          const { totals } = getEffectiveFooterTotals(table, computeFilteredMonthlyTotals);
+          return (
+            <span className="font-mono font-bold text-sm text-[#006877]">
+              {(totals.cumulativeRealization ?? 0).toLocaleString("id-ID")}
+            </span>
+          );
+        },
+      }),
+
+      columnHelper.accessor("cumulativePercentage", {
+        id: "cumulativePercentage",
+        header: "% KUMULATIF",
+        aggregationFn: (_columnId, leafRows) => {
+          const realization = sumSubRowField(leafRows, (r) => r.cumulativeRealization);
+          const target = sumSubRowField(leafRows, (r) => r.cumulativeTarget);
+          return calcReportPercentage(realization, target);
+        },
+        meta: {
+          align: "right",
+          headerClassName: "w-28",
+          label: "% Kumulatif",
+        },
+        cell: (info) => {
+          const isPass = info.row.original.status === "TERCAPAI";
+          return (
+            <span className={`font-mono font-bold ${isPass ? "text-[#15803d]" : "text-[#b45309]"}`}>
+              {info.getValue().toFixed(1)}%
+            </span>
+          );
+        },
+        aggregatedCell: ({ row }) => {
+          const realization = sumSubRowField(row.subRows, (r) => r.cumulativeRealization);
+          const target = sumSubRowField(row.subRows, (r) => r.cumulativeTarget);
+          const pct = calcReportPercentage(realization, target);
+          const status = calcReportStatus(realization, target);
+          return (
+            <span
+              className={`font-mono font-bold ${
+                status === "TERCAPAI" ? "text-[#15803d]" : "text-[#b45309]"
+              }`}
+            >
+              {pct.toFixed(1)}%
+            </span>
+          );
+        },
+        footer: ({ table }) => {
+          const { totals } = getEffectiveFooterTotals(table, computeFilteredMonthlyTotals);
+          return (
+            <span className="font-mono font-bold text-sm text-[#006877]">
+              {totals.percentage.toFixed(1)}%
+            </span>
+          );
+        },
+      }),
+
+      columnHelper.accessor("status", {
+        id: "status",
+        header: "KETERANGAN",
+        filterFn: "equalsString",
+        aggregationFn: (_columnId, leafRows) => {
+          const realization = sumSubRowField(leafRows, (r) => r.cumulativeRealization);
+          const target = sumSubRowField(leafRows, (r) => r.cumulativeTarget);
+          return calcReportStatus(realization, target);
+        },
+        meta: {
+          align: "center",
+          headerClassName: "w-36",
+          label: "Keterangan",
+        },
+        cell: (info) => {
+          const val = info.getValue();
+          const isPass = val === "TERCAPAI";
+          return (
+            <Badge
+              variant={isPass ? "success" : "warning"}
+              className="text-[10px] py-0 px-2 uppercase font-semibold"
+            >
+              {val}
+            </Badge>
+          );
+        },
+        aggregatedCell: ({ row }) => {
+          const realization = sumSubRowField(row.subRows, (r) => r.cumulativeRealization);
+          const target = sumSubRowField(row.subRows, (r) => r.cumulativeTarget);
+          const status = calcReportStatus(realization, target);
+          return (
+            <Badge
+              variant={status === "TERCAPAI" ? "success" : "warning"}
+              className="text-[10px] py-0 px-2 uppercase font-bold"
+            >
+              {status}
+            </Badge>
+          );
+        },
+        footer: ({ table }) => {
+          const { totals } = getEffectiveFooterTotals(table, computeFilteredMonthlyTotals);
+          return (
+            <Badge
+              variant={totals.status === "TERCAPAI" ? "success" : "warning"}
+              className="text-xs font-bold"
+            >
+              {totals.status}
+            </Badge>
+          );
+        },
+      }),
+    ],
+    []
+  );
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-[#e2e8f0] bg-white shadow-xs">
-      <table className="w-full text-xs text-left border-collapse font-sans">
-        <thead>
-          <tr className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#475569] font-bold uppercase tracking-wider text-[11px]">
-            <th className="py-3 px-3 text-center w-12 border-r border-[#e2e8f0]">NO</th>
-            <th className="py-3 px-4 border-r border-[#e2e8f0]">NAMA ULP</th>
-            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-32">TARGET HARIAN</th>
-            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-36">TARGET KUMULATIF</th>
-            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-32">REALISASI HARIAN</th>
-            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-36">REALISASI KUMULATIF</th>
-            <th className="py-3 px-4 text-right border-r border-[#e2e8f0] w-28">% KUMULATIF</th>
-            <th className="py-3 px-4 text-center w-36">KETERANGAN</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#f1f5f9]">
-          {groups.map((group) => {
-            return (
-              <React.Fragment key={group.up3Id}>
-                {/* UP3 Group Banner */}
-                <tr className="bg-[#f1f5f9] font-bold text-[#006877]">
-                  <td
-                    colSpan={8}
-                    className="py-2.5 px-4 font-mono tracking-wide text-xs border-y border-[#e2e8f0]"
-                  >
-                    🏢 {group.up3Name}
-                  </td>
-                </tr>
-
-                {/* ULP Rows */}
-                {group.ulps.map((ulp) => {
-                  const isPass = ulp.status === "TERCAPAI";
-                  return (
-                    <tr
-                      key={ulp.ulpId}
-                      className="hover:bg-[#f8fafc] transition-colors text-[#334155]"
-                    >
-                      <td className="py-2.5 px-3 text-center font-mono text-[#94a3b8] border-r border-[#f1f5f9]">
-                        {counter++}
-                      </td>
-                      <td className="py-2.5 px-4 font-semibold text-[#0f172a] border-r border-[#f1f5f9]">
-                        {ulp.ulpName}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#f1f5f9]">
-                        {ulp.dailyTarget.toLocaleString("id-ID")}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono text-[#0f172a] border-r border-[#f1f5f9]">
-                        {ulp.cumulativeTarget.toLocaleString("id-ID")}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#f1f5f9]">
-                        {ulp.dailyRealization.toLocaleString("id-ID")}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono font-bold text-[#0f172a] border-r border-[#f1f5f9]">
-                        {ulp.cumulativeRealization.toLocaleString("id-ID")}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono font-bold border-r border-[#f1f5f9]">
-                        <span className={isPass ? "text-[#15803d]" : "text-[#b45309]"}>
-                          {ulp.cumulativePercentage.toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-4 text-center">
-                        <Badge
-                          variant={isPass ? "success" : "warning"}
-                          className="text-[10px] py-0 px-2 uppercase font-semibold"
-                        >
-                          {ulp.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-
-                {/* UP3 Subtotal */}
-                <tr className="bg-[#f8fafc] font-bold border-b border-[#cbd5e1] text-[#0f172a]">
-                  <td className="border-r border-[#e2e8f0]"></td>
-                  <td className="py-2.5 px-4 text-[#006877] border-r border-[#e2e8f0]">
-                    SUBTOTAL {group.up3Name}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#e2e8f0]">
-                    {group.subtotal.dailyTarget.toLocaleString("id-ID")}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[#0f172a] border-r border-[#e2e8f0]">
-                    {group.subtotal.cumulativeTarget.toLocaleString("id-ID")}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[#64748b] border-r border-[#e2e8f0]">
-                    {group.subtotal.dailyRealization.toLocaleString("id-ID")}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[#006877] font-bold border-r border-[#e2e8f0]">
-                    {group.subtotal.cumulativeRealization.toLocaleString("id-ID")}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[#006877] font-bold border-r border-[#e2e8f0]">
-                    {group.subtotal.cumulativePercentage.toFixed(1)}%
-                  </td>
-                  <td className="py-2.5 px-4 text-center">
-                    <span
-                      className={`text-[10px] font-bold ${
-                        group.subtotal.status === "TERCAPAI" ? "text-[#15803d]" : "text-[#b45309]"
-                      }`}
-                    >
-                      {group.subtotal.status}
-                    </span>
-                  </td>
-                </tr>
-              </React.Fragment>
-            );
-          })}
-
-          {/* Grand Total Row */}
-          <tr className="bg-[#e7eeff] font-bold text-[#0f172a] border-t-2 border-[#00a2b9] text-xs">
-            <td className="py-3 px-3 text-center border-r border-[#cbd5e1]"></td>
-            <td className="py-3 px-4 text-[#006877] font-bold uppercase tracking-wider border-r border-[#cbd5e1]">
-              TOTAL UID S2JB
-            </td>
-            <td className="py-3 px-4 text-right font-mono text-[#64748b] border-r border-[#cbd5e1]">
-              {grandTotal.dailyTarget.toLocaleString("id-ID")}
-            </td>
-            <td className="py-3 px-4 text-right font-mono text-[#0f172a] border-r border-[#cbd5e1]">
-              {grandTotal.cumulativeTarget.toLocaleString("id-ID")}
-            </td>
-            <td className="py-3 px-4 text-right font-mono text-[#64748b] border-r border-[#cbd5e1]">
-              {grandTotal.dailyRealization.toLocaleString("id-ID")}
-            </td>
-            <td className="py-3 px-4 text-right font-mono text-[#006877] font-bold text-sm border-r border-[#cbd5e1]">
-              {grandTotal.cumulativeRealization.toLocaleString("id-ID")}
-            </td>
-            <td className="py-3 px-4 text-right font-mono text-[#006877] font-bold text-sm border-r border-[#cbd5e1]">
-              {grandTotal.cumulativePercentage.toFixed(1)}%
-            </td>
-            <td className="py-3 px-4 text-center">
-              <Badge
-                variant={grandTotal.status === "TERCAPAI" ? "success" : "warning"}
-                className="text-xs font-bold"
-              >
-                {grandTotal.status}
-              </Badge>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <ReportDataTable
+      data={data}
+      columns={columns}
+      grandTotal={normalizedGrandTotal}
+      tableLabel="Laporan Bulanan Kumulatif"
+      getRowPercentage={(row) => row.cumulativePercentage}
+      getGroupPercentage={(subRows) => {
+        const realization = sumSubRowField(subRows, (r) => r.cumulativeRealization);
+        const target = sumSubRowField(subRows, (r) => r.cumulativeTarget);
+        return calcReportPercentage(realization, target);
+      }}
+      getGroupStatus={(subRows) => {
+        const realization = sumSubRowField(subRows, (r) => r.cumulativeRealization);
+        const target = sumSubRowField(subRows, (r) => r.cumulativeTarget);
+        return calcReportStatus(realization, target);
+      }}
+      getMobileMetrics={(row) => [
+        { label: "Target Harian", value: row.dailyTarget.toLocaleString("id-ID") },
+        { label: "Realisasi Harian", value: row.dailyRealization.toLocaleString("id-ID") },
+        { label: "Target Kumulatif", value: row.cumulativeTarget.toLocaleString("id-ID") },
+        {
+          label: "Realisasi Kumulatif",
+          value: row.cumulativeRealization.toLocaleString("id-ID"),
+          highlight: true,
+        },
+      ]}
+      getMobileGroupMetrics={(subRows) => {
+        const dailyTarget = sumSubRowField(subRows, (r) => r.dailyTarget);
+        const dailyRealization = sumSubRowField(subRows, (r) => r.dailyRealization);
+        const cumulativeTarget = sumSubRowField(subRows, (r) => r.cumulativeTarget);
+        const cumulativeRealization = sumSubRowField(subRows, (r) => r.cumulativeRealization);
+        return [
+          { label: "Target Harian", value: dailyTarget.toLocaleString("id-ID") },
+          { label: "Realisasi Harian", value: dailyRealization.toLocaleString("id-ID") },
+          { label: "Target Kumulatif", value: cumulativeTarget.toLocaleString("id-ID") },
+          {
+            label: "Realisasi Kumulatif",
+            value: cumulativeRealization.toLocaleString("id-ID"),
+            highlight: true,
+          },
+        ];
+      }}
+      getFilteredTotals={computeFilteredMonthlyTotals}
+      renderMobileFooterMetrics={(totals) => [
+        { label: "Target Harian", value: totals.dailyTarget.toLocaleString("id-ID") },
+        { label: "Realisasi Harian", value: totals.dailyRealization.toLocaleString("id-ID") },
+        {
+          label: "Target Kumulatif",
+          value: (totals.cumulativeTarget ?? 0).toLocaleString("id-ID"),
+        },
+        {
+          label: "Realisasi Kumulatif",
+          value: (totals.cumulativeRealization ?? 0).toLocaleString("id-ID"),
+        },
+      ]}
+    />
   );
 }
