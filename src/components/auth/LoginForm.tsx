@@ -17,10 +17,12 @@ import {
 import type { Role } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth-client";
+import { useSessionCache } from "@/hooks/useSessionCache";
 import { forRole } from "@/lib/routeAuthorization";
 
 export function LoginForm() {
   const router = useRouter();
+  const sessionCache = useSessionCache();
   const searchParams = useSearchParams();
   const redirectParam = searchParams.get("redirect");
 
@@ -57,7 +59,7 @@ export function LoginForm() {
       const role = (data.user as { role?: Role }).role;
       const targetUrl = forRole(role).resolveLanding(redirectParam);
 
-      // Refresh and navigate
+      await sessionCache.afterSignIn();
       router.refresh();
       setTimeout(() => {
         router.push(targetUrl);

@@ -57,3 +57,7 @@ env/
 /logs/*
 !/logs/.gitkeep
 
+
+# Playwright output
+/test-results/
+/playwright-report/

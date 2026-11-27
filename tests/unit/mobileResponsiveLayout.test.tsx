@@ -66,6 +66,10 @@ vi.mock("@/lib/trpc", () => ({
   trpc: trpcProxy,
 }));
 
+vi.mock("@/hooks/useSessionCache", () => ({
+  useSessionCache: () => ({ afterSignIn: vi.fn(), afterSignOut: vi.fn() }),
+}));
+
 import { GlobalSidebar } from "@/components/layout/GlobalSidebar";
 import SystemProcessesPage from "@/app/(admin)/system-processes/page";
 import { RunningProcessTable } from "@/components/admin/system/RunningProcessTable";

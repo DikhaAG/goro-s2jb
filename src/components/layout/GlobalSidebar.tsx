@@ -20,6 +20,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
+import { useSessionCache } from "@/hooks/useSessionCache";
 import { forRole, type NavItemId } from "@/lib/routeAuthorization";
 
 interface GlobalSidebarProps {
@@ -42,6 +43,7 @@ const NAV_ICONS: Record<NavItemId, React.ComponentType<{ className?: string }>> 
 export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const sessionCache = useSessionCache();
   const sessionQuery = trpc.auth.getSession.useQuery();
   const user = sessionQuery.data;
 
@@ -54,6 +56,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
     } catch {
       // ignore network errors on logout
     } finally {
+      sessionCache.afterSignOut();
       router.push("/login");
       router.refresh();
     }

@@ -5,15 +5,18 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldX, LogOut, Home, ArrowLeft } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
+import { useSessionCache } from "@/hooks/useSessionCache";
 
 function UnauthorizedContent() {
   const router = useRouter();
+  const sessionCache = useSessionCache();
   const searchParams = useSearchParams();
   const requiredRole = searchParams.get("required");
 
   const handleLogout = async () => {
     try {
       await signOut();
+      sessionCache.afterSignOut();
       router.push("/login");
       router.refresh();
     } catch {
