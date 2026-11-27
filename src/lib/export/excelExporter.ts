@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { getDailyReport, getMonthlyReport } from "@/server/services/reportService";
+import type { DailyReport, MonthlyReport } from "@/server/services/achievementReport";
 
 /**
  * Generates an Excel workbook conforming 100% to PLN UID S2JB official reference standards.
@@ -9,20 +9,14 @@ import { getDailyReport, getMonthlyReport } from "@/server/services/reportServic
  * Note: Laporan H-1 has been removed per executive directive.
  */
 export async function generateExecutiveWorkbook(params: {
-  date: Date;
-  year: number;
-  month: number;
-  up3Id?: string;
+  daily: DailyReport;
+  monthly: MonthlyReport;
 }) {
-  const { date, year, month, up3Id } = params;
+  const { daily: dailyData, monthly: monthlyData } = params;
+  const { year, month } = monthlyData;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "GORO S2JB 2026 Engine";
   workbook.created = new Date();
-
-  const [dailyData, monthlyData] = await Promise.all([
-    getDailyReport(date, up3Id),
-    getMonthlyReport(year, month, up3Id, date),
-  ]);
 
   const monthNames = [
     "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
@@ -37,11 +31,13 @@ export async function generateExecutiveWorkbook(params: {
     right: { style: "thin", color: { argb: "FFCBD5E1" } },
   };
 
-  const formattedDateStr = date.toLocaleDateString("id-ID", {
+  // Posisi Tanggal is a WIB calendar date; format it as that date, not as a server-local instant.
+  const formattedDateStr = new Date(`${monthlyData.posisiTanggal}T00:00:00Z`).toLocaleDateString("id-ID", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   });
 
   // ==========================================

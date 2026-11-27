@@ -149,7 +149,7 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
     const todayStr = new Date().toISOString().split("T")[0];
 
     // 1. Fetch daily executive report
-    const dailyReport = await managerCaller.report.getDaily({ date: todayStr });
+    const dailyReport = await managerCaller.report.getDaily({ posisiTanggal: todayStr });
     expect(dailyReport).toBeDefined();
     expect(dailyReport.grandTotal.dailyRealization).toBeGreaterThanOrEqual(1);
 
@@ -163,9 +163,8 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
 
     // 2. Generate Excel workbook
     const excelBuffer = await generateExecutiveWorkbook({
-      date: new Date(),
-      year: new Date().getFullYear(),
-      month: new Date().getMonth() + 1,
+      daily: dailyReport,
+      monthly: await managerCaller.report.getMonthly({ posisiTanggal: todayStr }),
     });
 
     expect(excelBuffer).toBeDefined();

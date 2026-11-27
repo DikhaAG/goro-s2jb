@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Up3GroupDaily } from "@/server/services/reportService";
+import type { Up3GroupDaily } from "@/server/services/achievementReport";
 import { Badge } from "@/components/ui/badge";
 
 interface ReportTableDailyProps {

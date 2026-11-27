@@ -1,106 +1,111 @@
 import { router, executiveProcedure } from "../trpc";
 import { z } from "zod";
-import {
-  getDailyReport,
-  getMonthlyReport,
-  getExecutiveKpis,
-  getPacingData,
-  getTargetConfig,
-  saveTargetConfig,
-} from "../services/reportService";
+import { TRPCError } from "@trpc/server";
+import type { Context } from "../context";
+import { createAchievementReport, type AchievementReport } from "../services/achievementReport";
+
+function reportFor(ctx: Context): AchievementReport {
+  return createAchievementReport({ db: ctx.prisma, now: () => new Date() });
+}
+
+function posisiOrThrow(report: AchievementReport, input: string | undefined) {
+  const parsed = report.parsePosisi(input);
+  if (!parsed.ok) throw new TRPCError({ code: "BAD_REQUEST", message: parsed.error });
+  return parsed.posisi;
+}
+
+const posisiInput = z
+  .object({
+    posisiTanggal: z.string().optional(),
+    up3Id: z.string().optional(),
+  })
+  .optional();
 
 export const reportRouter = router({
-  getTargetSettings: executiveProcedure.query(async () => {
-    return getTargetConfig();
-  }),
-
-  updateTargetSettings: executiveProcedure
+  getTargetCalendar: executiveProcedure
     .input(
       z.object({
-        weekdayTarget: z.number().min(0).max(10000),
-        weekendTarget: z.number().min(0).max(10000),
+        year: z.number().int().min(2000).max(2100),
+        month: z.number().int().min(1).max(12),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      return reportFor(ctx).calendar(input.year, input.month);
+    }),
+
+  setTargetCalendar: executiveProcedure
+    .input(
+      z.object({
+        entries: z
+          .array(z.object({ date: z.string(), dailyTarget: z.number() }))
+          .min(1)
+          .max(62),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const updated = await saveTargetConfig(input);
+      const result = await reportFor(ctx).setCalendar(input.entries);
+      if (!result.ok) {
+        const dates = result.dates.join(", ");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            result.reason === "past_dates"
+              ? `Target tanggal yang sudah lewat tidak dapat diubah: ${dates}.`
+              : `Target harus bilangan bulat 0 sampai 10000: ${dates}.`,
+        });
+      }
+
       if (ctx.user?.id) {
         await ctx.prisma.auditLog.create({
           data: {
             userId: ctx.user.id,
-            action: "UPDATE_REPORT_TARGET_SETTINGS",
-            entityType: "REPORT_TARGET",
-            metadata: {
-              weekdayTarget: updated.weekdayTarget,
-              weekendTarget: updated.weekendTarget,
-            },
+            action: "UPDATE_TARGET_CALENDAR",
+            entityType: "TARGET_CALENDAR",
+            metadata: { entries: input.entries },
           },
         });
       }
-      return updated;
+      try {
+        await ctx.redis.set("reports:last_update_timestamp", Date.now().toString());
+      } catch {
+        // Live refresh is best effort; the reports read the calendar directly.
+      }
+      return result;
     }),
 
-  getDaily: executiveProcedure
-    .input(
-      z
-        .object({
-          date: z.string().optional(),
-          up3Id: z.string().optional(),
-        })
-        .optional()
-    )
-    .query(async ({ input }) => {
-      const targetDate = input?.date ? new Date(input.date) : new Date();
-      return getDailyReport(targetDate, input?.up3Id);
-    }),
+  getDaily: executiveProcedure.input(posisiInput).query(async ({ ctx, input }) => {
+    const report = reportFor(ctx);
+    return report.daily(posisiOrThrow(report, input?.posisiTanggal), { up3Id: input?.up3Id });
+  }),
 
-  getMonthly: executiveProcedure
-    .input(
-      z
-        .object({
-          year: z.number().optional(),
-          month: z.number().min(1).max(12).optional(),
-          up3Id: z.string().optional(),
-          asOfDate: z.string().optional(),
-        })
-        .optional()
-    )
-    .query(async ({ input }) => {
-      const now = new Date();
-      const year = input?.year || now.getFullYear();
-      const month = input?.month || now.getMonth() + 1;
-      const asOfDate = input?.asOfDate ? new Date(input.asOfDate) : undefined;
-      return getMonthlyReport(year, month, input?.up3Id, asOfDate);
-    }),
+  getMonthly: executiveProcedure.input(posisiInput).query(async ({ ctx, input }) => {
+    const report = reportFor(ctx);
+    return report.monthly(posisiOrThrow(report, input?.posisiTanggal), { up3Id: input?.up3Id });
+  }),
 
   getKpis: executiveProcedure
-    .input(
-      z
-        .object({
-          date: z.string().optional(),
-        })
-        .optional()
-    )
-    .query(async ({ input }) => {
-      const asOfDate = input?.date ? new Date(input.date) : new Date();
-      return getExecutiveKpis(asOfDate);
+    .input(z.object({ posisiTanggal: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const report = reportFor(ctx);
+      return report.kpis(posisiOrThrow(report, input?.posisiTanggal));
     }),
 
   getPacing: executiveProcedure
     .input(
       z
         .object({
-          year: z.number().optional(),
-          month: z.number().min(1).max(12).optional(),
+          posisiTanggal: z.string().optional(),
           up3Id: z.string().optional(),
           ulpId: z.string().optional(),
         })
         .optional()
     )
-    .query(async ({ input }) => {
-      const now = new Date();
-      const year = input?.year || now.getFullYear();
-      const month = input?.month || now.getMonth() + 1;
-      return getPacingData(year, month, input?.up3Id, input?.ulpId);
+    .query(async ({ ctx, input }) => {
+      const report = reportFor(ctx);
+      return report.pacing(posisiOrThrow(report, input?.posisiTanggal), {
+        up3Id: input?.up3Id,
+        ulpId: input?.ulpId,
+      });
     }),
 
   getSyncStatus: executiveProcedure.query(async ({ ctx }) => {

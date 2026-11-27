@@ -198,15 +198,22 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
     });
 
     it("should allow MANAGER and SUPER_ADMIN to generate Excel spreadsheet", async () => {
-      const reqManager = createRequest("http://localhost:3000/api/export/excel?year=2026&month=1", "GET", managerToken);
+      const reqManager = createRequest("http://localhost:3000/api/export/excel?posisiTanggal=2026-01-31", "GET", managerToken);
       const resManager = await getExcelExport(reqManager);
       expect(resManager.status).toBe(200);
       expect(resManager.headers.get("Content-Type")).toContain("spreadsheetml.sheet");
 
-      const reqAdmin = createRequest("http://localhost:3000/api/export/excel?year=2026&month=1", "GET", adminToken);
+      const reqAdmin = createRequest("http://localhost:3000/api/export/excel?posisiTanggal=2026-01-31", "GET", adminToken);
       const resAdmin = await getExcelExport(reqAdmin);
       expect(resAdmin.status).toBe(200);
       expect(resAdmin.headers.get("Content-Type")).toContain("spreadsheetml.sheet");
+      expect(resAdmin.headers.get("Content-Disposition")).toContain("Laporan_Eksekutif_2026-01-31.xlsx");
+    });
+
+    it("should reject a Posisi Tanggal that is not a YYYY-MM-DD date with 400", async () => {
+      const req = createRequest("http://localhost:3000/api/export/excel?posisiTanggal=2026-13-01", "GET", managerToken);
+      const res = await getExcelExport(req);
+      expect(res.status).toBe(400);
     });
   });
 
@@ -228,15 +235,22 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
     });
 
     it("should allow MANAGER and SUPER_ADMIN to generate printable HTML report", async () => {
-      const reqManager = createRequest("http://localhost:3000/api/export/pdf?year=2026&month=1", "GET", managerToken);
+      const reqManager = createRequest("http://localhost:3000/api/export/pdf?posisiTanggal=2026-01-31", "GET", managerToken);
       const resManager = await getPdfExport(reqManager);
       expect(resManager.status).toBe(200);
       expect(resManager.headers.get("Content-Type")).toContain("text/html");
 
-      const reqAdmin = createRequest("http://localhost:3000/api/export/pdf?year=2026&month=1", "GET", adminToken);
+      const reqAdmin = createRequest("http://localhost:3000/api/export/pdf?posisiTanggal=2026-01-31", "GET", adminToken);
       const resAdmin = await getPdfExport(reqAdmin);
       expect(resAdmin.status).toBe(200);
       expect(resAdmin.headers.get("Content-Type")).toContain("text/html");
+      expect(await resAdmin.text()).toContain("Posisi: Sabtu, 31 Januari 2026");
+    });
+
+    it("should reject a Posisi Tanggal that is not a YYYY-MM-DD date with 400", async () => {
+      const req = createRequest("http://localhost:3000/api/export/pdf?posisiTanggal=kemarin", "GET", managerToken);
+      const res = await getPdfExport(req);
+      expect(res.status).toBe(400);
     });
   });
 

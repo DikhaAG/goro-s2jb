@@ -176,7 +176,7 @@ describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
         userAgent: "test",
       } as any);
 
-      await expect(caller.report.getDaily({ date: "2026-03-01" })).rejects.toThrow(
+      await expect(caller.report.getDaily({ posisiTanggal: "2026-03-01" })).rejects.toThrow(
         "Hanya Manager atau Super Admin yang diizinkan."
       );
     });
