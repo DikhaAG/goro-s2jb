@@ -15,6 +15,7 @@ function getBaseUrl() {
   return `http://localhost:${process.env.PORT ?? 3000}`;
 }
 
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { MigrationGuardProvider } from "@/context/MigrationGuardContext";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -43,7 +44,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <MigrationGuardProvider>{children}</MigrationGuardProvider>
+        <NuqsAdapter>
+          <MigrationGuardProvider>{children}</MigrationGuardProvider>
+        </NuqsAdapter>
       </QueryClientProvider>
     </trpc.Provider>
   );

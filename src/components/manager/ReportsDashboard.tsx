@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { createParser, parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { trpc } from "@/lib/trpc";
 import { ExecutiveKpiCards } from "./ExecutiveKpiCards";
 import { ReportTable } from "./ReportTable";
@@ -23,146 +24,144 @@ import {
   CheckCircle2,
   Sparkles,
   X,
-  Activity,
   Database,
   Clock,
   ArrowRight,
   CalendarDays,
   Info,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { wibToday } from "@/lib/wibDate";
+import { wibDateOf, wibToday } from "@/lib/wibDate";
 
-type ReportTab = "MONTHLY" | "DAILY" | "CHARTS";
+const REPORT_TAB_IDS = ["MONTHLY", "DAILY", "CHARTS"] as const;
+type ReportTab = (typeof REPORT_TAB_IDS)[number];
+
+const REPORT_TABS: { id: ReportTab; label: string; icon: LucideIcon }[] = [
+  { id: "MONTHLY", label: "Laporan Bulanan", icon: ListOrdered },
+  { id: "DAILY", label: "Laporan Harian", icon: Calendar },
+  { id: "CHARTS", label: "Grafik & Pacing", icon: BarChart3 },
+];
+
+/** A "YYYY-MM-DD" date in the URL; anything else falls back to today. */
+const parseAsReportDate = createParser({
+  parse: (value) => (/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null),
+  serialize: (value: string) => value,
+});
+
+const EMPTY_KPIS = {
+  totalCumulativeRealization: 0,
+  totalCumulativeTarget: 0,
+  cumulativeAchievementRate: 0,
+  dailyRealizationToday: 0,
+  dailyTargetToday: 0,
+  top3Ulps: [],
+  bottom3Ulps: [],
+};
+
+const RECENT_BATCH_WINDOW_MS = 30 * 60 * 1000;
+
+const timeFormatter = new Intl.DateTimeFormat("id-ID", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+// Date keys parse as UTC midnight, so format them in UTC to keep the same calendar day.
+const dateKeyFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
 
 export function ReportsDashboard() {
   const utils = trpc.useUtils();
   const sessionQuery = trpc.auth.getSession.useQuery();
   const user = sessionQuery.data;
-
-  const now = new Date();
-  // Posisi Tanggal: the one reporting date. The server derives the month from it.
-  const [selectedDate, setSelectedDate] = useState<string>(() => wibToday(now));
-  const [selectedUp3Id, setSelectedUp3Id] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<ReportTab>("MONTHLY");
-  const [isTargetCalendarOpen, setIsTargetCalendarOpen] = useState<boolean>(false);
-
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(now);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [dismissedBatchId, setDismissedBatchId] = useState<string | null>(null);
-  const prevSyncTimestampRef = useRef<string | null>(null);
-
-  const unitsQuery = trpc.master.getUnits.useQuery();
   const isAuthorized = user?.role === "MANAGER" || user?.role === "SUPER_ADMIN";
 
-  // Watch migration completion and new reviews sync status in real time
+  // Posisi Tanggal: the one reporting date. The server derives the month from it.
+  const [selectedDate, setSelectedDate] = useQueryState("tanggal", parseAsReportDate.withDefault(wibToday()));
+  const [selectedUp3Id, setSelectedUp3Id] = useQueryState("up3", parseAsString.withDefault(""));
+  const [activeTab, setActiveTab] = useQueryState("tab", parseAsStringLiteral(REPORT_TAB_IDS).withDefault("MONTHLY"));
+
+  const [isTargetCalendarOpen, setIsTargetCalendarOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dismissedBatchId, setDismissedBatchId] = useState<string | null>(null);
+
+  const unitsQuery = trpc.master.getUnits.useQuery();
+
+  // The server bumps lastSyncTimestamp whenever reviews or the Kalender Target change.
   const syncStatusQuery = trpc.report.getSyncStatus.useQuery(undefined, {
     enabled: isAuthorized,
     refetchInterval: 3000,
   });
+  const syncStatus = syncStatusQuery.data;
 
-  // Automatically invalidate and update report data when an import completes or reviews are updated
+  const previousSyncTimestamp = useRef<string | null>(null);
   useEffect(() => {
-    if (!syncStatusQuery.data) return;
-    const currentSync = syncStatusQuery.data.lastSyncTimestamp;
-    if (prevSyncTimestampRef.current && prevSyncTimestampRef.current !== currentSync) {
-      utils.report.getKpis.invalidate();
-      utils.report.getDaily.invalidate();
-      utils.report.getMonthly.invalidate();
-      utils.report.getPacing.invalidate();
-      setLastRefreshedAt(new Date());
-    }
-    prevSyncTimestampRef.current = currentSync;
-  }, [syncStatusQuery.data?.lastSyncTimestamp, utils]);
+    const currentSyncTimestamp = syncStatus?.lastSyncTimestamp;
+    if (!currentSyncTimestamp) return;
 
-  // Report Queries with background auto-refresh
-  const kpiQuery = trpc.report.getKpis.useQuery(
-    { posisiTanggal: selectedDate },
-    { enabled: isAuthorized, refetchInterval: 10000 }
-  );
+    const hasNewData =
+      previousSyncTimestamp.current !== null && previousSyncTimestamp.current !== currentSyncTimestamp;
+    previousSyncTimestamp.current = currentSyncTimestamp;
 
-  const dailyQuery = trpc.report.getDaily.useQuery(
-    { posisiTanggal: selectedDate, up3Id: selectedUp3Id || undefined },
-    { enabled: isAuthorized && (activeTab === "DAILY" || activeTab === "CHARTS"), refetchInterval: 10000 }
-  );
+    if (hasNewData) utils.report.invalidate();
+  }, [syncStatus?.lastSyncTimestamp, utils]);
 
-  const monthlyQuery = trpc.report.getMonthly.useQuery(
-    { posisiTanggal: selectedDate, up3Id: selectedUp3Id || undefined },
-    { enabled: isAuthorized && (activeTab === "MONTHLY" || activeTab === "CHARTS"), refetchInterval: 10000 }
-  );
+  const reportInput = { posisiTanggal: selectedDate, up3Id: selectedUp3Id || undefined };
 
-  const pacingQuery = trpc.report.getPacing.useQuery(
-    { posisiTanggal: selectedDate, up3Id: selectedUp3Id || undefined },
-    { enabled: isAuthorized && activeTab === "CHARTS", refetchInterval: 10000 }
+  const kpiQuery = trpc.report.getKpis.useQuery({ posisiTanggal: selectedDate }, { enabled: isAuthorized });
+  const dailyQuery = trpc.report.getDaily.useQuery(reportInput, {
+    enabled: isAuthorized && (activeTab === "DAILY" || activeTab === "CHARTS"),
+  });
+  const monthlyQuery = trpc.report.getMonthly.useQuery(reportInput, {
+    enabled: isAuthorized && (activeTab === "MONTHLY" || activeTab === "CHARTS"),
+  });
+  const pacingQuery = trpc.report.getPacing.useQuery(reportInput, {
+    enabled: isAuthorized && activeTab === "CHARTS",
+  });
+
+  const lastRefreshedAt = Math.max(
+    kpiQuery.dataUpdatedAt,
+    dailyQuery.dataUpdatedAt,
+    monthlyQuery.dataUpdatedAt,
+    pacingQuery.dataUpdatedAt
   );
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([
-      kpiQuery.refetch(),
-      dailyQuery.refetch(),
-      monthlyQuery.refetch(),
-      pacingQuery.refetch(),
-      syncStatusQuery.refetch(),
-    ]);
-    setLastRefreshedAt(new Date());
-    setIsRefreshing(false);
-  };
-
-  const handleJumpToLatestDate = () => {
-    if (!syncStatusQuery.data?.latestApprovedReviewDate) return;
-    const latestDateStr = syncStatusQuery.data.latestApprovedReviewDate.split("T")[0];
-    setSelectedDate(latestDateStr);
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  };
-
-  const formatDateDisplay = (dateStr: string) => {
     try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-    } catch {
-      return dateStr;
+      // Refetches only the report queries that are currently shown.
+      await utils.report.invalidate();
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  const latestBatch = syncStatusQuery.data?.latestBatch;
+  const openExport = (format: "excel" | "pdf") => {
+    const params = new URLSearchParams({ posisiTanggal: selectedDate });
+    if (selectedUp3Id) params.set("up3Id", selectedUp3Id);
+    window.open(`/api/export/${format}?${params}`, "_blank");
+  };
+
+  const latestBatch = syncStatus?.latestBatch;
   const isRecentBatch =
-    latestBatch &&
-    latestBatch.status === "COMPLETED" &&
+    latestBatch?.status === "COMPLETED" &&
     latestBatch.id !== dismissedBatchId &&
     latestBatch.completedAt &&
-    Date.now() - new Date(latestBatch.completedAt).getTime() < 1000 * 60 * 30;
+    Date.now() - new Date(latestBatch.completedAt).getTime() < RECENT_BATCH_WINDOW_MS;
 
-  const latestApprovedDateStr = syncStatusQuery.data?.latestApprovedReviewDate
-    ? syncStatusQuery.data.latestApprovedReviewDate.split("T")[0]
+  // Reports group reviews by WIB day, so the suggested date must be the WIB day too.
+  const latestApprovedDate = syncStatus?.latestApprovedReviewDate
+    ? wibDateOf(new Date(syncStatus.latestApprovedReviewDate))
     : null;
+  const hasNoRealizationOnSelectedDate =
+    dailyQuery.data?.grandTotal.dailyRealization === 0 || kpiQuery.data?.dailyRealizationToday === 0;
   const showDateSuggestion =
-    latestApprovedDateStr &&
-    latestApprovedDateStr !== selectedDate &&
-    (dailyQuery.data?.grandTotal.dailyRealization === 0 || kpiQuery.data?.dailyRealizationToday === 0);
-
-  const handleExportExcel = () => {
-    let url = `/api/export/excel?posisiTanggal=${selectedDate}`;
-    if (selectedUp3Id) url += `&up3Id=${selectedUp3Id}`;
-    window.open(url, "_blank");
-  };
-
-  const handleExportPdf = () => {
-    let url = `/api/export/pdf?posisiTanggal=${selectedDate}`;
-    if (selectedUp3Id) url += `&up3Id=${selectedUp3Id}`;
-    window.open(url, "_blank");
-  };
+    latestApprovedDate !== null && latestApprovedDate !== selectedDate && hasNoRealizationOnSelectedDate;
 
   // RBAC Access Control Guard
   if (sessionQuery.isLoading) {
@@ -173,7 +172,7 @@ export function ReportsDashboard() {
     );
   }
 
-  if (user && user.role !== "MANAGER" && user.role !== "SUPER_ADMIN") {
+  if (user && !isAuthorized) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white border border-[#fed7aa] rounded-2xl p-6 text-center space-y-4 shadow-xs">
@@ -196,16 +195,6 @@ export function ReportsDashboard() {
       </div>
     );
   }
-
-  const kpis = kpiQuery.data || {
-    totalCumulativeRealization: 0,
-    totalCumulativeTarget: 0,
-    cumulativeAchievementRate: 0,
-    dailyRealizationToday: 0,
-    dailyTargetToday: 0,
-    top3Ulps: [],
-    bottom3Ulps: [],
-  };
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
@@ -231,13 +220,15 @@ export function ReportsDashboard() {
 
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-[#475569] text-xs">
               <Clock className="w-3.5 h-3.5 text-[#64748b]" />
-              <span>Terakhir disinkronkan: {formatTime(lastRefreshedAt)}</span>
+              <span>
+                Terakhir disinkronkan: {lastRefreshedAt > 0 ? timeFormatter.format(lastRefreshedAt) : "-"}
+              </span>
             </span>
 
-            {syncStatusQuery.data?.totalApprovedCount !== undefined && (
+            {syncStatus?.totalApprovedCount !== undefined && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f0fdfa] text-[#006877] border border-[#bae6fd] text-xs font-semibold">
                 <Database className="w-3.5 h-3.5 text-[#00a2b9]" />
-                <span>{syncStatusQuery.data.totalApprovedCount.toLocaleString("id-ID")} Ulasan Terverifikasi</span>
+                <span>{syncStatus.totalApprovedCount.toLocaleString("id-ID")} Ulasan Terverifikasi</span>
               </span>
             )}
           </div>
@@ -270,7 +261,7 @@ export function ReportsDashboard() {
           <Button
             size="sm"
             variant="outline"
-            onClick={handleExportExcel}
+            onClick={() => openExport("excel")}
             className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-emerald-500 text-slate-700 hover:text-emerald-700 font-medium rounded-xl shadow-sm transition-all active:scale-[0.98]"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
@@ -280,7 +271,7 @@ export function ReportsDashboard() {
           <Button
             size="sm"
             variant="outline"
-            onClick={handleExportPdf}
+            onClick={() => openExport("pdf")}
             className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-[#00A3E0] text-slate-700 hover:text-[#00A3E0] font-medium rounded-xl shadow-sm transition-all active:scale-[0.98]"
           >
             <Printer className="w-4 h-4 text-[#00A3E0]" />
@@ -329,13 +320,13 @@ export function ReportsDashboard() {
               </span>{" "}
               <span className="text-[#475569]">
                 Terdapat data ulasan terverifikasi pada tanggal{" "}
-                <strong className="text-[#0f172a]">{formatDateDisplay(latestApprovedDateStr)}</strong>.
+                <strong className="text-[#0f172a]">{dateKeyFormatter.format(new Date(latestApprovedDate))}</strong>.
               </span>
             </div>
           </div>
           <button
             type="button"
-            onClick={handleJumpToLatestDate}
+            onClick={() => setSelectedDate(latestApprovedDate)}
             className="min-h-[36px] px-3.5 py-1.5 bg-[#006877] hover:bg-[#00525e] text-white font-bold rounded-xl shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shrink-0 focus-utility-ring"
           >
             <span>Buka Periode Ini</span>
@@ -345,47 +336,28 @@ export function ReportsDashboard() {
       )}
 
       {/* Executive KPI Overview Cards */}
-      <ExecutiveKpiCards kpis={kpis} />
+      <ExecutiveKpiCards kpis={kpiQuery.data ?? EMPTY_KPIS} />
 
       {/* Global Filter Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white border border-[#e2e8f0] rounded-2xl shadow-xs">
         {/* Left Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-[#f8fafc] rounded-xl border border-[#e2e8f0] overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab("MONTHLY")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "MONTHLY"
-                ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
-                : "text-[#64748b] hover:text-[#0f172a]"
-              }`}
-          >
-            <ListOrdered className="w-3.5 h-3.5" />
-            <span>Laporan Bulanan</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("DAILY")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "DAILY"
-                ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
-                : "text-[#64748b] hover:text-[#0f172a]"
-              }`}
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Laporan Harian</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("CHARTS")}
-            className={`px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap ${activeTab === "CHARTS"
-                ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
-                : "text-[#64748b] hover:text-[#0f172a]"
-              }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Grafik & Pacing</span>
-          </button>
+          {REPORT_TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              className={cn(
+                "px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer focus-utility-ring whitespace-nowrap",
+                activeTab === id
+                  ? "bg-[#e7eeff] text-[#006877] border border-[#cfdaf2] font-semibold"
+                  : "text-[#64748b] hover:text-[#0f172a]"
+              )}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Right Filters */}
@@ -413,8 +385,7 @@ export function ReportsDashboard() {
               type="date"
               value={selectedDate}
               onChange={(e) => {
-                const val = e.target.value;
-                if (val) setSelectedDate(val);
+                if (e.target.value) setSelectedDate(e.target.value);
               }}
               className="bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] text-xs rounded-xl px-2.5 py-1.5 min-h-[38px] focus-utility-ring"
             />
@@ -424,97 +395,48 @@ export function ReportsDashboard() {
 
       {/* Tab Content */}
       {activeTab === "MONTHLY" && (
-        <div>
-          {monthlyQuery.isLoading ? (
-            <div className="h-64 flex flex-col items-center justify-center space-y-2 bg-white border border-[#e2e8f0] rounded-2xl shadow-xs">
-              <Loader2 className="w-6 h-6 animate-spin text-[#00a2b9]" />
-              <span className="text-xs text-[#64748b]">Memuat laporan bulanan kumulatif...</span>
-            </div>
-          ) : monthlyQuery.isError ? (
-            <div className="p-6 bg-[#fef2f2] border border-[#fecaca] rounded-2xl text-center space-y-3">
-              <p className="text-sm font-semibold text-[#b91c1c]">
-                Gagal memuat laporan bulanan kumulatif.
-              </p>
-              <p className="text-xs text-[#7f1d1d]">
-                {monthlyQuery.error?.message || "Terjadi gangguan koneksi ke server laporan."}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => monthlyQuery.refetch()}
-                className="min-h-[44px] px-4 rounded-xl border-[#fca5a5] bg-white text-[#b91c1c] hover:bg-[#fef2f2] text-xs font-semibold"
-              >
-                Muat Ulang Laporan
-              </Button>
-            </div>
-          ) : monthlyQuery.data ? (
+        <ReportQueryState
+          query={monthlyQuery}
+          loadingText="Memuat laporan bulanan kumulatif..."
+          errorTitle="Gagal memuat laporan bulanan kumulatif."
+        >
+          {(monthly) => (
             <>
-            {monthlyQuery.data.defaultTargetDates.length > 0 && (
-              <DefaultTargetNote onOpenCalendar={() => setIsTargetCalendarOpen(true)}>
-                {monthlyQuery.data.defaultTargetDates.length} tanggal sejak awal bulan belum diatur di Kalender Target, jadi
-                Target Kumulatif memakai nilai default untuk tanggal itu (hari kerja 50, akhir pekan 20).
-              </DefaultTargetNote>
-            )}
-            <ReportTable
-              mode="monthly"
-              groups={monthlyQuery.data.groups}
-              grandTotal={monthlyQuery.data.grandTotal}
-            />
+              {monthly.defaultTargetDates.length > 0 && (
+                <DefaultTargetNote onOpenCalendar={() => setIsTargetCalendarOpen(true)}>
+                  {monthly.defaultTargetDates.length} tanggal sejak awal bulan belum diatur di Kalender Target, jadi
+                  Target Kumulatif memakai nilai default untuk tanggal itu (hari kerja 50, akhir pekan 20).
+                </DefaultTargetNote>
+              )}
+              <ReportTable mode="monthly" groups={monthly.groups} grandTotal={monthly.grandTotal} />
             </>
-          ) : null}
-        </div>
+          )}
+        </ReportQueryState>
       )}
 
       {activeTab === "DAILY" && (
-        <div>
-          {dailyQuery.isLoading ? (
-            <div className="h-64 flex flex-col items-center justify-center space-y-2 bg-white border border-[#e2e8f0] rounded-2xl shadow-xs">
-              <Loader2 className="w-6 h-6 animate-spin text-[#00a2b9]" />
-              <span className="text-xs text-[#64748b]">Memuat laporan harian...</span>
-            </div>
-          ) : dailyQuery.isError ? (
-            <div className="p-6 bg-[#fef2f2] border border-[#fecaca] rounded-2xl text-center space-y-3">
-              <p className="text-sm font-semibold text-[#b91c1c]">
-                Gagal memuat laporan harian.
-              </p>
-              <p className="text-xs text-[#7f1d1d]">
-                {dailyQuery.error?.message || "Terjadi gangguan koneksi ke server laporan."}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => dailyQuery.refetch()}
-                className="min-h-[44px] px-4 rounded-xl border-[#fca5a5] bg-white text-[#b91c1c] hover:bg-[#fef2f2] text-xs font-semibold"
-              >
-                Muat Ulang Laporan
-              </Button>
-            </div>
-          ) : dailyQuery.data ? (
+        <ReportQueryState
+          query={dailyQuery}
+          loadingText="Memuat laporan harian..."
+          errorTitle="Gagal memuat laporan harian."
+        >
+          {(daily) => (
             <>
-            {dailyQuery.data.targetIsDefault && (
-              <DefaultTargetNote onOpenCalendar={() => setIsTargetCalendarOpen(true)}>
-                Tanggal ini belum diatur di Kalender Target, jadi target harian memakai nilai default (hari kerja 50, akhir pekan 20).
-              </DefaultTargetNote>
-            )}
-            <ReportTable
-              mode="daily"
-              groups={dailyQuery.data.groups}
-              grandTotal={dailyQuery.data.grandTotal}
-            />
+              {daily.targetIsDefault && (
+                <DefaultTargetNote onOpenCalendar={() => setIsTargetCalendarOpen(true)}>
+                  Tanggal ini belum diatur di Kalender Target, jadi target harian memakai nilai default (hari kerja 50, akhir pekan 20).
+                </DefaultTargetNote>
+              )}
+              <ReportTable mode="daily" groups={daily.groups} grandTotal={daily.grandTotal} />
             </>
-          ) : null}
-        </div>
+          )}
+        </ReportQueryState>
       )}
 
       {activeTab === "CHARTS" && (
         <div className="space-y-4">
-          {monthlyQuery.data && (
-            <PerformanceChart groups={monthlyQuery.data.groups} />
-          )}
-
-          {pacingQuery.data && (
-            <CumulativePacingChart pacingData={pacingQuery.data} />
-          )}
+          {monthlyQuery.data && <PerformanceChart groups={monthlyQuery.data.groups} />}
+          {pacingQuery.data && <CumulativePacingChart pacingData={pacingQuery.data} />}
         </div>
       )}
 
@@ -525,6 +447,58 @@ export function ReportsDashboard() {
       />
     </div>
   );
+}
+
+interface ReportQuery<TData> {
+  data: TData | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  error: { message: string } | null;
+  refetch: () => unknown;
+}
+
+/** Shows the loading or error state of a report query, and the report itself once it has data. */
+function ReportQueryState<TData>({
+  query,
+  loadingText,
+  errorTitle,
+  children,
+}: {
+  query: ReportQuery<TData>;
+  loadingText: string;
+  errorTitle: string;
+  children: (data: TData) => React.ReactNode;
+}) {
+  if (query.isLoading) {
+    return (
+      <div className="h-64 flex flex-col items-center justify-center space-y-2 bg-white border border-[#e2e8f0] rounded-2xl shadow-xs">
+        <Loader2 className="w-6 h-6 animate-spin text-[#00a2b9]" />
+        <span className="text-xs text-[#64748b]">{loadingText}</span>
+      </div>
+    );
+  }
+
+  if (query.isError) {
+    return (
+      <div className="p-6 bg-[#fef2f2] border border-[#fecaca] rounded-2xl text-center space-y-3">
+        <p className="text-sm font-semibold text-[#b91c1c]">{errorTitle}</p>
+        <p className="text-xs text-[#7f1d1d]">
+          {query.error?.message || "Terjadi gangguan koneksi ke server laporan."}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => query.refetch()}
+          className="min-h-[44px] px-4 rounded-xl border-[#fca5a5] bg-white text-[#b91c1c] hover:bg-[#fef2f2] text-xs font-semibold"
+        >
+          Muat Ulang Laporan
+        </Button>
+      </div>
+    );
+  }
+
+  if (query.data === undefined) return null;
+  return <div>{children(query.data)}</div>;
 }
 
 /** Says when a report used the fixed default target because the Kalender Target had no entry (ADR-0002). */
