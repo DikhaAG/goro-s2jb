@@ -17,6 +17,8 @@ async function resolveAdminQueue(role: string | undefined, queueName: "import" |
   return ocrQueue;
 }
 
+const REDACTED_FAILURE_REASON = "Job gagal diproses. Detail teknis hanya tersedia untuk Super Admin.";
+
 function batchDeps(ctx: { prisma: any; redis?: any }) {
   return {
     prisma: ctx.prisma,
@@ -153,9 +155,11 @@ export const migrationRouter = router({
         pageSize: z.number().int().min(1).max(50).default(10),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const { ocrQueue } = await import("../queues/ocrQueue");
       const targetQueue = input.queueName === "import" ? importQueue : ocrQueue;
+      // Payloads hold server paths and user ids, and stack traces hold code paths: Super Admin only.
+      const showInternals = ctx.user.role === "SUPER_ADMIN";
 
       const counts = await targetQueue.getJobCounts();
       const isWaitingQuery = input.status === "waiting";
@@ -171,14 +175,14 @@ export const migrationRouter = router({
       const jobs = rawJobs.map((job) => ({
         id: job.id || "unknown",
         name: job.name,
-        data: job.data,
+        data: showInternals ? job.data : null,
         progress: job.progress,
         timestamp: job.timestamp,
         processedOn: job.processedOn,
         finishedOn: job.finishedOn,
         attemptsMade: job.attemptsMade,
-        failedReason: job.failedReason || null,
-        stacktrace: job.stacktrace ? job.stacktrace.slice(0, 3) : [],
+        failedReason: job.failedReason ? (showInternals ? job.failedReason : REDACTED_FAILURE_REASON) : null,
+        stacktrace: showInternals && job.stacktrace ? job.stacktrace.slice(0, 3) : [],
       }));
 
       return {
