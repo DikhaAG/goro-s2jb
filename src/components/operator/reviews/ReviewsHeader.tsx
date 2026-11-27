@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 interface ReviewsHeaderProps {
   operatorName?: string | null;
   userRole: string;
+  /** False hides "Entri Baru" for roles that /intake would turn away. */
+  canCreateEntry: boolean;
   isRefreshing: boolean;
   onRefresh: () => void;
   onExportPage: () => void;
@@ -16,6 +18,7 @@ interface ReviewsHeaderProps {
 export function ReviewsHeader({
   operatorName,
   userRole,
+  canCreateEntry,
   isRefreshing,
   onRefresh,
   onExportPage,
@@ -100,14 +103,15 @@ export function ReviewsHeader({
             <span className="inline xl:hidden">Hapus Semua</span>
           </Button>
 
-          {/* New Review Entry Link */}
-          <Link
-            href="/intake"
-            className="min-h-[44px] h-11 px-4 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs shrink-0"
-          >
-            <FilePlus className="w-4 h-4" />
-            <span>Entri Baru</span>
-          </Link>
+          {canCreateEntry && (
+            <Link
+              href="/intake"
+              className="min-h-[44px] h-11 px-4 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs shrink-0"
+            >
+              <FilePlus className="w-4 h-4" />
+              <span>Entri Baru</span>
+            </Link>
+          )}
         </div>
       </div>
     </div>

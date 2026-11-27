@@ -22,6 +22,7 @@ import { OperatorPipelineStatusBar } from "./OperatorPipelineStatusBar";
 import { ReviewsHeader } from "./ReviewsHeader";
 import { OcrProgressBanner } from "./OcrProgressBanner";
 import { useTriageHotkeys } from "@/hooks/useTriageHotkeys";
+import { forRole } from "@/lib/routeAuthorization";
 import { SessionUser } from "@/types";
 import {
   CLEARED_FILTERS,
@@ -434,6 +435,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       <ReviewsHeader
         operatorName={currentSession?.name}
         userRole={userRole}
+        canCreateEntry={forRole(currentSession?.role).canVisit("/intake")}
         isRefreshing={isListFetching}
         onRefresh={() => refetchList()}
         onExportPage={() => handleExportCsv(false)}
