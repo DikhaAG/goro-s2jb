@@ -3,7 +3,6 @@ import type { EngineBridgeMetrics } from "@/server/services/evidenceVerification
 export type ServiceType =
   | "POSTGRES"
   | "REDIS"
-  | "PYTHON_OCR"
   | "RUST_OCR"
   | "IMPORT_WORKER"
   | "OCR_WORKER"
@@ -183,7 +182,7 @@ export interface OperatorAlertSummary {
 export interface VisionEngineProbeResult {
   status: "up" | "down";
   latencyMs?: number;
-  backend?: "http" | "rust_cli" | "python_venv";
+  backend?: "http" | "rust_cli";
   error?: string;
 }
 

@@ -120,7 +120,7 @@ export function createSystemProcessesRouter(deps: SystemProcessesRouterDeps = {}
     restartWorker: adminProcedure
       .input(
         z.object({
-          workerType: z.enum(["import", "ocr", "python", "rust"]),
+          workerType: z.enum(["import", "ocr", "rust"]),
           reason: z.string().optional(),
         })
       )

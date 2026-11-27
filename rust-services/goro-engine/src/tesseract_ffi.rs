@@ -72,8 +72,6 @@ pub fn find_tessdata_path() -> Option<PathBuf> {
         "/usr/share/tesseract-ocr/4.00/tessdata",
         "/usr/share/tessdata",
         "/usr/local/share/tessdata",
-        "python-services/ocr/tessdata",
-        "../../python-services/ocr/tessdata",
     ];
 
     for c in &candidates {

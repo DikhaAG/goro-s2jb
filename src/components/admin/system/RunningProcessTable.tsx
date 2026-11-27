@@ -49,8 +49,6 @@ export function RunningProcessTable({
         return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#faf5ff] text-[#7e22ce] border border-[#e9d5ff]">Worker OCR</span>;
       case "RUST_OCR":
         return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#ecfdf5] text-[#15803d] border border-[#a7f3d0]">Rust Vision Core</span>;
-      case "PYTHON_OCR":
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#fefce8] text-[#854d0e] border border-[#fef08a]">Python OCR (Fallback)</span>;
       case "WEB_SERVER":
         return <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#f0fdfa] text-[#006877] border border-[#99f6e4]">Web Next.js</span>;
       case "REDIS":
@@ -73,8 +71,7 @@ export function RunningProcessTable({
     const matchesType =
       selectedType === "ALL" ||
       (selectedType === "WORKER" && (p.serviceType === "IMPORT_WORKER" || p.serviceType === "OCR_WORKER")) ||
-      (selectedType === "VISION" && (p.serviceType === "RUST_OCR" || p.serviceType === "PYTHON_OCR")) ||
-      (selectedType === "PYTHON" && (p.serviceType === "RUST_OCR" || p.serviceType === "PYTHON_OCR")) ||
+      (selectedType === "VISION" && p.serviceType === "RUST_OCR") ||
       (selectedType === "DATABASE" && (p.serviceType === "POSTGRES" || p.serviceType === "REDIS")) ||
       (selectedType === "WEB" && p.serviceType === "WEB_SERVER");
 

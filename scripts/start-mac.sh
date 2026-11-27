@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # GORO S2JB - Runner Tunggal Native (macOS / Linux)
-# Menjalankan Python OCR, BullMQ Worker, dan Next.js Web App secara bersamaan
+# Menjalankan Rust Vision Engine, BullMQ Worker, dan Next.js Web App secara bersamaan
 # dengan penanganan cleanup proses otomatis saat tombol Ctrl+C ditekan.
 # ==============================================================================
 
@@ -64,25 +64,8 @@ if [ -f "$RUST_ENGINE" ]; then
     OCR_PID=$!
     CHILD_PIDS+=($OCR_PID)
     echo -e "${GREEN}✓ Rust Native OCR Engine berjalan di latar belakang (PID: $OCR_PID, log: logs/ocr_service.log)${NC}"
-elif [ -d "$PROJECT_DIR/python-services/ocr" ]; then
-    echo -e "${BLUE}[1/4] Menjalankan Microservice Python OCR (Port 8001)...${NC}"
-    OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python"
-    if [ ! -f "$OCR_PYTHON" ]; then
-        OCR_PYTHON="$PROJECT_DIR/python-services/ocr/venv/bin/python3"
-    fi
-    if [ ! -f "$OCR_PYTHON" ]; then
-        OCR_PYTHON="python3"
-    fi
-
-    (
-        cd python-services/ocr
-        "$OCR_PYTHON" -m uvicorn main:app --host 127.0.0.1 --port 8001 --log-level info >> "$PROJECT_DIR/logs/ocr_service.log" 2>&1
-    ) &
-    OCR_PID=$!
-    CHILD_PIDS+=($OCR_PID)
-    echo -e "${GREEN}✓ Microservice Python OCR (Fallback) berjalan di latar belakang (PID: $OCR_PID, log: logs/ocr_service.log)${NC}"
 else
-    echo -e "${YELLOW}⚠️ Binary Rust belum dikompilasi dan python-services tidak ditemukan. Jalankan: npm run rust:build${NC}"
+    echo -e "${YELLOW}⚠️ Binary Rust belum dikompilasi. Jalankan: npm run rust:build${NC}"
 fi
 
 # 3. Menjalankan Background Worker BullMQ OCR

@@ -157,22 +157,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
-/**
- * Universal export conventions for Edge Proxy.
- * Supports Next.js conventions as well as test harness imports.
- */
-export { proxy as middleware };
 export default proxy;
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for static files:
+     * Match all request paths except:
+     * - api (route handlers and tRPC enforce their own auth)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - Static asset file extensions
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

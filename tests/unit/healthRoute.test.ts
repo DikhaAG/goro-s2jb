@@ -125,7 +125,7 @@ describe("GET /api/health logging suppression and OCR timeout budget", () => {
 
     expect(res.status).toBe(200);
     expect(body.status).toBe("degraded");
-    expect(body.services.python_ocr.status).toBe("down");
+    expect(body.services.vision_engine.status).toBe("down");
     expect(infoSpy).not.toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy.mock.calls[0]?.[1]).toMatchObject({
@@ -184,7 +184,7 @@ describe("GET /api/health logging suppression and OCR timeout budget", () => {
 
     expect(capturedSignal).toBeDefined();
     expect(capturedSignal?.aborted).toBe(false);
-    expect(body.services.python_ocr.status).toBe("up");
+    expect(body.services.vision_engine.status).toBe("up");
     expect(body.status).toBe("healthy");
   });
 
@@ -213,7 +213,7 @@ describe("GET /api/health logging suppression and OCR timeout budget", () => {
 
     expect(capturedSignal?.aborted).toBe(true);
     expect(body.status).toBe("degraded");
-    expect(body.services.python_ocr.status).toBe("down");
+    expect(body.services.vision_engine.status).toBe("down");
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -229,7 +229,7 @@ describe("GET /api/health logging suppression and OCR timeout budget", () => {
     expect(body.services.database).toMatchObject({ status: "up" });
     expect(body.services.redis).toMatchObject({ status: "up" });
     expect(body.services.storage).toBeUndefined();
-    expect(body.services.python_ocr).toBeUndefined();
+    expect(body.services.vision_engine).toBeUndefined();
     expect(body.services.network_downloader).toBeUndefined();
     expect(body.services.ocr_bridge).toBeUndefined();
     expect(fetchSpy).not.toHaveBeenCalled();

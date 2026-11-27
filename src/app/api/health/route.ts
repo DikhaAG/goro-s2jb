@@ -82,7 +82,7 @@ export async function GET(request?: Request): Promise<NextResponse> {
             : { error: probe.bullmq.error }),
         }
       : { status: "down" as const },
-    python_ocr: probe.visionEngine
+    vision_engine: probe.visionEngine
       ? formatCoreDep(probe.visionEngine)
       : { status: "down" as const },
     storage: probe.storage

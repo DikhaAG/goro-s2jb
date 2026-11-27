@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # GORO S2JB - Skrip Inisialisasi Pertama Kali (macOS / Linux)
-# Menyiapkan dependensi, virtual environment Python, migrasi DB, dan data seed.
+# Menyiapkan dependensi, Rust Native Vision Engine, migrasi DB, dan data seed.
 # ==============================================================================
 
 set -e
@@ -22,7 +22,7 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
 
 # 1. Pengecekan Prasyarat Software
-echo -e "\n${BLUE}[1/7] Memeriksa Prasyarat Software...${NC}"
+echo -e "\n${BLUE}[1/6] Memeriksa Prasyarat Software...${NC}"
 
 check_command() {
     if ! command -v "$1" &> /dev/null; then
@@ -41,13 +41,10 @@ check_command "psql" "Silakan pasang PostgreSQL via: brew install postgresql@16"
 check_command "redis-cli" "Silakan pasang Redis via: brew install redis" || MISSING_DEPS=1
 check_command "tesseract" "Silakan pasang Tesseract OCR via: brew install tesseract tesseract-lang" || MISSING_DEPS=1
 
-# Cargo (Rust) is primary; Python is optional fallback
 if command -v cargo &> /dev/null; then
     echo -e "${GREEN}✓ cargo terdeteksi (Rust Engine Siap):${NC} $(command -v cargo)"
-elif command -v python3 &> /dev/null; then
-    echo -e "${GREEN}✓ python3 terdeteksi (Fallback OCR):${NC} $(command -v python3)"
 else
-    echo -e "${RED}❌ Baik cargo maupun python3 tidak terdeteksi.${NC} Pasang Rust via https://rustup.rs atau Python 3.11+"
+    echo -e "${RED}❌ cargo tidak terdeteksi.${NC} Pasang Rust via https://rustup.rs"
     MISSING_DEPS=1
 fi
 
@@ -59,7 +56,7 @@ if [ $MISSING_DEPS -ne 0 ]; then
 fi
 
 # Pengecekan Service PostgreSQL & Redis aktif
-echo -e "\n${BLUE}[2/7] Memeriksa Layanan Basis Data & Redis...${NC}"
+echo -e "\n${BLUE}[2/6] Memeriksa Layanan Basis Data & Redis...${NC}"
 if ! nc -z localhost 5432 2>/dev/null; then
     echo -e "${YELLOW}⚠️ PostgreSQL port 5432 tidak aktif. Mencoba mengaktifkan via brew services...${NC}"
     brew services start postgresql@16 || brew services start postgresql || true
@@ -73,7 +70,7 @@ if ! nc -z localhost 6379 2>/dev/null; then
 fi
 
 # 2. Setup File Konfigurasi .env
-echo -e "\n${BLUE}[3/7] Memeriksa File Konfigurasi .env...${NC}"
+echo -e "\n${BLUE}[3/6] Memeriksa File Konfigurasi .env...${NC}"
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
         cp .env.example .env
@@ -95,32 +92,18 @@ else
 fi
 
 # 3. Instalasi Dependensi Node.js
-echo -e "\n${BLUE}[4/7] Memasang Dependensi Node.js (npm install)...${NC}"
+echo -e "\n${BLUE}[4/6] Memasang Dependensi Node.js (npm install)...${NC}"
 npm install
 
 # 4. Kompilasi Engine Rust Native (Prioritas Utama)
 if command -v cargo &> /dev/null; then
-    echo -e "\n${BLUE}[5/8] Mengompilasi Rust Native Vision Engine (goro-engine)...${NC}"
+    echo -e "\n${BLUE}[5/6] Mengompilasi Rust Native Vision Engine (goro-engine)...${NC}"
     npm run rust:build || echo -e "${YELLOW}⚠️ Kompilasi Rust gagal.${NC}"
     echo -e "${GREEN}✓ Engine Rust Native berhasil dikompilasi.${NC}"
 fi
 
-# 5. Setup Python Virtual Environment (Hanya jika folder python-services masih ada)
-OCR_DIR="python-services/ocr"
-if [ -d "$OCR_DIR" ]; then
-    echo -e "\n${BLUE}[6/8] Menyiapkan Python Virtual Environment (Fallback Microservice OCR)...${NC}"
-    if [ ! -d "$OCR_DIR/venv" ]; then
-        echo "Membuat virtual environment di $OCR_DIR/venv..."
-        python3 -m venv "$OCR_DIR/venv"
-    fi
-    echo "Memasang dependensi Python (Pillow, RapidFuzz, Pytesseract, FastAPI, Uvicorn)..."
-    "$OCR_DIR/venv/bin/pip" install --upgrade pip
-    "$OCR_DIR/venv/bin/pip" install -r "$OCR_DIR/requirements.txt"
-    echo -e "${GREEN}✓ Virtual environment Python OCR siap digunakan.${NC}"
-fi
-
 # 6. Inisialisasi Database (Prisma Generate, Migrate, Seed)
-echo -e "\n${BLUE}[7/8] Menyiapkan Skema Database & Data Seed...${NC}"
+echo -e "\n${BLUE}[6/6] Menyiapkan Skema Database & Data Seed...${NC}"
 mkdir -p uploads logs
 
 npx prisma generate

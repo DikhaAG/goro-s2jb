@@ -18,7 +18,6 @@ import type {
 
 const execAsync = promisify(exec);
 const OCR_HEALTH_TIMEOUT_MS = 3500;
-const PROJECT_ROOT = path.resolve(process.cwd());
 
 const portLatencyHistory = new Map<number, number[]>();
 
@@ -170,23 +169,11 @@ function isLoopbackHost(host: string): boolean {
  * Inspects all 4 core services to determine endpoint reachability, latency, and local PID.
  */
 export async function detectServicePorts(): Promise<ServicePortInfo[]> {
-  const isWindows = process.platform === "win32";
-  const rustBin = path.resolve(
-    PROJECT_ROOT,
-    "rust-services",
-    "goro-engine",
-    "target",
-    "release",
-    isWindows ? "goro-engine.exe" : "goro-engine"
-  );
   const pgEndpoint = resolveServiceEndpoint(process.env.DATABASE_URL, "127.0.0.1", 5432);
   const redisEndpoint = resolveServiceEndpoint(process.env.REDIS_URL, "127.0.0.1", 6379);
   const ocrEndpoint = resolveServiceEndpoint(process.env.OCR_SERVICE_URL, "127.0.0.1", 8001);
   const parsedWebPort = parseInt(process.env.PORT || "3000", 10);
   const webPort = !isNaN(parsedWebPort) && parsedWebPort > 0 ? parsedWebPort : 3000;
-
-  const defaultOcrIsRust =
-    fs.existsSync(rustBin) || ocrEndpoint.host.toLowerCase() === "ocr-engine";
 
   const serviceDefs: Array<{
     name: string;
@@ -207,10 +194,10 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
       serviceType: "REDIS",
     },
     {
-      name: defaultOcrIsRust ? "Rust Native Vision Engine" : "Vision & OCR Engine",
+      name: "Rust Native Vision Engine",
       host: ocrEndpoint.host,
       port: ocrEndpoint.port,
-      serviceType: defaultOcrIsRust ? "RUST_OCR" : "PYTHON_OCR",
+      serviceType: "RUST_OCR",
     },
     {
       name: "Next.js Web Application",
@@ -244,7 +231,6 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
 
       let processCommand: string | undefined;
       let finalName = svc.name;
-      let finalType = svc.serviceType;
 
       if (pid) {
         try {
@@ -259,17 +245,11 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
             processCommandText = stdout.trim();
           }
           processCommand = processCommandText || undefined;
-          if (svc.port === ocrEndpoint.port) {
-            if (processCommand?.toLowerCase().includes("goro-engine")) {
-              finalName = "Rust Native Vision Engine (goro-engine)";
-              finalType = "RUST_OCR";
-            } else if (
-              processCommand?.toLowerCase().includes("uvicorn") ||
-              processCommand?.toLowerCase().includes("python")
-            ) {
-              finalName = "Python OCR Microservice (Fallback)";
-              finalType = "PYTHON_OCR";
-            }
+          if (
+            svc.port === ocrEndpoint.port &&
+            processCommand?.toLowerCase().includes("goro-engine")
+          ) {
+            finalName = "Rust Native Vision Engine (goro-engine)";
           }
         } catch {
           // ignore error fetching command
@@ -279,7 +259,7 @@ export async function detectServicePorts(): Promise<ServicePortInfo[]> {
       return {
         name: finalName,
         port: svc.port,
-        serviceType: finalType,
+        serviceType: svc.serviceType,
         status,
         latencyMs: conn.isReachable ? conn.latencyMs : undefined,
         recentLatencies,
@@ -311,9 +291,6 @@ export function classifyServiceType(command: string): {
   if (lower.includes("goro-engine")) {
     return { serviceType: "RUST_OCR", isSafeToKill: true };
   }
-  if (lower.includes("uvicorn") && lower.includes("main:app")) {
-    return { serviceType: "PYTHON_OCR", isSafeToKill: true };
-  }
   if (lower.includes("scripts/start-mac.sh") || lower.includes("scripts/start-windows.ps1")) {
     return { serviceType: "CLI_TASK", isSafeToKill: true };
   }
@@ -341,7 +318,6 @@ function isRelatedProcessCommand(command: string): boolean {
     command.includes("ocrWorker.ts") ||
     command.includes("worker:import") ||
     command.includes("worker:ocr") ||
-    (command.includes("uvicorn") && command.includes("main:app")) ||
     command.includes("redis-server") ||
     command.includes("postgres")
   );
@@ -381,7 +357,7 @@ export async function listAppProcesses(): Promise<ManagedProcess[]> {
   try {
     if (process.platform === "win32") {
       try {
-        const psCmd = `powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and ($_.CommandLine -like '*goro*' -or $_.CommandLine -like '*node*' -or $_.CommandLine -like '*python*' -or $_.CommandLine -like '*redis*' -or $_.CommandLine -like '*postgres*') } | Select-Object ProcessId, ParentProcessId, CommandLine | ConvertTo-Json -Compress"`;
+        const psCmd = `powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and ($_.CommandLine -like '*goro*' -or $_.CommandLine -like '*node*' -or $_.CommandLine -like '*redis*' -or $_.CommandLine -like '*postgres*') } | Select-Object ProcessId, ParentProcessId, CommandLine | ConvertTo-Json -Compress"`;
         const { stdout } = await execAsync(psCmd);
         if (!stdout.trim()) return [];
 
@@ -557,28 +533,7 @@ export function createDefaultVisionEngineProbe(): VisionEngineProbePort {
             isUp = true;
             backend = "rust_cli";
           } catch {
-            // Fall through to Python fallback check
-          }
-        }
-      }
-
-      if (!isUp) {
-        const venvPaths = [
-          path.resolve(process.cwd(), "python-services/ocr/venv/bin/python3"),
-          path.resolve(process.cwd(), "python-services/ocr/venv/bin/python"),
-          path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python.exe"),
-          path.resolve(process.cwd(), "python-services/ocr/venv/Scripts/python"),
-        ];
-        const foundVenv = venvPaths.find((p) => fs.existsSync(p));
-        if (foundVenv) {
-          try {
-            await execAsync(`"${foundVenv}" -c "import rapidfuzz, PIL; print('OK')"`, {
-              timeout: 3000,
-            });
-            isUp = true;
-            backend = "python_venv";
-          } catch {
-            // Unavailable
+            // Binary present but not runnable
           }
         }
       }

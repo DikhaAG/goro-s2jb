@@ -11,7 +11,7 @@ import {
   OcrProcessingStatus,
 } from "@prisma/client";
 
-describe("Comprehensive End-to-End Integration Test Suite: UI + Python OCR Worker + Database", () => {
+describe("Comprehensive End-to-End Integration Test Suite: UI + Rust Vision Engine Worker + Database", () => {
   let adminUser: { id: string; username: string; name: string; role: Role };
   let operatorUser: { id: string; username: string; name: string; role: Role };
   let fieldUser: { id: string; username: string; name: string; role: Role };
@@ -90,7 +90,7 @@ describe("Comprehensive End-to-End Integration Test Suite: UI + Python OCR Worke
       expect(userCount).toBeGreaterThan(0);
     });
 
-    it("should successfully execute Python OCR engine directly via adapter and extract valid results", async () => {
+    it("should successfully execute the Rust vision engine directly via adapter and extract valid results", async () => {
       const ocrResult = await rustVisionEngineAdapter.extractAndMatch(sampleImagePath, "Budi Santoso");
 
       expect(ocrResult.success).toBe(true);
@@ -134,8 +134,8 @@ describe("Comprehensive End-to-End Integration Test Suite: UI + Python OCR Worke
       expect(dbReview?.submittedById).toBe(fieldUser.id);
     });
 
-    it("should process evidence through Python OCR worker and update review metrics", async () => {
-      // Simulate worker executing Python OCR on the newly ingested record
+    it("should process evidence through the OCR worker and update review metrics", async () => {
+      // Simulate worker executing OCR on the newly ingested record
       const ocrResult = await rustVisionEngineAdapter.extractAndMatch(sampleImagePath, "Budi Santoso");
 
       const updatedReview = await prisma.ratingReview.update({

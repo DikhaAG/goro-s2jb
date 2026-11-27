@@ -23,11 +23,6 @@ dist/
 rust-services/goro-engine/target/
 **/target/
 
-# Local Python environments
-python-services/ocr/venv/
-**/__pycache__/
-*.pyc
-
 # Local runtime data and secrets
 .env
 .env.local
