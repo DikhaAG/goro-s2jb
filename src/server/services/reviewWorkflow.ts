@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { enqueueEvidenceVerification } from "./evidenceVerification";
+import { isValidUnitPair } from "./unitHierarchy";
 
 export interface ReviewActor {
   id: string;
@@ -252,10 +253,7 @@ async function assertValidUnitPair(
   errorMessage: string
 ): Promise<void> {
   if (!up3Id || !ulpId) return;
-  const validUlp = await db.uLP.findFirst({
-    where: { id: ulpId, up3Id },
-  });
-  if (!validUlp) {
+  if (!(await isValidUnitPair(db, up3Id, ulpId))) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: errorMessage,
