@@ -13,9 +13,9 @@ Dokumen ini merupakan panduan resmi standar UI/UX antarmuka pengguna untuk selur
 ### Palet Warna Utama (Core Tokens)
 | Token / Kegunaan | Kode Hex / Tailwind | Deskripsi & Implementasi |
 | :--- | :--- | :--- |
-| **Primary Brand Teal** | `#006877` | Warna primer korporat PLN untuk teks utama tombol, ikon aktif, judul aksen. |
-| **Accent Primary Teal** | `#00a2b9` | Warna tombol utama (`bg-[#00a2b9]`), cincin fokus (`focus-utility-ring`), active borders. |
-| **Primary Hover** | `#008c9f` | Status hover tombol primer (`hover:bg-[#008c9f]`). |
+| **Primary Brand Teal** | `#006877` | Warna primer korporat PLN: latar tombol utama bertulisan putih (`bg-[#006877]`, 6.47:1), teks tautan, ikon aktif, judul aksen. |
+| **Accent Primary Teal** | `#00a2b9` | Cincin fokus (`focus-utility-ring`), active borders, ikon. Jangan dipakai sebagai latar teks putih atau warna teks berukuran normal: putih di atas `#00a2b9` hanya 3.06:1, gagal WCAG AA (4.5:1). |
+| **Primary Hover** | `#004e5a` | Status hover tombol primer (`hover:bg-[#004e5a]`). |
 | **PLN Cyan Accent** | `#00A3E0` | Gradien sekunder dan badge aksen listrik. |
 | **Dark Carbon Text** | `#0f172a` (`slate-900`) | Warna tipografi heading, nama entitas, dan nilai teks kontras tinggi (WCAG AAA). |
 | **Secondary Body Text** | `#334155` (`slate-700`) | Teks deskripsi, label formulir, keterangan data. |
@@ -67,7 +67,7 @@ Header utama modul operasional wajib menggunakan kontainer kartu putih rounded-2
    - Deskripsi: `text-xs md:text-sm text-[#475569] mt-0.5`.
 3. **Operator Status Pill & Action Buttons:**
    - Status Aktif: Indikator hijau berkedip (`span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"`), teks identitas operator.
-   - Tombol Tindakan Primer: `min-h-[44px] px-4 py-2 bg-[#00a2b9] hover:bg-[#008c9f] text-white text-xs font-bold rounded-xl shadow-xs transition-all focus-utility-ring`.
+   - Tombol Tindakan Primer: `min-h-[44px] px-4 py-2 bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-bold rounded-xl shadow-xs transition-all focus-utility-ring`.
    - Tombol Tindakan Sekunder: `min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#f8fafc] text-[#334155] border border-[#cbd5e1] text-xs font-bold rounded-xl transition-all focus-utility-ring`.
 
 ### B. KPI Ribbon & Ringkasan Metrik
@@ -106,7 +106,7 @@ Baris ringkasan metrik menggunakan grid kartu interaktif:
 ### E. Floating Action Bars & Toasts
 Aksi massal (*bulk actions*) dan notifikasi status pemulihan (*undo toast*) wajib menggunakan palet gelap melayang:
 - Kontainer: `fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl px-4 py-2.5 flex items-center gap-3`.
-- Badge Counter: `px-2 py-0.5 rounded-md bg-[#00a2b9] text-white text-xs font-bold font-mono`.
+- Badge Counter: `px-2 py-0.5 rounded-md bg-[#006877] text-white text-xs font-bold font-mono`.
 - Tombol Aksi: `min-h-[36px] px-3 py-1.5 rounded-xl font-bold text-xs transition-colors`.
 
 ### F. Modal Dialog & Drawer Detail

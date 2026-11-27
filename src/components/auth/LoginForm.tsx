@@ -181,7 +181,7 @@ export function LoginForm() {
           <Button
             type="submit"
             disabled={isLoading || isLocked}
-            className="w-full min-h-[44px] h-11 bg-[#00a2b9] hover:bg-[#008b9e] text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer mt-2"
+            className="w-full min-h-[44px] h-11 font-semibold rounded-xl flex items-center justify-center gap-2 transition cursor-pointer mt-2"
           >
             {isLoading ? (
               <>

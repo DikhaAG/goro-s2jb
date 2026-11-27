@@ -26,7 +26,7 @@ export default function NotFound() {
 
         <div className="pt-2 border-t border-[#f1f5f9]">
           <Link href="/">
-            <Button className="w-full min-h-[44px] h-11 bg-[#00a2b9] hover:bg-[#008b9e] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition cursor-pointer">
+            <Button className="w-full min-h-[44px] h-11 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition cursor-pointer">
               <Home className="w-4 h-4" />
               <span>Kembali ke Beranda Sistem</span>
             </Button>

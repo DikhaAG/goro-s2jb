@@ -12,13 +12,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles =
       "inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00a2b9] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none active:scale-[0.98]";
 
+    // White text needs #006877 (6.47:1); #00a2b9 only reaches 3.06:1, so it stays on focus rings and borders.
     const variantStyles = {
       default:
-        "bg-[#00a2b9] text-white hover:bg-[#0097a7] rounded-lg font-semibold shadow-xs",
+        "bg-[#006877] text-white hover:bg-[#004e5a] rounded-lg font-semibold shadow-xs",
       teal:
-        "bg-[#00a2b9] text-white hover:bg-[#0097a7] rounded-lg font-semibold shadow-xs",
+        "bg-[#006877] text-white hover:bg-[#004e5a] rounded-lg font-semibold shadow-xs",
       tactical:
-        "bg-[#00a2b9] text-white hover:bg-[#0097a7] rounded-lg font-semibold shadow-xs",
+        "bg-[#006877] text-white hover:bg-[#004e5a] rounded-lg font-semibold shadow-xs",
       destructive:
         "bg-[#ef4444] text-white hover:bg-[#dc2626] rounded-lg font-semibold shadow-xs",
       outline:
@@ -28,7 +29,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ghost:
         "text-[#64748b] hover:text-[#1e293b] hover:bg-[#f1f5f9] rounded-lg",
       link:
-        "text-[#00a2b9] font-semibold underline-offset-4 hover:underline p-0 h-auto",
+        "text-[#006877] font-semibold underline-offset-4 hover:underline p-0 h-auto",
     };
 
     // Minimum 44px tap target for default and lg (R-03 compliance)

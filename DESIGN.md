@@ -152,7 +152,8 @@ The aesthetic builds upon **Modern Utility Minimalism**: flat, high-legibility p
 ## Colors
 The color architecture relies on a calm, high-efficiency palette with clear functional semantics:
 
-- **Primary Teal (`#00A2B9`, `#0097A7`)**: Serves as the primary operational signature for interactive buttons (e.g., "Aktifkan", quick top-ups), actionable links ("Atur"), active navigation states, and primary feature tile glyphs.
+- **Primary Teal (`#006877`, hover `#004E5A`)**: Fill for interactive buttons that carry white text (e.g., "Aktifkan", quick top-ups) and the color of text links ("Atur"). White on `#006877` measures 6.47:1.
+- **Accent Teal (`#00A2B9`, `#0097A7`)**: Focus rings, active borders, active navigation states, and primary feature tile glyphs. Never use it behind or as normal-size text: white on `#00A2B9` measures 3.06:1, below the WCAG AA minimum of 4.5:1.
 - **Carbon & Slate Neutrals (`#0F172A`, `#1E293B`, `#64748B`)**: Text levels must strictly prioritize legibility. Headings and critical numeric data use dark carbon (`#0F172A` / `#1E293B`), while subtitles, timestamps, and metadata employ secondary muted slate (`#64748B`).
 - **Semantic Notification System**:
   - **Neutral / Info**: Pastel slate tint `#F8FAFC` paired with a solid dark slate `#475569` circular icon (used for routine bills, meter reports, and account updates).
@@ -207,11 +208,11 @@ Curvature forms the foundational visual DNA of the interface:
 
 ### 2. Balance & Floating Utility Card
 - **Surface**: Background `#FFFFFF`, border-radius `rounded-2xl`, elevation `shadow-sm`, padding `1.25rem`.
-- **Header**: Flex row with account label, balance display, and high-visibility `#00A2B9` primary button with white text and `rounded-lg` borders.
+- **Header**: Flex row with account label, balance display, and high-visibility `#006877` primary button with white text and `rounded-lg` borders.
 
 ### 3. Action Buttons & Links
-- **Primary Action**: Solid `#00A2B9` teal, white typography, hover fill `#0097A7`, active scale 0.98.
-- **Tertiary/Header Link ("Atur")**: Pure text button, `#00A2B9`, weight `600`, hover underline or subtle opacity shift.
+- **Primary Action**: Solid `#006877` teal, white typography, hover fill `#004E5A`, active scale 0.98.
+- **Tertiary/Header Link ("Atur")**: Pure text button, `#006877`, weight `600`, hover underline or subtle opacity shift.
 - **Interactive Promo Action ("Get rewards...")**: Distinctive `#F97316` bold text with inline gift icon accent.
 
 ### 4. Service Matrix Navigation Tile
