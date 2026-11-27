@@ -40,6 +40,5 @@ logs/
 
 # Documentation and temporary files
 docs/
-graphify-out/
 tests/
 
