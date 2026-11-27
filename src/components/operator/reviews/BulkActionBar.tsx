@@ -42,7 +42,7 @@ export function BulkActionBar({
       <div className="bg-[#0f172a] text-white rounded-2xl px-4 py-2.5 shadow-2xl border border-[#334155] flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
         {/* Selection Count Pill */}
         <div className="flex items-center gap-2 pr-2 sm:pr-3 border-r border-[#334155]">
-          <div className="w-6 h-6 rounded-lg bg-[#00a2b9] text-white flex items-center justify-center font-bold font-mono text-xs shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-[#00a2b9] text-[#0f172a] flex items-center justify-center font-bold font-mono text-xs shrink-0">
             {selectedCount}
           </div>
           <span className="text-xs font-semibold text-[#f8fafc] whitespace-nowrap hidden sm:inline">

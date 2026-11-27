@@ -99,7 +99,7 @@ export function ModuleErrorFallback({
           <button
             type="button"
             onClick={() => reset()}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008b9e] text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer focus-utility-ring"
+            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer focus-utility-ring"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>{retryLabel}</span>

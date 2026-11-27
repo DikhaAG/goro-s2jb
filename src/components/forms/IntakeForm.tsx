@@ -351,7 +351,7 @@ export function IntakeForm() {
           <button
             type="submit"
             disabled={isBusy}
-            className="w-full sm:w-auto min-w-[220px] px-5 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008c9f] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all focus-utility-ring cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto min-w-[220px] px-5 py-2.5 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all focus-utility-ring cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
               <span className="flex items-center space-x-2">
@@ -527,7 +527,7 @@ function EvidenceImageField({
                 type="button"
                 disabled={isProcessing}
                 onClick={() => cameraInputRef.current?.click()}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-[#00a2b9] hover:bg-[#008c9f] text-white transition-all focus-utility-ring cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-[#006877] hover:bg-[#004e5a] text-white transition-all focus-utility-ring cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
               >
                 <Camera className="w-4 h-4" />
                 <span>Foto Ulang Kamera</span>
@@ -584,7 +584,7 @@ function EvidenceImageField({
                   ref={image.ref}
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
-                  className="min-h-[44px] flex-1 px-4 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008c9f] text-white text-xs font-bold shadow-xs transition-all focus-utility-ring cursor-pointer inline-flex items-center justify-center gap-2"
+                  className="min-h-[44px] flex-1 px-4 py-2.5 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-bold shadow-xs transition-all focus-utility-ring cursor-pointer inline-flex items-center justify-center gap-2"
                 >
                   <Camera className="w-4 h-4 shrink-0" />
                   <span>Ambil Foto Kamera</span>

@@ -124,7 +124,7 @@ export function WorkerDetailInspector({
                     onClick={() => onResumeQueue(key)}
                     disabled={isActionLoading}
                     title="Lanjutkan antrean worker ini"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#00a2b9] hover:bg-[#008c9f] transition-all focus-utility-ring disabled:opacity-50 cursor-pointer shadow-xs min-h-[36px]"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#006877] hover:bg-[#004e5a] transition-all focus-utility-ring disabled:opacity-50 cursor-pointer shadow-xs min-h-[36px]"
                   >
                     <PlayCircle className="w-3.5 h-3.5" />
                     <span>Lanjutkan</span>

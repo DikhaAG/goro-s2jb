@@ -776,7 +776,7 @@ export function ReviewDetailDrawer({
                     <button
                       type="submit"
                       disabled={updateMutation.isPending || isSubmitting}
-                      className="min-h-[40px] h-10 px-5 rounded-xl bg-[#00a2b9] hover:bg-[#008b9e] text-white text-xs font-semibold inline-flex items-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer focus-utility-ring active:scale-95"
+                      className="min-h-[40px] h-10 px-5 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-semibold inline-flex items-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer focus-utility-ring active:scale-95"
                     >
                       {updateMutation.isPending || isSubmitting ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />

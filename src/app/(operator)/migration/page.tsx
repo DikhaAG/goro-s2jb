@@ -99,7 +99,7 @@ function MigrationHeader({ isRefreshing, onRefresh }: MigrationHeaderProps) {
 
         <Link
           href="/migration/monitor"
-          className="min-h-[44px] px-4 py-2 bg-[#00a2b9] hover:bg-[#008c9f] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 focus-utility-ring"
+          className="min-h-[44px] px-4 py-2 bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 focus-utility-ring"
         >
           <Activity className="w-4 h-4 text-white" />
           <span>Pusat Pemantauan Worker</span>

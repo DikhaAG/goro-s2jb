@@ -178,7 +178,7 @@ export function BulkReassignUnitModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="min-h-[44px] h-11 px-5 rounded-xl bg-[#00a2b9] hover:bg-[#008b9e] text-white text-xs font-semibold inline-flex items-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer focus-utility-ring"
+              className="min-h-[44px] h-11 px-5 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-semibold inline-flex items-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer focus-utility-ring"
             >
               {isSubmitting ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />

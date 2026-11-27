@@ -201,7 +201,7 @@ export function QueueJobsManager({
               onClick={() => onStatusChange(tab.value as any)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all focus-utility-ring shrink-0 cursor-pointer min-h-[36px] ${
                 status === tab.value
-                  ? "bg-[#00a2b9] text-white shadow-xs"
+                  ? "bg-[#006877] text-white shadow-xs"
                   : "bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9] border border-[#cbd5e1]"
               }`}
             >

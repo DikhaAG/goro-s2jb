@@ -132,7 +132,7 @@ export function BatchProgressCard({
                 type="button"
                 onClick={() => onResume(batch.id)}
                 disabled={isActionLoading}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#00a2b9] hover:bg-[#008c9f] transition-all focus-utility-ring min-h-[38px] cursor-pointer disabled:opacity-50 shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#006877] hover:bg-[#004e5a] transition-all focus-utility-ring min-h-[38px] cursor-pointer disabled:opacity-50 shadow-xs"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>Lanjutkan</span>

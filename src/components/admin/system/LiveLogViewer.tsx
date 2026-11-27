@@ -99,7 +99,7 @@ export function LiveLogViewer({
               onClick={() => onSelectFile(item.fileName)}
               className={`text-xs px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 min-h-[44px] shrink-0 whitespace-nowrap focus-utility-ring cursor-pointer ${
                 activeFile === item.fileName
-                  ? "bg-[#00a2b9] text-white shadow-xs"
+                  ? "bg-[#00a2b9] text-[#0f172a] shadow-xs"
                   : "bg-[#1e293b] text-[#94a3b8] hover:text-white hover:bg-[#334155]"
               }`}
             >

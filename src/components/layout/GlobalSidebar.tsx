@@ -193,7 +193,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
             <Link
               href="/login"
               onClick={onClose}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-[#00a2b9] hover:bg-[#008b9e] text-white transition-colors focus-utility-ring shadow-xs min-h-[44px]"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-[#006877] hover:bg-[#004e5a] text-white transition-colors focus-utility-ring shadow-xs min-h-[44px]"
             >
               <LogIn className="w-4 h-4" />
               <span>Masuk ke Sistem</span>

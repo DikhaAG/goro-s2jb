@@ -197,7 +197,7 @@ export function BatchMonitorTable({
                 onClick={() => onStatusChange(opt.value)}
                 className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 focus-utility-ring cursor-pointer ${
                   selectedStatus === opt.value
-                    ? "bg-[#00a2b9] text-white shadow-xs"
+                    ? "bg-[#006877] text-white shadow-xs"
                     : "bg-white text-[#475569] border border-[#cbd5e1] hover:bg-[#f1f5f9]"
                 }`}
               >

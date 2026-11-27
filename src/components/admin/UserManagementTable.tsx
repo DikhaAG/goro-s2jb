@@ -333,7 +333,7 @@ export function UserManagementTable({ onRefreshTrigger }: UserManagementTablePro
             <button
               type="button"
               onClick={() => setTempPasswordModal(null)}
-              className="w-full min-h-[44px] py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008b9e] text-white font-semibold text-xs transition focus-utility-ring cursor-pointer shadow-xs"
+              className="w-full min-h-[44px] py-2.5 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white font-semibold text-xs transition focus-utility-ring cursor-pointer shadow-xs"
             >
               Tutup & Bagikan ke Pengguna
             </button>

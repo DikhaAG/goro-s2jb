@@ -351,7 +351,7 @@ export function EvidenceLightbox({
               <div className="p-4 border-t border-slate-800 bg-slate-950 flex gap-2">
                 <Button
                   variant="default"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 h-10"
+                  className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white gap-1.5 h-10"
                   onClick={() => {
                     onApprove?.(item.id);
                     onClose();
@@ -362,7 +362,7 @@ export function EvidenceLightbox({
                 </Button>
                 <Button
                   variant="destructive"
-                  className="flex-1 bg-red-600 hover:bg-red-500 text-white gap-1.5 h-10"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white gap-1.5 h-10"
                   onClick={() => {
                     onReject?.(item.id);
                     onClose();

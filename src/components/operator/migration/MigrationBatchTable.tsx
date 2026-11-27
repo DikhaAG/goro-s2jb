@@ -713,7 +713,7 @@ export function MigrationBatchTable({
               className={cn(
                 "min-h-[34px] px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 border",
                 statusFilter === "COMPLETED"
-                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                  ? "bg-emerald-700 text-white border-emerald-700 shadow-xs"
                   : "bg-white text-[#475569] border-[#cbd5e1] hover:bg-slate-50"
               )}
             >

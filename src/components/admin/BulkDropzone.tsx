@@ -403,7 +403,7 @@ export function BulkDropzone() {
             type="button"
             onClick={handleStartImport}
             disabled={!file || isProcessing || isUploading}
-            className="w-full sm:w-auto min-w-[220px] px-5 py-2.5 rounded-xl bg-[#00a2b9] hover:bg-[#008c9f] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all focus-utility-ring cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto min-w-[220px] px-5 py-2.5 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white min-h-[44px] text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all focus-utility-ring cursor-pointer disabled:opacity-50"
           >
             {isUploading ? (
               <>
