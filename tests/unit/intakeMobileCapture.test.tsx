@@ -36,7 +36,6 @@ import {
   normalizeEvidenceImageFile,
   normalizeFilenameForMime,
 } from "@/lib/client/evidenceImageNormalizer";
-import { validateEvidenceMime } from "@/lib/storage";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -81,14 +80,12 @@ describe("evidenceImageNormalizer utilities", () => {
     expect(isSupportedImageCandidate({ name: "doc.pdf", type: "application/pdf" })).toBe(false);
   });
 
-  it("normalizes filenames cleanly to match storage MIME validation", () => {
+  it("normalizes HEIC and extensionless filenames to .jpg", () => {
     const jpgName = normalizeFilenameForMime("IMG_9981.HEIC", "image/jpeg");
     expect(jpgName).toBe("IMG_9981.jpg");
-    expect(validateEvidenceMime("image/jpeg", jpgName)).toBe(true);
 
     const noExtName = normalizeFilenameForMime("100004512", "image/jpeg");
     expect(noExtName).toBe("100004512.jpg");
-    expect(validateEvidenceMime("image/jpeg", noExtName)).toBe(true);
   });
 
   it("preserves dimensions <= 1920px and downscales high-megapixel photos while keeping aspect ratio", () => {
@@ -184,7 +181,6 @@ describe("evidenceImageNormalizer utilities", () => {
     expect(res.height).toBe(1440);
     expect(res.mimeType).toBe("image/jpeg");
     expect(res.filename).toBe("IMG_0420.jpg");
-    expect(validateEvidenceMime(res.mimeType, res.filename)).toBe(true);
     expect(closeSpy).toHaveBeenCalled();
     expect(fillRectSpy).toHaveBeenCalledWith(0, 0, 1920, 1440);
   });

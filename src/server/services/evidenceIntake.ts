@@ -1,16 +1,14 @@
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
 import { ReviewSource, type PrismaClient } from "@prisma/client";
 import { detectImageMimeFromBuffer } from "./evidenceAcquisition";
 import { enqueueEvidenceVerification } from "./evidenceVerification";
 import { isValidUnitPair } from "./unitHierarchy";
+import { discardEvidenceImage, storeEvidenceImage, type EvidenceImageType } from "@/lib/storage";
 import { ACCEPTED_IMAGE_TYPES, MAX_FILE_SIZE_BYTES } from "@/lib/validators/intake";
 
 export interface IntakeOfficer {
   id: string;
-  up3Id: string | null;
-  ulpId: string | null;
+  up3Id?: string | null;
+  ulpId?: string | null;
 }
 
 export interface EvidenceSubmission {
@@ -42,12 +40,6 @@ export interface EvidenceIntakeDeps {
   enqueueVerification?: typeof enqueueEvidenceVerification;
 }
 
-const EXTENSION_BY_MIME = {
-  "image/jpeg": ".jpg",
-  "image/png": ".png",
-  "image/webp": ".webp",
-} as const;
-
 /**
  * Pengumpulan Eviden: accepts or rejects an Eviden Ulasan submitted by a Petugas Lapangan.
  */
@@ -55,23 +47,10 @@ export function createEvidenceIntake(deps: EvidenceIntakeDeps) {
   const { prisma, storageRoot, uploadQuota, enqueueVerification = enqueueEvidenceVerification } = deps;
 
   /** The bytes decide the type. Client-declared MIME types and filenames are never trusted. */
-  function detectEvidenceType(bytes: Buffer): keyof typeof EXTENSION_BY_MIME | null {
+  function detectEvidenceType(bytes: Buffer): EvidenceImageType | null {
     if (bytes.length === 0 || bytes.length > MAX_FILE_SIZE_BYTES) return null;
     const mime = detectImageMimeFromBuffer(bytes);
     return mime && ACCEPTED_IMAGE_TYPES.includes(mime) ? mime : null;
-  }
-
-  async function storeEvidence(bytes: Buffer, mime: keyof typeof EXTENSION_BY_MIME, entryDate: string) {
-    const [yyyy, mm, dd] = entryDate.split("-");
-    const relativeDir = path.posix.join("evidence", yyyy, mm, dd);
-    const filename = `eviden_${Date.now()}_${crypto.randomBytes(8).toString("hex")}${EXTENSION_BY_MIME[mime]}`;
-    await fs.promises.mkdir(path.join(storageRoot, relativeDir), { recursive: true });
-    await fs.promises.writeFile(path.join(storageRoot, relativeDir, filename), bytes);
-    return path.posix.join(relativeDir, filename);
-  }
-
-  async function discardEvidence(evidencePath: string) {
-    await fs.promises.rm(path.join(storageRoot, evidencePath), { force: true }).catch(() => {});
   }
 
   return {
@@ -88,7 +67,7 @@ export function createEvidenceIntake(deps: EvidenceIntakeDeps) {
         return { ok: false, reason: "invalid-unit-pair" };
       }
 
-      const evidencePath = await storeEvidence(input.evidence, mime, input.entryDate);
+      const evidencePath = await storeEvidenceImage(storageRoot, input.evidence, mime, input.entryDate);
 
       let review: { id: string };
       try {
@@ -111,7 +90,7 @@ export function createEvidenceIntake(deps: EvidenceIntakeDeps) {
           },
         });
       } catch (err) {
-        await discardEvidence(evidencePath);
+        await discardEvidenceImage(storageRoot, evidencePath);
         throw err;
       }
 
@@ -126,7 +105,7 @@ export function createEvidenceIntake(deps: EvidenceIntakeDeps) {
         );
       } catch (cause) {
         await prisma.ratingReview.delete({ where: { id: review.id } }).catch(() => {});
-        await discardEvidence(evidencePath);
+        await discardEvidenceImage(storageRoot, evidencePath);
         return { ok: false, reason: "queue-unavailable", cause };
       }
 

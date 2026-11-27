@@ -1,115 +1,73 @@
+import { TRPCError } from "@trpc/server";
 import { router, fieldProcedure } from "../trpc";
 import { intakeReviewSchema } from "@/lib/validators/intake";
-import { deleteEvidenceFile, saveEvidenceFile } from "@/lib/storage";
-import { enqueueEvidenceVerification } from "../services/evidenceVerification";
-import { TRPCError } from "@trpc/server";
-import { ReviewSource } from "@prisma/client";
+import { BASE_UPLOAD_DIR } from "@/lib/storage";
 import { rateLimits } from "@/server/rateLimits/live";
+import { createEvidenceIntake, type IntakeRejection } from "../services/evidenceIntake";
+
+/** Accepts a data URL (`data:image/jpeg;base64,...`) or bare base64. */
+function decodeEvidence(base64OrDataUrl: string): Buffer {
+  const payload = base64OrDataUrl.startsWith("data:")
+    ? base64OrDataUrl.slice(base64OrDataUrl.indexOf(",") + 1)
+    : base64OrDataUrl;
+  return Buffer.from(payload, "base64");
+}
+
+function toTrpcError(rejection: IntakeRejection): TRPCError {
+  switch (rejection.reason) {
+    case "quota-exceeded":
+      return new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: "Batas frekuensi unggahan terlampaui (maksimal 60 berkas per menit).",
+      });
+    case "invalid-file":
+      return new TRPCError({
+        code: "BAD_REQUEST",
+        message: "File eviden harus berupa gambar JPG/PNG/WebP dengan ukuran maksimal 5 MB",
+      });
+    case "invalid-unit-pair":
+      return new TRPCError({
+        code: "BAD_REQUEST",
+        message: "ULP yang dipilih tidak berada di bawah UP3 terkait.",
+      });
+    case "queue-unavailable":
+      console.error("Pengumpulan Eviden: Verifikasi Eviden could not be queued:", rejection.cause);
+      return new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Sistem verifikasi sedang tidak tersedia, entri dibatalkan. Silakan coba lagi.",
+      });
+  }
+}
 
 export const intakeRouter = router({
-  submitReview: fieldProcedure
-    .input(intakeReviewSchema)
-    .mutation(async ({ ctx, input }) => {
-      // 1. Anti-Flooding Upload Rate Limiter (max 60/min per field officer)
-      const quota = await rateLimits.uploadQuota.consume(ctx.user.id);
-      if (!quota.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Batas frekuensi unggahan terlampaui (maksimal 60 berkas per menit).",
-        });
-      }
+  submitReview: fieldProcedure.input(intakeReviewSchema).mutation(async ({ ctx, input }) => {
+    const startTime = Date.now();
+    const intake = createEvidenceIntake({
+      prisma: ctx.prisma,
+      storageRoot: BASE_UPLOAD_DIR,
+      uploadQuota: rateLimits.uploadQuota,
+    });
 
-      const startTime = Date.now();
+    const { evidenceImageBase64, ...fields } = input;
+    let result;
+    try {
+      result = await intake.submit(ctx.user, { ...fields, evidence: decodeEvidence(evidenceImageBase64) });
+    } catch (err) {
+      console.error("Pengumpulan Eviden failed unexpectedly:", err);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Gagal menyimpan ulasan eviden lapangan",
+      });
+    }
 
-      try {
-        // 1. Decode base64 evidence image
-        let buffer: Buffer;
-        let mimeType = "image/jpeg";
-        let rawFilename = input.evidenceFilename || "eviden.jpg";
+    if (!result.ok) throw toTrpcError(result);
 
-        if (input.evidenceImageBase64.startsWith("data:")) {
-          const parts = input.evidenceImageBase64.split(";base64,");
-          const mimeMatch = parts[0].match(/data:(.*)/);
-          if (mimeMatch) {
-            mimeType = mimeMatch[1];
-          }
-          buffer = Buffer.from(parts[1], "base64");
-        } else {
-          buffer = Buffer.from(input.evidenceImageBase64, "base64");
-        }
-
-        // 2. Save physical file to local storage (uploads/evidence/YYYY/MM/DD)
-        const entryDateObj = new Date(input.entryDate);
-        const { relativePath } = await saveEvidenceFile(
-          buffer,
-          rawFilename,
-          mimeType,
-          entryDateObj
-        );
-
-        // 3. Insert record to database with PENDING status
-        const review = await ctx.prisma.ratingReview.create({
-          data: {
-            timestamp: new Date(),
-            up3Id: input.up3Id,
-            ulpId: input.ulpId,
-            playstoreReviewerName: input.playstoreReviewerName,
-            entryDate: entryDateObj,
-            evidenceImagePath: relativePath,
-            appVersionId: input.appVersionId,
-            originalReviewerName: input.originalReviewerName || input.playstoreReviewerName,
-            reviewerCategory: input.reviewerCategory || "Pelanggan",
-            fieldNotes: input.fieldNotes || null,
-            validationStatus: "PENDING",
-            isDuplicate: false,
-            source: ReviewSource.INTAKE,
-            submittedById: ctx.user?.id || null,
-          },
-        });
-
-        // 4. Asynchronously dispatch job via Verifikasi Eviden enqueue seam; compensate on queue failure
-        try {
-          await enqueueEvidenceVerification(
-            {
-              reviewId: review.id,
-              evidenceImagePath: relativePath,
-              expectedReviewerName: input.playstoreReviewerName,
-            },
-            {
-              priority: 1,
-              markQueuedInDb: false,
-              prismaClient: ctx.prisma,
-            }
-          );
-        } catch (queueErr: any) {
-          console.error("Gagal mengirim job OCR ke antrian BullMQ/Redis:", queueErr);
-          await ctx.prisma.ratingReview.delete({ where: { id: review.id } }).catch(() => {});
-          await deleteEvidenceFile(relativePath).catch(() => {});
-          const queueMsg = queueErr?.message || "";
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Antrian OCR (Redis/BullMQ) gagal dipicu sehingga entri dibatalkan: ${queueMsg}. Pastikan Redis yang berjalan minimal versi 6.2.0 (versi 5.0.x tidak didukung BullMQ v5).`,
-          });
-        }
-
-        const latencyMs = Date.now() - startTime;
-
-        return {
-          success: true,
-          reviewId: review.id,
-          evidencePath: relativePath,
-          latencyMs,
-          message: "Eviden rating berhasil dicatat dan sedang diverifikasi sistem",
-        };
-      } catch (err: any) {
-        if (err instanceof TRPCError) {
-          throw err;
-        }
-        console.error("Error submitting field review:", err);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: err.message || "Gagal menyimpan ulasan eviden lapangan",
-        });
-      }
-    }),
+    return {
+      success: true,
+      reviewId: result.reviewId,
+      evidencePath: result.evidencePath,
+      latencyMs: Date.now() - startTime,
+      message: "Eviden rating berhasil dicatat dan sedang diverifikasi sistem",
+    };
+  }),
 });

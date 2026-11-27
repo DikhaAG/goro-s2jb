@@ -41,7 +41,6 @@ export const intakeReviewSchema = z.object({
         message: "File eviden harus berupa gambar JPG/PNG/WebP dengan ukuran maksimal 5 MB",
       }
     ),
-  evidenceFilename: z.string().optional().default("eviden.jpg"),
 });
 
 export type IntakeReviewInput = z.infer<typeof intakeReviewSchema>;
