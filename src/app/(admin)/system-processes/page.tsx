@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
   Terminal,
   RefreshCw,
   Sparkles,
-  CheckCircle2,
-  AlertTriangle,
   Layers,
   FileText,
   Activity,
@@ -28,7 +27,6 @@ export default function SystemProcessesPage() {
   const [activeLogFile, setActiveLogFile] = useState<string>("worker_import.log");
   const [lineCount, setLineCount] = useState<number>(100);
   const [processToKill, setProcessToKill] = useState<ManagedProcessItem | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Queries with auto-polling
   const overviewQuery = trpc.systemProcesses.getSystemOverview.useQuery(undefined, {
@@ -52,42 +50,36 @@ export default function SystemProcessesPage() {
   // Mutations
   const terminateMutation = trpc.systemProcesses.terminateProcess.useMutation({
     onSuccess: (data) => {
-      setFeedback({ type: "success", message: data.message });
+      toast.success(data.message);
       setProcessToKill(null);
       processesQuery.refetch();
       overviewQuery.refetch();
-      setTimeout(() => setFeedback(null), 4000);
     },
     onError: (err) => {
-      setFeedback({ type: "error", message: err.message });
-      setTimeout(() => setFeedback(null), 5000);
+      toast.error(err.message, { duration: 5000 });
     },
   });
 
   const restartMutation = trpc.systemProcesses.restartWorker.useMutation({
     onSuccess: (data) => {
-      setFeedback({ type: "success", message: data.message });
+      toast.success(data.message);
       processesQuery.refetch();
       overviewQuery.refetch();
       logsQuery.refetch();
-      setTimeout(() => setFeedback(null), 4000);
     },
     onError: (err) => {
-      setFeedback({ type: "error", message: err.message });
-      setTimeout(() => setFeedback(null), 5000);
+      toast.error(err.message, { duration: 5000 });
     },
   });
 
   const cleanOrphansMutation = trpc.systemProcesses.cleanOrphanProcesses.useMutation({
     onSuccess: (data) => {
-      setFeedback({ type: "success", message: data.message });
+      toast.success(data.message);
       processesQuery.refetch();
       overviewQuery.refetch();
-      setTimeout(() => setFeedback(null), 4000);
     },
     onError: (err) => {
-      setFeedback({ type: "error", message: err.message });
-      setTimeout(() => setFeedback(null), 5000);
+      toast.error(err.message, { duration: 5000 });
     },
   });
 
@@ -167,36 +159,13 @@ export default function SystemProcessesPage() {
             type="button"
             onClick={handleRefreshAll}
             disabled={overviewQuery.isFetching}
-            className="flex-1 sm:flex-none justify-center min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-[#00a2b9] hover:bg-[#008c9f] text-white shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-none justify-center min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-[#006877] hover:bg-[#004e5a] text-white shadow-xs transition-all flex items-center gap-2 focus-utility-ring cursor-pointer disabled:opacity-50"
           >
             <RotateCw className={`w-3.5 h-3.5 shrink-0 ${overviewQuery.isFetching ? "animate-spin text-white" : "text-white"}`} />
             <span>Segarkan Status</span>
           </button>
         </div>
       </div>
-
-      {/* Floating Dark Toast Notification */}
-      {feedback && (
-        <div
-          role="status"
-          className="fixed bottom-4 sm:bottom-6 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 max-w-[calc(100vw-2rem)] sm:max-w-md z-40 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl px-4 sm:px-5 py-3 flex items-center justify-between gap-3 animate-in fade-in duration-200"
-        >
-          {feedback.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          ) : (
-            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-          )}
-          <span className="text-xs font-semibold flex-1 min-w-0 break-words">{feedback.message}</span>
-          <button
-            type="button"
-            onClick={() => setFeedback(null)}
-            aria-label="Tutup notifikasi"
-            className="text-slate-400 hover:text-white font-bold min-w-[36px] min-h-[36px] flex items-center justify-center text-xs focus-utility-ring rounded-lg shrink-0"
-          >
-            x
-          </button>
-        </div>
-      )}
 
       {/* 2. Topologi Pipeline Flow Visualizer (Hulu ke Hilir) */}
       <PipelineFlowVisualizer />

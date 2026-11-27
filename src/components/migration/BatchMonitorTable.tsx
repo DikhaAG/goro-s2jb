@@ -41,15 +41,26 @@ export interface BatchItem {
   };
 }
 
+export const BATCH_STATUS_FILTERS = [
+  "ALL",
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "FAILED",
+  "PAUSED",
+  "CANCELLED",
+] as const;
+export type BatchStatusFilter = (typeof BATCH_STATUS_FILTERS)[number];
+
 interface BatchMonitorTableProps {
   batches: BatchItem[];
   totalBatches: number;
   currentPage: number;
   pageSize: number;
   totalPages: number;
-  selectedStatus: string;
+  selectedStatus: BatchStatusFilter;
   onPageChange: (newPage: number) => void;
-  onStatusChange: (status: string) => void;
+  onStatusChange: (status: BatchStatusFilter) => void;
   onCancelBatch: (batchId: string) => Promise<void>;
   onResumeBatch: (batchId: string) => Promise<void>;
   isSuperAdmin: boolean;
@@ -74,7 +85,7 @@ export function BatchMonitorTable({
   const [errorLogTarget, setErrorLogTarget] = useState<BatchItem | null>(null);
   const [isAborting, setIsAborting] = useState(false);
 
-  const statusOptions = [
+  const statusOptions: { label: string; value: BatchStatusFilter }[] = [
     { label: "Semua", value: "ALL" },
     { label: "Sedang Berjalan", value: "PROCESSING" },
     { label: "Selesai", value: "COMPLETED" },

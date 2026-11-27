@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CalendarDays,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Lock,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { wibToday } from "@/lib/wibDate";
 import { cn } from "@/lib/utils";
@@ -30,8 +30,6 @@ interface TargetCalendarModalProps {
   /** The dashboard's Posisi Tanggal; the modal opens on its month. */
   initialDate: string;
 }
-
-type Feedback = { kind: "success" | "error"; text: string } | null;
 
 function parseTarget(raw: string): number | null {
   const trimmed = raw.trim();
@@ -57,13 +55,11 @@ export function TargetCalendarModal({ isOpen, onClose, initialDate }: TargetCale
   // Unsaved edits keyed by date, kept across month changes until saved or discarded.
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pattern, setPattern] = useState({ weekday: "50", weekend: "20" });
-  const [feedback, setFeedback] = useState<Feedback>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setView(monthOf(initialDate));
     setDrafts({});
-    setFeedback(null);
     closeButtonRef.current?.focus();
   }, [isOpen, initialDate]);
 
@@ -81,10 +77,9 @@ export function TargetCalendarModal({ isOpen, onClose, initialDate }: TargetCale
   const saveMutation = trpc.report.setTargetCalendar.useMutation({
     onSuccess: (result) => {
       setDrafts({});
-      setFeedback({
-        kind: "success",
-        text: `Kalender Target tersimpan untuk ${result.changedDates.length} tanggal. Laporan sudah memakai nilai baru.`,
-      });
+      toast.success(
+        `Kalender Target tersimpan untuk ${result.changedDates.length} tanggal. Laporan sudah memakai nilai baru.`
+      );
       utils.report.getTargetCalendar.invalidate();
       utils.report.getDaily.invalidate();
       utils.report.getMonthly.invalidate();
@@ -92,7 +87,7 @@ export function TargetCalendarModal({ isOpen, onClose, initialDate }: TargetCale
       utils.report.getPacing.invalidate();
     },
     onError: (err) => {
-      setFeedback({ kind: "error", text: err.message || "Kalender Target gagal disimpan. Coba lagi." });
+      toast.error(err.message || "Kalender Target gagal disimpan. Coba lagi.");
     },
   });
 
@@ -103,7 +98,6 @@ export function TargetCalendarModal({ isOpen, onClose, initialDate }: TargetCale
   const storedByDate = new Map(days.map((d) => [d.date, d]));
 
   function setDraft(date: string, raw: string) {
-    setFeedback(null);
     setDrafts((prev) => {
       const next = { ...prev };
       const stored = storedByDate.get(date);
@@ -383,22 +377,6 @@ export function TargetCalendarModal({ isOpen, onClose, initialDate }: TargetCale
 
         {/* Footer */}
         <div className="space-y-3 border-t border-[#e2e8f0] bg-[#f8fafc] px-4 py-3 sm:px-6 sm:py-4">
-          {feedback && (
-            <div
-              role={feedback.kind === "error" ? "alert" : "status"}
-              className={cn(
-                "flex items-start gap-2 text-xs",
-                feedback.kind === "error" ? "text-[#93000a]" : "text-[#15803d]"
-              )}
-            >
-              {feedback.kind === "error" ? (
-                <AlertCircle className="mt-px h-4 w-4 shrink-0" aria-hidden />
-              ) : (
-                <CheckCircle2 className="mt-px h-4 w-4 shrink-0" aria-hidden />
-              )}
-              <span>{feedback.text}</span>
-            </div>
-          )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-[#475569]" aria-live="polite">
@@ -421,10 +399,7 @@ export function TargetCalendarModal({ isOpen, onClose, initialDate }: TargetCale
               {changeCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setDrafts({});
-                    setFeedback(null);
-                  }}
+                  onClick={() => setDrafts({})}
                   className="min-h-[44px] flex-1 rounded-xl border border-[#cbd5e1] bg-white px-4 text-xs font-bold text-[#334155] hover:bg-[#f1f5f9] focus-utility-ring cursor-pointer sm:flex-none"
                 >
                   Batalkan perubahan
