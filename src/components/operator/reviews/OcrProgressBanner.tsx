@@ -18,11 +18,11 @@ export function OcrProgressBanner({ activeCount, onShowProcessing }: OcrProgress
         <div>
           <div className="text-xs font-bold text-[#0f172a] flex items-center gap-2">
             <span>Background OCR Worker & Image Proxy Sedang Berjalan</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#00a2b9] text-white">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#006877] text-white">
               {activeCount} baris dalam pemrosesan
             </span>
           </div>
-          <p className="text-xs text-[#64748b] mt-0.5">
+          <p className="text-xs text-[#475569] mt-0.5">
             Citra eviden beresolusi tinggi sedang diunduh dari Google Drive dan diekstraksi teksnya secara asinkron. Halaman otomatis memperbarui progress.
           </p>
         </div>

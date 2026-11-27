@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, FilePlus, FolderKanban, RefreshCw, Trash2, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ReviewsHeaderProps {
@@ -60,46 +61,49 @@ export function ReviewsHeader({
           </div>
 
           {/* Refresh Button */}
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="min-h-[44px] h-11 px-4 rounded-xl bg-white border border-[#cbd5e1] hover:bg-[#f8fafc] text-[#334155] text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs disabled:opacity-50 shrink-0"
             title="Segarkan Data Tabel"
+            className="gap-2 text-xs font-semibold text-[#334155] rounded-xl shadow-xs shrink-0"
           >
             <RefreshCw
               className={cn("w-4 h-4 text-[#006877]", isRefreshing && "animate-spin")}
             />
             <span>Segarkan</span>
-          </button>
+          </Button>
 
           {/* Export Current Page Button */}
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onExportPage}
-            className="min-h-[44px] h-11 px-4 rounded-xl bg-white border border-[#cbd5e1] hover:bg-[#f8fafc] text-[#334155] text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs shrink-0"
             title="Ekspor ulasan pada halaman saat ini ke CSV"
+            className="gap-2 text-xs font-semibold text-[#334155] rounded-xl shadow-xs shrink-0"
           >
             <Download className="w-4 h-4 text-[#64748b]" />
             <span>Ekspor CSV</span>
-          </button>
+          </Button>
 
           {/* Purge All Reviews Button */}
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onPurgeAll}
-            className="min-h-[44px] h-11 px-3.5 rounded-xl bg-[#fef2f2] border border-[#fecaca] hover:bg-[#fee2e2] text-[#dc2626] hover:text-[#b91c1c] text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs shrink-0"
             title="Hapus atau tolak seluruh data ulasan sekaligus"
+            className="gap-2 px-3.5 text-xs font-semibold rounded-xl shadow-xs shrink-0 bg-[#fef2f2] border-[#fecaca] hover:bg-[#fee2e2] text-[#b91c1c]"
           >
             <Trash2 className="w-4 h-4 text-[#dc2626]" />
             <span className="hidden xl:inline">Hapus Seluruh Data</span>
             <span className="inline xl:hidden">Hapus Semua</span>
-          </button>
+          </Button>
 
           {/* New Review Entry Link */}
           <Link
             href="/intake"
-            className="min-h-[44px] h-11 px-4 rounded-xl bg-[#00a2b9] hover:bg-[#008b9e] text-white text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs shrink-0"
+            className="min-h-[44px] h-11 px-4 rounded-xl bg-[#006877] hover:bg-[#004e5a] text-white text-xs font-semibold flex items-center gap-2 transition cursor-pointer focus-utility-ring shadow-xs shrink-0"
           >
             <FilePlus className="w-4 h-4" />
             <span>Entri Baru</span>
