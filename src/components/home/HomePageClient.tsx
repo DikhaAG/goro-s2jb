@@ -327,7 +327,7 @@ export function HomePageClient() {
             </div>
 
             {unitsQuery.isLoading ? (
-              <div className="py-8 text-center text-sm text-[#94a3b8] animate-pulse">
+              <div className="py-8 text-center text-sm text-[#64748b] animate-pulse">
                 Memuat data master unit...
               </div>
             ) : (

@@ -156,13 +156,13 @@ export function ServiceStatusGrid({
                 <button
                   type="button"
                   onClick={() => onViewLogs(associatedLog)}
-                  className="min-h-[44px] text-xs text-[#006877] hover:text-[#00a2b9] font-bold flex items-center gap-1.5 transition-colors focus-utility-ring rounded-xl px-2.5 py-2 cursor-pointer"
+                  className="min-h-[44px] text-xs text-[#006877] hover:text-[#006877] font-bold flex items-center gap-1.5 transition-colors focus-utility-ring rounded-xl px-2.5 py-2 cursor-pointer"
                 >
                   <Terminal className="w-3.5 h-3.5" />
                   <span>Lihat Log</span>
                 </button>
               ) : (
-                <span className="text-xs text-[#94a3b8] italic">Layanan Daemon</span>
+                <span className="text-xs text-[#64748b] italic">Layanan Daemon</span>
               )}
 
               {canRestart && (

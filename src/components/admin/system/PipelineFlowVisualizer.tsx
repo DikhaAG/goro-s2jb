@@ -181,11 +181,11 @@ export function PipelineFlowVisualizer() {
                   </div>
 
                   <h4 className="text-xs font-bold text-[#0f172a]">{node.title}</h4>
-                  <p className="text-xs text-[#64748b] leading-tight mt-0.5">{node.subtitle}</p>
+                  <p className="text-xs text-[#475569] leading-tight mt-0.5">{node.subtitle}</p>
                 </div>
 
                 <div className="mt-3 pt-2.5 border-t border-black/5 text-xs">
-                  <div className="text-xs text-[#64748b]">{node.metricLabel}</div>
+                  <div className="text-xs text-[#475569]">{node.metricLabel}</div>
                   <div className="font-mono font-bold text-[#0f172a] text-xs truncate">
                     {node.metricValue}
                   </div>

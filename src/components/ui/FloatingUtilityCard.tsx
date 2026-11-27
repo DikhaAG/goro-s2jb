@@ -56,7 +56,7 @@ export function FloatingUtilityCard({
           <button
             type="button"
             onClick={onAction}
-            className="text-label-action text-[#00a2b9] hover:text-[#0097a7] font-semibold transition-colors focus-utility-ring rounded cursor-pointer"
+            className="text-label-action text-[#006877] hover:text-[#004e5a] font-semibold transition-colors focus-utility-ring rounded cursor-pointer"
           >
             {actionText}
           </button>

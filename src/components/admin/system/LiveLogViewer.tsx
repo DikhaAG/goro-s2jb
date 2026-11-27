@@ -219,7 +219,7 @@ export function LiveLogViewer({
 
             return (
               <div key={index} className={`py-0.5 hover:bg-slate-800/40 px-1 rounded break-words ${textColor}`}>
-                <span className="text-slate-600 select-none mr-3 w-8 inline-block text-right">
+                <span className="text-slate-400 select-none mr-3 w-8 inline-block text-right">
                   {index + 1}
                 </span>
                 <span className="whitespace-pre-wrap break-all sm:break-words">{line}</span>

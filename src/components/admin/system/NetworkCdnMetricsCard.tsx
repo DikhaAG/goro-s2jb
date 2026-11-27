@@ -103,7 +103,7 @@ export function NetworkCdnMetricsCard() {
           type="button"
           onClick={fetchMetrics}
           disabled={isLoading}
-          className="min-h-[44px] px-2.5 py-2 rounded-xl text-xs font-semibold text-[#006877] hover:text-[#00a2b9] hover:bg-[#f8fafc] flex items-center gap-1.5 self-start sm:self-auto cursor-pointer focus-utility-ring"
+          className="min-h-[44px] px-2.5 py-2 rounded-xl text-xs font-semibold text-[#006877] hover:text-[#006877] hover:bg-[#f8fafc] flex items-center gap-1.5 self-start sm:self-auto cursor-pointer focus-utility-ring"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
           <span>{lastUpdated.toLocaleTimeString("id-ID")}</span>
@@ -146,7 +146,7 @@ export function NetworkCdnMetricsCard() {
             {data?.bytes_streamed_mb || 0} <span className="text-xs font-normal text-[#64748b]">MB</span>
           </div>
           <div className="text-xs text-[#64748b] mt-1">
-            Berhasil dialirkan: <strong className="text-emerald-600">{data?.successful_streams || 0}</strong>
+            Berhasil dialirkan: <strong className="text-emerald-700">{data?.successful_streams || 0}</strong>
           </div>
         </div>
 

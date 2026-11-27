@@ -179,7 +179,7 @@ export function ReviewsTable({
           "inline-flex items-center justify-center w-5 h-5 rounded-md transition-colors",
           isActive
             ? "bg-[#e0f2fe] text-[#006877]"
-            : "text-[#94a3b8] group-hover:text-[#475569] group-hover:bg-[#f1f5f9]"
+            : "text-[#64748b] group-hover:text-[#475569] group-hover:bg-[#f1f5f9]"
         )}
       >
         {isActive ? (
@@ -370,7 +370,7 @@ export function ReviewsTable({
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-[#94a3b8] font-mono">
+                <div className="w-full h-full flex items-center justify-center text-xs text-[#64748b] font-mono">
                   N/A
                 </div>
               )}
@@ -701,7 +701,7 @@ export function ReviewsTable({
               <button
                 type="button"
                 onClick={() => meta?.onOpenDelete?.(item)}
-                className="min-h-[36px] min-w-[36px] h-9 w-9 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#fef2f2] text-[#94a3b8] hover:text-[#ef4444] hover:border-[#fecaca] inline-flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
+                className="min-h-[36px] min-w-[36px] h-9 w-9 rounded-xl border border-[#cbd5e1] bg-white hover:bg-[#fef2f2] text-[#64748b] hover:text-[#dc2626] hover:border-[#fecaca] inline-flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
                 title="Tolak Kuratif / Hapus Entri"
                 aria-label="Hapus atau tolak kuratif ulasan"
               >
@@ -784,14 +784,14 @@ export function ReviewsTable({
               </kbd>
               <span>Setujui</span>
             </span>
-            <span className="text-[#cbd5e1]">•</span>
+            <span className="text-[#cbd5e1]" aria-hidden>•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
               <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 R
               </kbd>
               <span>Tolak</span>
             </span>
-            <span className="text-[#cbd5e1]">•</span>
+            <span className="text-[#cbd5e1]" aria-hidden>•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
               <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 J
@@ -802,7 +802,7 @@ export function ReviewsTable({
               </kbd>
               <span>Berikut</span>
             </span>
-            <span className="text-[#cbd5e1]">•</span>
+            <span className="text-[#cbd5e1]" aria-hidden>•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
               <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 K
@@ -813,21 +813,21 @@ export function ReviewsTable({
               </kbd>
               <span>Sebelum</span>
             </span>
-            <span className="text-[#cbd5e1]">•</span>
+            <span className="text-[#cbd5e1]" aria-hidden>•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
               <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 Spasi
               </kbd>
               <span>Lightbox</span>
             </span>
-            <span className="text-[#cbd5e1]">•</span>
+            <span className="text-[#cbd5e1]" aria-hidden>•</span>
             <span className="inline-flex items-center gap-1 text-[#334155]">
               <kbd className="px-1.5 py-0.5 rounded bg-white border border-[#cbd5e1] font-mono font-semibold text-xs shadow-2xs">
                 Esc
               </kbd>
               <span>Tutup</span>
             </span>
-            <span className="text-[#cbd5e1]">•</span>
+            <span className="text-[#cbd5e1]" aria-hidden>•</span>
             <span className="inline-flex items-center gap-1 text-[#006877] font-medium">
               <span className="bg-[#e0f2fe] px-1.5 py-0.5 rounded text-xs font-mono">Double-Click</span>
               <span>Buka Detail</span>
@@ -993,7 +993,7 @@ export function ReviewsTable({
               <tr>
                 <td colSpan={table.getVisibleLeafColumns().length} className="py-20 px-4 text-center">
                   <div className="max-w-sm mx-auto flex flex-col items-center space-y-3.5">
-                    <div className="w-14 h-14 bg-[#f0fdf4] border border-[#bbf7d0] rounded-full flex items-center justify-center text-[#16a34a] shadow-xs">
+                    <div className="w-14 h-14 bg-[#f0fdf4] border border-[#bbf7d0] rounded-full flex items-center justify-center text-[#15803d] shadow-xs">
                       <CheckCircle2 className="w-7 h-7" />
                     </div>
                     <div>

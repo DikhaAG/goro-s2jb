@@ -123,7 +123,7 @@ export function ExecutiveKpiCards({ kpis }: ExecutiveKpiCardsProps) {
               </div>
             ))
           ) : (
-            <span className="text-xs text-[#94a3b8] italic">Belum ada data</span>
+            <span className="text-xs text-[#64748b] italic">Belum ada data</span>
           )}
         </div>
       </div>
@@ -152,7 +152,7 @@ export function ExecutiveKpiCards({ kpis }: ExecutiveKpiCardsProps) {
               </div>
             ))
           ) : (
-            <span className="text-xs text-[#94a3b8] italic">Belum ada data</span>
+            <span className="text-xs text-[#64748b] italic">Belum ada data</span>
           )}
         </div>
       </div>

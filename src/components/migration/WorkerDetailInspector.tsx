@@ -199,7 +199,7 @@ export function WorkerDetailInspector({
           </div>
 
           {queue.activeJobs.length === 0 ? (
-            <div className="text-xs text-[#94a3b8] italic bg-[#f8fafc] p-3 rounded-xl border border-[#e2e8f0] text-center">
+            <div className="text-xs text-[#64748b] italic bg-[#f8fafc] p-3 rounded-xl border border-[#e2e8f0] text-center">
               Tidak ada proses aktif yang sedang berjalan di worker ini saat ini.
             </div>
           ) : (

@@ -205,7 +205,7 @@ export function AuditLogTable() {
                           </div>
                         </div>
                       ) : (
-                        <span className="text-xs text-[#94a3b8] italic">Anonim / Sistem</span>
+                        <span className="text-xs text-[#64748b] italic">Anonim / Sistem</span>
                       )}
                     </td>
 
@@ -228,7 +228,7 @@ export function AuditLogTable() {
                     <td className="px-4 py-3.5 whitespace-nowrap text-xs text-[#64748b]">
                       <span className="font-semibold text-[#0f172a]">{log.entityType}</span>
                       {log.entityId && (
-                        <span className="text-[11px] text-[#94a3b8] block font-mono">
+                        <span className="text-[11px] text-[#64748b] block font-mono">
                           ID: {log.entityId.slice(0, 10)}...
                         </span>
                       )}

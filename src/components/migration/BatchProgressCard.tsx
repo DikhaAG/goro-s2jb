@@ -199,7 +199,7 @@ export function BatchProgressCard({
                   <span className="text-xs font-normal text-[#64748b]"> baris/dtk</span>
                 </>
               ) : (
-                <span className="text-sm font-semibold text-[#94a3b8]">Menstabilkan</span>
+                <span className="text-sm font-semibold text-[#64748b]">Menstabilkan</span>
               )}
             </div>
           </div>

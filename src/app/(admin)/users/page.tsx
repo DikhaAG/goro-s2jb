@@ -30,7 +30,7 @@ export default function AdminUsersPage() {
         <button
           type="button"
           onClick={() => setIsDialogOpen(true)}
-          className="h-9 min-h-[44px] px-4 py-2 bg-[#00A3E0] hover:bg-[#0072A3] text-white font-medium rounded-xl text-xs flex items-center justify-center space-x-2 transition cursor-pointer active:scale-[0.98] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00A3E0]/30"
+          className="h-9 min-h-[44px] px-4 py-2 bg-[#006877] hover:bg-[#004e5a] text-white font-medium rounded-xl text-xs flex items-center justify-center space-x-2 transition cursor-pointer active:scale-[0.98] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00A3E0]/30"
         >
           <UserPlus className="w-4 h-4" />
           <span>Tambah Pengguna</span>

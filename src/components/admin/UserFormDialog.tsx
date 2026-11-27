@@ -128,7 +128,7 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#334155] mb-1.5">
-                Username / NIP <span className="text-[#ef4444]">*</span>
+                Username / NIP <span className="text-[#dc2626]">*</span>
               </label>
               <input
                 type="text"
@@ -142,7 +142,7 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
 
             <div>
               <label className="block text-xs font-semibold text-[#334155] mb-1.5">
-                Nama Lengkap <span className="text-[#ef4444]">*</span>
+                Nama Lengkap <span className="text-[#dc2626]">*</span>
               </label>
               <input
                 type="text"
@@ -158,7 +158,7 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#334155] mb-1.5">
-                Peran Pengguna (RBAC) <span className="text-[#ef4444]">*</span>
+                Peran Pengguna (RBAC) <span className="text-[#dc2626]">*</span>
               </label>
               <select
                 value={role}
@@ -174,7 +174,7 @@ export function UserFormDialog({ isOpen, onClose, onSuccess }: UserFormDialogPro
 
             <div>
               <label className="block text-xs font-semibold text-[#334155] mb-1.5">
-                Kata Sandi Awal <span className="text-[#ef4444]">*</span>
+                Kata Sandi Awal <span className="text-[#dc2626]">*</span>
               </label>
               <input
                 type="text"

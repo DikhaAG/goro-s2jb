@@ -133,7 +133,7 @@ export function RunningProcessTable({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari PID atau perintah..."
-              className="w-full pl-9 pr-3 h-11 min-h-[44px] text-xs rounded-xl border border-[#cbd5e1] bg-white text-[#0f172a] placeholder:text-[#94a3b8] focus-utility-ring transition-all"
+              className="w-full pl-9 pr-3 h-11 min-h-[44px] text-xs rounded-xl border border-[#cbd5e1] bg-white text-[#0f172a] placeholder:text-[#64748b] focus-utility-ring transition-all"
             />
           </div>
         </div>

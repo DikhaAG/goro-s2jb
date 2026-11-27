@@ -56,7 +56,7 @@ export function CascadingUnitSelect({
         >
           <Building2 className="w-3.5 h-3.5 text-[#006877]" />
           <span>Unit Pelaksana (UP3)</span>
-          <span className="text-[#ef4444] font-bold">*</span>
+          <span className="text-[#dc2626] font-bold">*</span>
         </label>
         <select
           id="up3Select"
@@ -87,7 +87,7 @@ export function CascadingUnitSelect({
         >
           <MapPin className="w-3.5 h-3.5 text-[#b45309]" />
           <span>Unit Layanan Pelanggan (ULP)</span>
-          <span className="text-[#ef4444] font-bold">*</span>
+          <span className="text-[#dc2626] font-bold">*</span>
         </label>
         <select
           id="ulpSelect"

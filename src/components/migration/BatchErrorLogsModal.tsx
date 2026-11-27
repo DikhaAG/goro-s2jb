@@ -94,7 +94,7 @@ export function BatchErrorLogsModal({
             type="button"
             onClick={onClose}
             aria-label="Tutup dialog"
-            className="text-[#94a3b8] hover:text-[#0f172a] rounded-xl p-1.5 hover:bg-[#f1f5f9] transition-colors focus-utility-ring"
+            className="text-[#64748b] hover:text-[#0f172a] rounded-xl p-1.5 hover:bg-[#f1f5f9] transition-colors focus-utility-ring"
           >
             <X className="w-5 h-5" />
           </button>
@@ -133,7 +133,7 @@ export function BatchErrorLogsModal({
                       {copiedId === err.id ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-[#16a34a]" />
-                          <span className="text-[#16a34a]">Tersalin</span>
+                          <span className="text-[#15803d]">Tersalin</span>
                         </>
                       ) : (
                         <>

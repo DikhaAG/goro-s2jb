@@ -791,9 +791,9 @@ export function DuplicateSplitViewModal({
                       {originalReview?.extractedOcrText ? (
                         originalReview.extractedOcrText
                       ) : isOriginalLoading ? (
-                        <span className="italic text-[#94a3b8]">Memuat teks ekstraksi OCR...</span>
+                        <span className="italic text-[#64748b]">Memuat teks ekstraksi OCR...</span>
                       ) : (
-                        <span className="italic text-[#94a3b8]">Tidak ada teks OCR tersimpan pada ulasan asli.</span>
+                        <span className="italic text-[#64748b]">Tidak ada teks OCR tersimpan pada ulasan asli.</span>
                       )}
                     </div>
                   </div>
@@ -1016,7 +1016,7 @@ export function DuplicateSplitViewModal({
                       {currentReview.extractedOcrText ? (
                         currentReview.extractedOcrText
                       ) : (
-                        <span className="italic text-[#94a3b8]">Tidak ada teks OCR tersimpan pada baris ini.</span>
+                        <span className="italic text-[#64748b]">Tidak ada teks OCR tersimpan pada baris ini.</span>
                       )}
                     </div>
                   </div>
@@ -1448,7 +1448,7 @@ export function DuplicateSplitViewModal({
               {imageCompareMode === "slider" && (
                 <div className="bg-white p-3 rounded-2xl border border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs">
                   <div className="flex items-center gap-2 flex-1 max-w-md">
-                    <span className="font-semibold text-[#16a34a] shrink-0">100% Asli</span>
+                    <span className="font-semibold text-[#15803d] shrink-0">100% Asli</span>
                     <input
                       type="range"
                       min="0"
@@ -1491,7 +1491,7 @@ export function DuplicateSplitViewModal({
               {imageCompareMode === "overlay" && (
                 <div className="bg-white p-3 rounded-2xl border border-[#e2e8f0] flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs">
                   <div className="flex items-center gap-2 flex-1 max-w-md">
-                    <span className="font-semibold text-[#16a34a] shrink-0">Asli</span>
+                    <span className="font-semibold text-[#15803d] shrink-0">Asli</span>
                     <input
                       type="range"
                       min="0"

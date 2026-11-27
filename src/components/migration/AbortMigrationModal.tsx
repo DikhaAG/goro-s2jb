@@ -61,7 +61,7 @@ export function AbortMigrationModal({
           onClick={onClose}
           disabled={isLoading}
           aria-label="Tutup dialog"
-          className="absolute top-4 right-4 text-[#94a3b8] hover:text-[#0f172a] rounded-xl p-1.5 hover:bg-[#f1f5f9] transition-colors focus-utility-ring disabled:opacity-50"
+          className="absolute top-4 right-4 text-[#64748b] hover:text-[#0f172a] rounded-xl p-1.5 hover:bg-[#f1f5f9] transition-colors focus-utility-ring disabled:opacity-50"
         >
           <X className="w-5 h-5" />
         </button>

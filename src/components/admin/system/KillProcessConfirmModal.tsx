@@ -41,7 +41,7 @@ export function KillProcessConfirmModal({
             type="button"
             aria-label="Tutup dialog konfirmasi"
             onClick={onClose}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[#94a3b8] hover:text-[#0f172a] p-2 rounded-xl hover:bg-[#f1f5f9] transition-colors focus-utility-ring cursor-pointer"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[#64748b] hover:text-[#0f172a] p-2 rounded-xl hover:bg-[#f1f5f9] transition-colors focus-utility-ring cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -88,7 +88,7 @@ export function KillProcessConfirmModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Contoh: Proses menggantung / socket tidak tertutup"
-              className="w-full text-xs min-h-[44px] px-3.5 py-2.5 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] focus-utility-ring text-[#0f172a] placeholder:text-[#94a3b8] transition-all"
+              className="w-full text-xs min-h-[44px] px-3.5 py-2.5 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] focus-utility-ring text-[#0f172a] placeholder:text-[#64748b] transition-all"
             />
           </div>
 

@@ -380,14 +380,14 @@ export function ReviewDetailDrawer({
                     />
                   </div>
                 ) : (
-                  <div className="m-auto text-center p-8 text-xs text-slate-400">
+                  <div className="m-auto text-center p-8 text-xs text-slate-500">
                     Tidak ada citra eviden tersedia.
                   </div>
                 )}
               </div>
 
               {/* Bottom Canvas Context Bar */}
-              <div className="shrink-0 h-8 px-4 bg-[#090d16]/90 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="shrink-0 h-8 px-4 bg-[#090d16]/90 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-500">
                 <span className="truncate max-w-[280px]">
                   {review?.playstoreReviewerName || "Eviden"}
                 </span>
@@ -480,7 +480,7 @@ export function ReviewDetailDrawer({
                   {hasCopiedOcr ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-[#16a34a]" />
-                      <span className="text-[#16a34a]">Tersalin</span>
+                      <span className="text-[#15803d]">Tersalin</span>
                     </>
                   ) : (
                     <>
@@ -493,7 +493,7 @@ export function ReviewDetailDrawer({
 
               <div className="text-xs text-[#334155] font-mono bg-[#f8fafc] p-3 rounded-xl max-h-32 overflow-y-auto whitespace-pre-wrap border border-[#e2e8f0] leading-relaxed">
                 {review?.extractedOcrText || (
-                  <span className="text-[#94a3b8] italic">
+                  <span className="text-[#64748b] italic">
                     Belum ada teks terekstraksi atau OCR gagal diproses.
                   </span>
                 )}
@@ -586,7 +586,7 @@ export function ReviewDetailDrawer({
                       )}
                     />
                     {errors.playstoreReviewerName ? (
-                      <p className="text-[11px] text-[#ef4444] mt-1">
+                      <p className="text-[11px] text-[#dc2626] mt-1">
                         {errors.playstoreReviewerName.message}
                       </p>
                     ) : (
@@ -633,7 +633,7 @@ export function ReviewDetailDrawer({
                         ))}
                       </select>
                       {errors.up3Id && (
-                        <p className="text-[11px] text-[#ef4444] mt-1">{errors.up3Id.message}</p>
+                        <p className="text-[11px] text-[#dc2626] mt-1">{errors.up3Id.message}</p>
                       )}
                     </div>
 
@@ -657,7 +657,7 @@ export function ReviewDetailDrawer({
                         ))}
                       </select>
                       {errors.ulpId && (
-                        <p className="text-[11px] text-[#ef4444] mt-1">{errors.ulpId.message}</p>
+                        <p className="text-[11px] text-[#dc2626] mt-1">{errors.ulpId.message}</p>
                       )}
                     </div>
                   </div>
@@ -761,7 +761,7 @@ export function ReviewDetailDrawer({
                         <span>Perubahan belum disimpan</span>
                       </span>
                     ) : (
-                      <span className="text-[#94a3b8]">Data sinkron</span>
+                      <span className="text-[#64748b]">Data sinkron</span>
                     )}
                   </div>
 
@@ -798,7 +798,7 @@ export function ReviewDetailDrawer({
                 </div>
 
                 {auditLogs.length === 0 ? (
-                  <div className="py-16 text-center text-xs text-[#94a3b8]">
+                  <div className="py-16 text-center text-xs text-[#64748b]">
                     Belum ada rekaman log audit untuk ulasan ini.
                   </div>
                 ) : (

@@ -316,7 +316,7 @@ export function NetworkTrafficChart({
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                 timeRange === "HOUR"
                   ? "bg-[#006877] text-white shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a] hover:bg-slate-100"
+                  : "text-[#475569] hover:text-[#0f172a] hover:bg-slate-100"
               )}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -331,7 +331,7 @@ export function NetworkTrafficChart({
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                 timeRange === "DAY"
                   ? "bg-[#006877] text-white shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a] hover:bg-slate-100"
+                  : "text-[#475569] hover:text-[#0f172a] hover:bg-slate-100"
               )}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -346,7 +346,7 @@ export function NetworkTrafficChart({
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                 timeRange === "MONTH"
                   ? "bg-[#006877] text-white shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a] hover:bg-slate-100"
+                  : "text-[#475569] hover:text-[#0f172a] hover:bg-slate-100"
               )}
             >
               <BarChart2 className="w-3.5 h-3.5" />
@@ -361,7 +361,7 @@ export function NetworkTrafficChart({
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                 timeRange === "YEAR"
                   ? "bg-[#006877] text-white shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a] hover:bg-slate-100"
+                  : "text-[#475569] hover:text-[#0f172a] hover:bg-slate-100"
               )}
             >
               <TrendingUp className="w-3.5 h-3.5" />
@@ -381,7 +381,7 @@ export function NetworkTrafficChart({
                   "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                   hourSubMode === "live"
                     ? "bg-white text-emerald-700 shadow-2xs"
-                    : "text-[#64748b] hover:text-[#0f172a]"
+                    : "text-[#475569] hover:text-[#0f172a]"
                 )}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
@@ -394,7 +394,7 @@ export function NetworkTrafficChart({
                   "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                   hourSubMode === "24h"
                     ? "bg-white text-[#006877] shadow-2xs"
-                    : "text-[#64748b] hover:text-[#0f172a]"
+                    : "text-[#475569] hover:text-[#0f172a]"
                 )}
               >
                 <Clock className="w-3 h-3 text-[#006877]" />
@@ -417,7 +417,7 @@ export function NetworkTrafficChart({
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 selectedMetric === "rate"
                   ? "bg-white text-[#006877] shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a]"
+                  : "text-[#475569] hover:text-[#0f172a]"
               )}
             >
               Throughput (KB/s)
@@ -429,7 +429,7 @@ export function NetworkTrafficChart({
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 selectedMetric === "latency"
                   ? "bg-white text-[#006877] shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a]"
+                  : "text-[#475569] hover:text-[#0f172a]"
               )}
             >
               Latensi (ms)
@@ -441,7 +441,7 @@ export function NetworkTrafficChart({
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 selectedMetric === "requests"
                   ? "bg-white text-[#006877] shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a]"
+                  : "text-[#475569] hover:text-[#0f172a]"
               )}
             >
               Aliran Citra
@@ -700,7 +700,7 @@ export function NetworkTrafficChart({
               : `Menampilkan agregasi telemetri jaringan historis ${rangeDescription}.`}
           </span>
         </div>
-        <span className="font-mono text-slate-400">PLN UID S2JB Telemetry Engine</span>
+        <span className="font-mono text-slate-500">PLN UID S2JB Telemetry Engine</span>
       </div>
     </div>
   );

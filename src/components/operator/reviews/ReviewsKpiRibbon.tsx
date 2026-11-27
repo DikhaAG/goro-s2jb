@@ -209,7 +209,7 @@ export function ReviewsKpiRibbon({
                   </span>
                 )}
               </div>
-              <span className="text-[10px] text-[#64748b] block mt-0.5 truncate">
+              <span className="text-[10px] text-[#475569] block mt-0.5 truncate">
                 {card.sublabel}
               </span>
             </div>

@@ -306,7 +306,7 @@ export function MigrationBatchTable({
                   <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-[#475569]">
                     {formatBytes(row.fileSize)}
                   </span>
-                  <span className="font-mono text-[#94a3b8] truncate">
+                  <span className="font-mono text-[#64748b] truncate">
                     ID: {row.id.slice(0, 8)}...
                   </span>
                 </div>
@@ -366,7 +366,7 @@ export function MigrationBatchTable({
           }
 
           return (
-            <span className="font-mono text-xs text-[#94a3b8]">
+            <span className="font-mono text-xs text-[#64748b]">
               Menunggu Antrian
             </span>
           );
@@ -464,7 +464,7 @@ export function MigrationBatchTable({
           if (failed <= 0) {
             return (
               <div className="text-right">
-                <span className="font-mono text-xs text-[#94a3b8] bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
+                <span className="font-mono text-xs text-[#64748b] bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
                   0
                 </span>
               </div>
@@ -605,7 +605,7 @@ export function MigrationBatchTable({
               {b.status === "PROCESSING" && (
                 <Link
                   href="/migration/monitor"
-                  className="p-1.5 text-[#00a2b9] hover:text-[#006877] hover:bg-sky-50 rounded-lg transition-colors border border-sky-200 animate-pulse cursor-pointer"
+                  className="p-1.5 text-[#006877] hover:text-[#006877] hover:bg-sky-50 rounded-lg transition-colors border border-sky-200 animate-pulse cursor-pointer"
                   title="Pantau progres live worker"
                 >
                   <Activity className="w-4 h-4" />
@@ -697,7 +697,7 @@ export function MigrationBatchTable({
               <span
                 className={cn(
                   "px-1.5 py-0.2 rounded-full text-xs font-mono",
-                  statusFilter === "ALL" ? "bg-white/20 text-white" : "bg-slate-100 text-[#475569]"
+                  statusFilter === "ALL" ? "bg-black/20 text-white" : "bg-slate-100 text-[#475569]"
                 )}
               >
                 {statusCounts.ALL}
@@ -722,7 +722,7 @@ export function MigrationBatchTable({
               <span
                 className={cn(
                   "px-1.5 py-0.2 rounded-full text-xs font-mono",
-                  statusFilter === "COMPLETED" ? "bg-white/20 text-white" : "bg-slate-100 text-[#475569]"
+                  statusFilter === "COMPLETED" ? "bg-black/20 text-white" : "bg-slate-100 text-[#475569]"
                 )}
               >
                 {statusCounts.COMPLETED}
@@ -747,7 +747,7 @@ export function MigrationBatchTable({
               <span
                 className={cn(
                   "px-1.5 py-0.2 rounded-full text-xs font-mono",
-                  statusFilter === "PROCESSING" ? "bg-white/20 text-white" : "bg-slate-100 text-[#475569]"
+                  statusFilter === "PROCESSING" ? "bg-black/20 text-white" : "bg-slate-100 text-[#475569]"
                 )}
               >
                 {statusCounts.PROCESSING}
@@ -772,7 +772,7 @@ export function MigrationBatchTable({
               <span
                 className={cn(
                   "px-1.5 py-0.2 rounded-full text-xs font-mono",
-                  statusFilter === "FAILED" ? "bg-white/20 text-white" : "bg-slate-100 text-[#475569]"
+                  statusFilter === "FAILED" ? "bg-black/20 text-white" : "bg-slate-100 text-[#475569]"
                 )}
               >
                 {statusCounts.FAILED}
@@ -797,7 +797,7 @@ export function MigrationBatchTable({
               <span
                 className={cn(
                   "px-1.5 py-0.2 rounded-full text-xs font-mono",
-                  statusFilter === "PENDING" ? "bg-white/20 text-white" : "bg-slate-100 text-[#475569]"
+                  statusFilter === "PENDING" ? "bg-black/20 text-white" : "bg-slate-100 text-[#475569]"
                 )}
               >
                 {statusCounts.PENDING}
@@ -822,7 +822,7 @@ export function MigrationBatchTable({
               <button
                 type="button"
                 onClick={() => setGlobalFilter("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0f172a] p-0.5 cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a] p-0.5 cursor-pointer"
                 title="Hapus pencarian"
               >
                 <X className="w-3.5 h-3.5" />
@@ -867,7 +867,7 @@ export function MigrationBatchTable({
               <tr>
                 <td colSpan={columns.length} className="py-16 text-center text-xs text-[#64748b]">
                   <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-[#94a3b8]">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-[#64748b]">
                       <FileSpreadsheet className="w-6 h-6 text-[#94a3b8]" />
                     </div>
                     <p className="font-bold text-sm text-[#0f172a]">
@@ -1302,7 +1302,7 @@ export function MigrationBatchTable({
                                     {row.confidenceScore}%
                                   </span>
                                 ) : (
-                                  <span className="font-mono text-xs text-[#94a3b8]">-</span>
+                                  <span className="font-mono text-xs text-[#64748b]">-</span>
                                 )}
                               </td>
                               <td className="py-2.5 px-3 text-center">

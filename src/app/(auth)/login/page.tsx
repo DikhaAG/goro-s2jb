@@ -23,7 +23,7 @@ export default function LoginPage() {
             <ShieldCheck className="w-3.5 h-3.5 text-[#006877]" />
             <span>PLN UID S2JB</span>
           </Badge>
-          <span className="text-xs font-mono text-[#64748b] bg-[#e2e8f0] px-2 py-0.5 rounded">
+          <span className="text-xs font-mono text-[#475569] bg-[#e2e8f0] px-2 py-0.5 rounded">
             2026
           </span>
         </div>
@@ -50,7 +50,7 @@ export default function LoginPage() {
       </div>
 
       {/* Footer copyright */}
-      <footer className="mt-10 text-center text-xs text-[#94a3b8]">
+      <footer className="mt-10 text-center text-xs text-[#64748b]">
         &copy; {new Date().getFullYear()} PT PLN (Persero) UID Sumatera Selatan, Jambi, dan Bengkulu.
       </footer>
     </div>

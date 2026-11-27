@@ -177,7 +177,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
         ) : (
           <>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-[#f1f5f9] text-[#64748b] font-bold text-sm flex items-center justify-center shrink-0 border border-[#e2e8f0]">
+              <div className="w-10 h-10 rounded-full bg-[#f1f5f9] text-[#475569] font-bold text-sm flex items-center justify-center shrink-0 border border-[#e2e8f0]">
                 <Users className="w-5 h-5 text-[#64748b]" />
               </div>
               <div className="flex flex-col text-left overflow-hidden">

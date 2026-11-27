@@ -226,7 +226,7 @@ export function IntakeForm() {
               >
                 <User className="w-3.5 h-3.5 text-[#006877]" />
                 <span>Nama Pengulas Play Store</span>
-                <span className="text-[#ef4444] font-bold">*</span>
+                <span className="text-[#dc2626] font-bold">*</span>
               </label>
               <input
                 id="playstoreReviewerName"
@@ -234,7 +234,7 @@ export function IntakeForm() {
                 placeholder="Misal: Ahmad Dani atau Budi Santoso"
                 aria-invalid={errors.playstoreReviewerName ? true : undefined}
                 {...register("playstoreReviewerName")}
-                className={`${inputBaseClass} placeholder:text-[#94a3b8] ${borderClass(!!errors.playstoreReviewerName)}`}
+                className={`${inputBaseClass} placeholder:text-[#64748b] ${borderClass(!!errors.playstoreReviewerName)}`}
               />
               <FieldError message={errors.playstoreReviewerName?.message} />
             </div>
@@ -246,7 +246,7 @@ export function IntakeForm() {
               >
                 <Calendar className="w-3.5 h-3.5 text-[#0284c7]" />
                 <span>Tanggal Entri</span>
-                <span className="text-[#ef4444] font-bold">*</span>
+                <span className="text-[#dc2626] font-bold">*</span>
               </label>
               <input
                 id="entryDate"
@@ -268,7 +268,7 @@ export function IntakeForm() {
               >
                 <Tag className="w-3.5 h-3.5 text-[#006877]" />
                 <span>Versi PLN Mobile</span>
-                <span className="text-[#ef4444] font-bold">*</span>
+                <span className="text-[#dc2626] font-bold">*</span>
               </label>
               <select
                 id="appVersionSelect"
@@ -300,7 +300,7 @@ export function IntakeForm() {
                 placeholder="Opsional jika berbeda dengan nama Play Store"
                 aria-invalid={errors.originalReviewerName ? true : undefined}
                 {...register("originalReviewerName")}
-                className={`${inputBaseClass} placeholder:text-[#94a3b8] ${borderClass(!!errors.originalReviewerName)}`}
+                className={`${inputBaseClass} placeholder:text-[#64748b] ${borderClass(!!errors.originalReviewerName)}`}
               />
               <FieldError message={errors.originalReviewerName?.message} />
             </div>
@@ -330,7 +330,7 @@ export function IntakeForm() {
               placeholder="Catatan tambahan kondisi pelaksanaan di lapangan..."
               aria-invalid={errors.fieldNotes ? true : undefined}
               {...register("fieldNotes")}
-              className={`flex w-full rounded-xl border bg-[#f8fafc] px-3.5 py-2.5 text-xs sm:text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus-utility-ring transition-all ${borderClass(!!errors.fieldNotes)}`}
+              className={`flex w-full rounded-xl border bg-[#f8fafc] px-3.5 py-2.5 text-xs sm:text-sm text-[#0f172a] placeholder:text-[#64748b] focus-utility-ring transition-all ${borderClass(!!errors.fieldNotes)}`}
             />
             <FieldError message={errors.fieldNotes?.message} />
           </div>
@@ -472,7 +472,7 @@ function EvidenceImageField({
       <label className="text-[11px] font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1.5">
         <Camera className="w-3.5 h-3.5 text-[#006877]" />
         <span>Eviden Ulasan (Foto Kamera Langsung / Tangkapan Layar)</span>
-        <span className="text-[#ef4444] font-bold">*</span>
+        <span className="text-[#dc2626] font-bold">*</span>
       </label>
 
       {previewUrl ? (

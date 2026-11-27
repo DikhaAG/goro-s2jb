@@ -268,7 +268,7 @@ export function MigrationMonitor() {
             <Tabs.Trigger
               key={id}
               value={id}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[40px] text-[#64748b] hover:text-[#0f172a] data-[state=active]:bg-white data-[state=active]:text-[#0f172a] data-[state=active]:shadow-xs"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[40px] text-[#475569] hover:text-[#0f172a] data-[state=active]:bg-white data-[state=active]:text-[#0f172a] data-[state=active]:shadow-xs"
             >
               <Icon className={cn("w-4 h-4", iconClass)} aria-hidden />
               <span>

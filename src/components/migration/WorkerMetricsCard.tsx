@@ -114,7 +114,7 @@ export function WorkerMetricsCard({ metrics, isLoading = false }: WorkerMetricsC
                 {metrics.importQueue.active} Aktif
               </span>
             ) : (
-              <span className="text-[10px] font-semibold text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold text-[#475569] bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-0.5 rounded-full">
                 Idle
               </span>
             )}
@@ -147,7 +147,7 @@ export function WorkerMetricsCard({ metrics, isLoading = false }: WorkerMetricsC
                 {metrics.ocrQueue.active} Aktif
               </span>
             ) : (
-              <span className="text-[10px] font-semibold text-[#64748b] bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold text-[#475569] bg-[#f1f5f9] border border-[#e2e8f0] px-2 py-0.5 rounded-full">
                 Idle
               </span>
             )}

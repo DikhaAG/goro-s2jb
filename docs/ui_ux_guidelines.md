@@ -83,7 +83,7 @@ Baris ringkasan metrik menggunakan grid kartu interaktif:
 ### C. Filter & Pencarian (FilterBar)
 - Kontainer: `bg-white border border-[#e2e8f0] p-4 rounded-2xl shadow-xs space-y-3`.
 - Input Pencarian:
-  - Input: `w-full bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] placeholder-[#94a3b8] text-xs rounded-xl pl-9 pr-4 min-h-[38px] transition-all focus-utility-ring`.
+  - Input: `w-full bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] placeholder-[#64748b] text-xs rounded-xl pl-9 pr-4 min-h-[38px] transition-all focus-utility-ring`.
   - Icon Search: `absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]`.
 - Dropdown Bertingkat (Cascading Selects):
   - Label: `text-[11px] font-bold text-[#475569] uppercase tracking-wider block mb-1`.

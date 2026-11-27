@@ -562,7 +562,7 @@ export function BulkDropzone() {
                       <td className="py-2 px-3 font-bold">Indikator Duplikasi</td>
                       <td className="py-2 px-3 font-mono text-[#64748b]">Boolean / Teks</td>
                       <td className="py-2 px-3 text-[#475569]">
-                        <span className="font-mono font-semibold text-rose-600">YA</span> (Duplikat) atau <span className="font-mono font-semibold text-emerald-600">TIDAK</span>
+                        <span className="font-mono font-semibold text-rose-600">YA</span> (Duplikat) atau <span className="font-mono font-semibold text-emerald-700">TIDAK</span>
                       </td>
                     </tr>
                     <tr className="bg-slate-50/50">

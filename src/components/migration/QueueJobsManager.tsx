@@ -167,7 +167,7 @@ export function QueueJobsManager({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[36px] ${
                 queueName === "import"
                   ? "bg-white text-[#0f172a] shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a]"
+                  : "text-[#475569] hover:text-[#0f172a]"
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-[#006877]" />
@@ -180,7 +180,7 @@ export function QueueJobsManager({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all focus-utility-ring cursor-pointer min-h-[36px] ${
                 queueName === "ocr"
                   ? "bg-white text-[#0f172a] shadow-xs"
-                  : "text-[#64748b] hover:text-[#0f172a]"
+                  : "text-[#475569] hover:text-[#0f172a]"
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-[#f59e0b]" />
@@ -346,7 +346,7 @@ export function QueueJobsManager({
                         onClick={() => job.id && handleRemove(job.id)}
                         disabled={isProcessingThisJob || !job.id}
                         title="Hapus job dari antrean"
-                        className="inline-flex items-center gap-1 p-2 rounded-xl text-xs font-semibold text-[#94a3b8] hover:text-[#b91c1c] hover:bg-[#fef2f2] border border-transparent hover:border-[#fecaca] transition-all focus-utility-ring disabled:opacity-50 min-h-[36px] cursor-pointer"
+                        className="inline-flex items-center gap-1 p-2 rounded-xl text-xs font-semibold text-[#64748b] hover:text-[#b91c1c] hover:bg-[#fef2f2] border border-transparent hover:border-[#fecaca] transition-all focus-utility-ring disabled:opacity-50 min-h-[36px] cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

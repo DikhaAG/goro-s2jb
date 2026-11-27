@@ -108,7 +108,7 @@ export function CumulativePacingChart({ pacingData }: CumulativePacingChartProps
             )}
           </div>
         ) : (
-          <span className="text-slate-400 italic">Arahkan kursor ke titik kurva untuk melihat detail</span>
+          <span className="text-slate-500 italic">Arahkan kursor ke titik kurva untuk melihat detail</span>
         )}
       </div>
 

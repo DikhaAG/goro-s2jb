@@ -296,7 +296,7 @@ export function PurgeAllReviewsModal({
               </label>
               <span className="flex items-center gap-1 text-xs font-semibold text-[#64748b]">
                 {isConfirmed ? (
-                  <span className="text-[#16a34a] flex items-center gap-1 font-bold">
+                  <span className="text-[#15803d] flex items-center gap-1 font-bold">
                     <Unlock className="w-3.5 h-3.5" /> Terbuka
                   </span>
                 ) : (
@@ -316,7 +316,7 @@ export function PurgeAllReviewsModal({
               className={cn(
                 "w-full min-h-[40px] px-3 rounded-xl border bg-white text-xs font-mono font-bold tracking-wider focus-utility-ring transition-colors uppercase",
                 isConfirmed
-                  ? "border-[#16a34a] text-[#16a34a]"
+                  ? "border-[#16a34a] text-[#15803d]"
                   : "border-[#cbd5e1] text-[#0f172a]"
               )}
             />

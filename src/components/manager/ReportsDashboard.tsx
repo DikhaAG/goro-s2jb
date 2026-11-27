@@ -272,7 +272,7 @@ export function ReportsDashboard() {
             size="sm"
             variant="outline"
             onClick={() => openExport("pdf")}
-            className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-[#00A3E0] text-slate-700 hover:text-[#00A3E0] font-medium rounded-xl shadow-sm transition-all active:scale-[0.98]"
+            className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-[#00A3E0] text-slate-700 hover:text-[#006877] font-medium rounded-xl shadow-sm transition-all active:scale-[0.98]"
           >
             <Printer className="w-4 h-4 text-[#00A3E0]" />
             <span>Cetak PDF</span>

@@ -120,7 +120,7 @@ export function LoginForm() {
               Username / Akun Petugas
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94a3b8]">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#64748b]">
                 <User className="w-4 h-4" />
               </div>
               <input
@@ -148,7 +148,7 @@ export function LoginForm() {
               </label>
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#94a3b8]">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#64748b]">
                 <Lock className="w-4 h-4" />
               </div>
               <input

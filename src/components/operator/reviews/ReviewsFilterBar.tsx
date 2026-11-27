@@ -93,7 +93,7 @@ export function ReviewsFilterBar({
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Cari nama pengulas Play Store, akun Form, teks OCR, atau catatan..."
-            className="w-full min-h-[40px] pl-10 pr-9 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] text-xs sm:text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:bg-white focus-utility-ring transition-all font-medium"
+            className="w-full min-h-[40px] pl-10 pr-9 rounded-xl border border-[#cbd5e1] bg-[#f8fafc] text-xs sm:text-sm text-[#0f172a] placeholder:text-[#64748b] focus:bg-white focus-utility-ring transition-all font-medium"
           />
           {searchInput && (
             <button
@@ -102,7 +102,7 @@ export function ReviewsFilterBar({
                 setSearchInput("");
                 onFilterChange({ search: "" });
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#94a3b8] hover:text-[#0f172a] rounded-md transition-colors cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#64748b] hover:text-[#0f172a] rounded-md transition-colors cursor-pointer"
               title="Hapus kata kunci pencarian"
             >
               <X className="w-3.5 h-3.5" />

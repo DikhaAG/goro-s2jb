@@ -285,7 +285,7 @@ export function BatchMonitorTable({
                           {item.failedRows.toLocaleString("id-ID")}
                         </span>
                       ) : (
-                        <span className="text-[#94a3b8]">0</span>
+                        <span className="text-[#64748b]">0</span>
                       )}
                     </td>
 
@@ -334,7 +334,7 @@ export function BatchMonitorTable({
                           item.status !== "PENDING" &&
                           item.status !== "PAUSED" &&
                           item.failedRows === 0 && (
-                            <span className="text-[#94a3b8] text-[11px] font-semibold">
+                            <span className="text-[#64748b] text-[11px] font-semibold">
                               Tuntas
                             </span>
                           )}
