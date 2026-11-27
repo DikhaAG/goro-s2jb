@@ -312,14 +312,18 @@ export function QueueJobsManager({
 
                   {/* Actions per Job */}
                   <div className="flex items-center gap-2 self-end sm:self-center">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedJobId(isExpanded ? null : job.id || null)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#334155] bg-white border border-[#cbd5e1] hover:bg-[#f1f5f9] transition-all focus-utility-ring cursor-pointer min-h-[36px]"
-                    >
-                      <Code className="w-3.5 h-3.5 text-[#006877]" />
-                      <span>{isExpanded ? "Tutup Data" : "Lihat Data"}</span>
-                    </button>
+                    {/* Payload and stack trace are sent to Super Admin only, so only they get this control. */}
+                    {isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedJobId(isExpanded ? null : job.id || null)}
+                        aria-expanded={isExpanded}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-[#334155] bg-white border border-[#cbd5e1] hover:bg-[#f1f5f9] transition-all focus-utility-ring cursor-pointer min-h-[36px]"
+                      >
+                        <Code className="w-3.5 h-3.5 text-[#006877]" />
+                        <span>{isExpanded ? "Tutup Data" : "Lihat Data"}</span>
+                      </button>
+                    )}
 
                     {isSuperAdmin && status === "failed" && (
                       <button
@@ -357,14 +361,15 @@ export function QueueJobsManager({
                       <AlertCircle className="w-3.5 h-3.5" />
                       Penyebab Kegagalan:
                     </div>
-                    <div className="font-mono text-[11px] break-all">
+                    {/* Super Admin reads a raw error log; Pegawai read a plain sentence. */}
+                    <div className={isSuperAdmin ? "font-mono text-[11px] break-all" : "text-xs"}>
                       {job.failedReason}
                     </div>
                   </div>
                 )}
 
                 {/* Expanded Details / Payload JSON */}
-                {isExpanded && (
+                {isSuperAdmin && isExpanded && (
                   <div className="mt-3 bg-[#0f172a] text-slate-200 rounded-xl p-4 text-xs font-mono overflow-x-auto space-y-2 border border-[#334155] shadow-xs">
                     <div>
                       <span className="text-[#94a3b8] text-[10px] uppercase font-bold tracking-wider">Payload Data (JSON):</span>
