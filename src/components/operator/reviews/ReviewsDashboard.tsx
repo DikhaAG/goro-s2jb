@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
@@ -61,12 +61,6 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   const currentSession = session || initialSession;
   const userRole = currentSession?.role || "PEGAWAI";
 
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   // Filters, paging and sort live in the URL, so a refresh or a shared link keeps them.
   const [params, setParams] = useQueryStates(reviewsSearchParams);
   const { page, pageSize, sortBy, sortOrder, isDuplicate, ...filterParams } = params;
@@ -75,17 +69,14 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Triage Active Row & Modals State
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [chosenActiveId, setActiveId] = useState<string | null>(null);
   const [lightboxItem, setLightboxItem] = useState<ReviewItem | null>(null);
   const [rejectDialogItem, setRejectDialogItem] = useState<ReviewItem | null>(null);
   const [duplicateSplitViewItem, setDuplicateSplitViewItem] = useState<ReviewItem | null>(null);
 
-  // Drawer & Modals State
-  const [selectedReviewForDrawer, setSelectedReviewForDrawer] = useState<string | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
+  // Drawer & Modals State (a drawer or modal is open while its review is set)
+  const [drawerReviewId, setDrawerReviewId] = useState<string | null>(null);
   const [reviewToDelete, setReviewToDelete] = useState<{ id: string; playstoreReviewerName: string } | null>(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isPurgeAllModalOpen, setIsPurgeAllModalOpen] = useState(false);
@@ -127,20 +118,25 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
     [listData?.items]
   );
 
-  // Synchronize activeId with current items
-  useEffect(() => {
-    if (currentItems.length > 0) {
-      if (!activeId || !currentItems.some((i) => i.id === activeId)) {
-        setActiveId(currentItems[0].id);
-      }
-    } else {
-      setActiveId(null);
-    }
-  }, [currentItems, activeId]);
+  // Falls back to the first row when the chosen row is no longer on this page.
+  const activeItem =
+    currentItems.find((i) => i.id === chosenActiveId) ?? currentItems[0] ?? null;
+  const activeId = activeItem?.id ?? null;
 
-  const activeItem = useMemo(() => {
-    return currentItems.find((i) => i.id === activeId) || null;
-  }, [currentItems, activeId]);
+  const activateNeighbor = (fromId: string | null, step: 1 | -1) => {
+    const neighbor = currentItems[currentItems.findIndex((i) => i.id === fromId) + step];
+    if (neighbor) setActiveId(neighbor.id);
+  };
+
+  const isDialogOpen =
+    !!rejectDialogItem ||
+    !!duplicateSplitViewItem ||
+    !!drawerReviewId ||
+    !!reviewToDelete ||
+    isBulkDeleteModalOpen ||
+    isPurgeAllModalOpen ||
+    isBulkReassignModalOpen;
+  const isOverlayOpen = isDialogOpen || !!lightboxItem;
 
   // Mutations
   const utils = trpc.useUtils();
@@ -196,7 +192,6 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
           ? "Ulasan berhasil dihapus secara permanen dari basis data."
           : "Ulasan berhasil ditandai REJECTED (kuratif)."
       );
-      setIsDeleteModalOpen(false);
       setReviewToDelete(null);
       return refreshReviews();
     },
@@ -259,128 +254,41 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   };
 
   // Triage Quick Action Handlers
-  const handleApprove = (id: string) => {
-    const targetItem = currentItems.find((i) => i.id === id);
-    if (!targetItem) return;
-
-    // Advance activeId to next row for smooth workflow
-    const currentIndex = currentItems.findIndex((i) => i.id === id);
-    if (currentIndex < currentItems.length - 1) {
-      setActiveId(currentItems[currentIndex + 1].id);
-    }
-
-    showUndoToast(targetItem, "APPROVED");
-
-    submitDecisionMutation.mutate({
-      reviewId: id,
-      decision: "APPROVED",
-    });
+  const submitDecision = (item: ReviewItem, decision: TriageDecision, remarks?: string) => {
+    activateNeighbor(item.id, 1);
+    showUndoToast(item, decision);
+    submitDecisionMutation.mutate({ reviewId: item.id, decision, remarks });
   };
 
-  const handleOpenRejectDialog = (item: ReviewItem) => {
-    setRejectDialogItem(item);
+  const handleApprove = (id: string) => {
+    const item = currentItems.find((i) => i.id === id);
+    if (item) submitDecision(item, "APPROVED");
   };
 
   const handleConfirmReject = (reason: string) => {
     if (!rejectDialogItem) return;
-    const targetItem = rejectDialogItem;
-    const id = targetItem.id;
-
     setRejectDialogItem(null);
-
-    // Advance activeId to next row for smooth workflow
-    const currentIndex = currentItems.findIndex((i) => i.id === id);
-    if (currentIndex < currentItems.length - 1) {
-      setActiveId(currentItems[currentIndex + 1].id);
-    }
-
-    showUndoToast(targetItem, "REJECTED");
-
-    submitDecisionMutation.mutate({
-      reviewId: id,
-      decision: "REJECTED",
-      remarks: reason,
-    });
+    submitDecision(rejectDialogItem, "REJECTED", reason);
   };
 
   // Keyboard Navigation Hotkeys
   useTriageHotkeys(
     {
       onApprove: () => {
-        if (
-          activeId &&
-          !lightboxItem &&
-          !rejectDialogItem &&
-          !duplicateSplitViewItem &&
-          !isDrawerOpen &&
-          !isDeleteModalOpen &&
-          !isBulkDeleteModalOpen &&
-          !isPurgeAllModalOpen &&
-          !isBulkReassignModalOpen
-        ) {
-          handleApprove(activeId);
-        }
+        if (activeId && !isOverlayOpen) handleApprove(activeId);
       },
       onReject: () => {
-        if (
-          activeItem &&
-          !lightboxItem &&
-          !rejectDialogItem &&
-          !duplicateSplitViewItem &&
-          !isDrawerOpen &&
-          !isDeleteModalOpen &&
-          !isBulkDeleteModalOpen &&
-          !isPurgeAllModalOpen &&
-          !isBulkReassignModalOpen
-        ) {
-          handleOpenRejectDialog(activeItem);
-        }
+        if (activeItem && !isOverlayOpen) setRejectDialogItem(activeItem);
       },
       onNext: () => {
-        if (
-          !lightboxItem &&
-          !rejectDialogItem &&
-          !duplicateSplitViewItem &&
-          !isDrawerOpen &&
-          currentItems.length > 0
-        ) {
-          const currentIndex = currentItems.findIndex((i) => i.id === activeId);
-          if (currentIndex < currentItems.length - 1) {
-            setActiveId(currentItems[currentIndex + 1].id);
-          }
-        }
+        if (!isOverlayOpen) activateNeighbor(activeId, 1);
       },
       onPrevious: () => {
-        if (
-          !lightboxItem &&
-          !rejectDialogItem &&
-          !duplicateSplitViewItem &&
-          !isDrawerOpen &&
-          currentItems.length > 0
-        ) {
-          const currentIndex = currentItems.findIndex((i) => i.id === activeId);
-          if (currentIndex > 0) {
-            setActiveId(currentItems[currentIndex - 1].id);
-          }
-        }
+        if (!isOverlayOpen) activateNeighbor(activeId, -1);
       },
       onToggleLightbox: () => {
-        if (
-          rejectDialogItem ||
-          duplicateSplitViewItem ||
-          isDrawerOpen ||
-          isDeleteModalOpen ||
-          isBulkDeleteModalOpen ||
-          isPurgeAllModalOpen ||
-          isBulkReassignModalOpen
-        ) {
-          return;
-        }
-        if (lightboxItem) {
-          setLightboxItem(null);
-        } else if (activeItem) {
-          setLightboxItem(activeItem);
-        }
+        if (isDialogOpen) return;
+        setLightboxItem(lightboxItem ? null : activeItem);
       },
       onCloseModal: () => {
         setLightboxItem(null);
@@ -445,17 +353,13 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   };
 
   // Single Action Handlers
-  const handleOpenDetail = (review: ReviewItem) => {
-    setSelectedReviewForDrawer(review.id);
-    setIsDrawerOpen(true);
-  };
+  const handleOpenDetail = (review: ReviewItem) => setDrawerReviewId(review.id);
 
   const handleOpenDelete = (review: ReviewItem) => {
     setReviewToDelete({
       id: review.id,
       playstoreReviewerName: review.playstoreReviewerName,
     });
-    setIsDeleteModalOpen(true);
   };
 
   // Bulk Action Handlers
@@ -580,7 +484,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
             <div className="flex items-center gap-2 px-3.5 min-h-[44px] py-2 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs max-w-full min-w-0">
               <div className="w-2.5 h-2.5 rounded-full bg-[#16a34a] shrink-0 animate-pulse" />
               <span className="text-[#0f172a] font-semibold truncate" suppressHydrationWarning>
-                {currentSession?.name || (isMounted ? "Petugas Verifikator" : "Petugas Verifikator")}
+                {currentSession?.name || "Petugas Verifikator"}
               </span>
               <span className="text-[#64748b] font-mono text-xs uppercase shrink-0" suppressHydrationWarning>
                 ({userRole})
@@ -715,7 +619,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         activeId={activeId}
         onSelectActive={(id) => setActiveId(id)}
         onApprove={handleApprove}
-        onReject={handleOpenRejectDialog}
+        onReject={setRejectDialogItem}
         onOpenLightbox={(item) => setLightboxItem(item)}
       />
 
@@ -742,7 +646,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         onApprove={handleApprove}
         onReject={(id) => {
           const item = currentItems.find((i) => i.id === id);
-          if (item) handleOpenRejectDialog(item);
+          if (item) setRejectDialogItem(item);
         }}
       />
 
@@ -756,12 +660,9 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
 
       {/* Slide-Over Inspection & Edit Drawer */}
       <ReviewDetailDrawer
-        reviewId={selectedReviewForDrawer}
-        isOpen={isDrawerOpen}
-        onClose={() => {
-          setIsDrawerOpen(false);
-          setSelectedReviewForDrawer(null);
-        }}
+        reviewId={drawerReviewId}
+        isOpen={!!drawerReviewId}
+        onClose={() => setDrawerReviewId(null)}
         up3s={filterOptions?.up3s || []}
         ulps={filterOptions?.ulps || []}
         onReviewUpdated={() => {
@@ -827,11 +728,8 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
 
       {/* Delete / Curative Rejection Modal */}
       <DeleteReviewModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setReviewToDelete(null);
-        }}
+        isOpen={!!reviewToDelete}
+        onClose={() => setReviewToDelete(null)}
         review={reviewToDelete}
         userRole={userRole}
         onConfirmDelete={(data) => {
