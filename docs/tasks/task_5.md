@@ -2,7 +2,9 @@
 
 > **Status:** Completed / Verified ✅  
 > **Fase:** 2 (Modul Fitur Utama - Modul 4.4 PRD)  
-> **Target Audiens:** Data Engineer, Backend Engineer, Frontend Engineer  
+> **Target Audiens:** Data Engineer, Backend Engineer, Frontend Engineer
+>
+> **Diperbarui 2026-11-27:** `TargetMaster` dan `reportService.ts` sudah diganti. Target kini berasal dari Kalender Target UID-wide, dan seluruh laporan dihitung oleh modul Laporan Capaian (`src/server/services/achievementReport.ts`). Lihat [ADR-0002](../adr/0002-uid-wide-target-calendar.md) dan `GLOSSARY.md`. Rumus di bawah ini adalah catatan historis.  
 > **Referensi Wajib:**
 > - [`docs/PRD.md`](file:///Users/a69/Desktop/goro-s2jb/docs/PRD.md) (Bagian 1.2: Inkonsistensi Historis Target Kinerja, Bagian 4.4: Modul Laporan Eksekutif, Bagian 5: RBAC Role Manager)
 > - [`docs/GORO S2JB 2026 (Jawaban).xlsx`](file:///Users/a69/Desktop/goro-s2jb/docs/GORO%20S2JB%202026%20%28Jawaban%29.xlsx) (Sheet *LAPORAN HARIAN H-1*, *LAPORAN HARIAN*, dan *LAPORAN BULANAN*)

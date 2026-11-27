@@ -44,6 +44,28 @@ _Avoid_: Bulk job, raw import, antrean impor mentah
 Penilaian manual oleh operator atas Eviden Ulasan yang menunggu verifikasi atau perlu triase (Zona Kuning) untuk menetapkan status akhir, termasuk koreksi kuratif dan peninjauan duplikasi.
 _Avoid_: Kurasi saja, approval manual, antrean triage terpisah
 
+### Pelaporan Capaian
+
+**Laporan Capaian**:
+Perbandingan Realisasi terhadap target per ULP, subtotal UP3, dan total UID pada satu Posisi Tanggal, disajikan sebagai Laporan Harian, Laporan Bulanan, Kurva Pacing, dan KPI Eksekutif.
+_Avoid_: Report service, laporan eksekutif saja, dashboard
+
+**Posisi Tanggal**:
+Satu hari kalender WIB yang menjadi acuan seluruh Laporan Capaian; bulan laporan adalah bulan yang memuat tanggal ini, dan tidak boleh melewati hari ini.
+_Avoid_: Periode, asOfDate, tanggal target, year/month terpisah
+
+**Kalender Target**:
+Target harian per tanggal yang berlaku seragam untuk setiap ULP di UID; tanggal sebelum hari ini terkunci, dan nilai 0 berarti tidak ada target pada hari itu.
+_Avoid_: Target config, TargetMaster, target hari kerja/akhir pekan
+
+**Target Kumulatif**:
+Jumlah Kalender Target sejak tanggal 1 bulan berjalan hingga Posisi Tanggal; selalu dihitung, tidak pernah disimpan.
+_Avoid_: Target bulanan tetap, target 1100
+
+**Realisasi**:
+Jumlah ulasan berstatus disetujui (APPROVED) per ULP menurut tanggal entri, harian pada Posisi Tanggal atau kumulatif sejak tanggal 1 bulan berjalan.
+_Avoid_: Capaian mentah, jumlah ulasan, entri
+
 ### Telemetri & Kesehatan Sistem
 
 **Telemetri Sistem**:
