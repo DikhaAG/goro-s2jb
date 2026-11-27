@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { Role } from "@prisma/client";
 import { appRouter } from "@/server/routers/_app";
 import { createContext } from "@/server/context";
 import { GET as getHealth } from "@/app/api/health/route";
@@ -7,10 +8,17 @@ import redis from "@/lib/redis";
 
 describe("tRPC v11 API Routers (Health, Master)", () => {
   let caller: ReturnType<typeof appRouter.createCaller>;
+  let anonymousCaller: ReturnType<typeof appRouter.createCaller>;
+  let callerAs: (role: Role) => Promise<ReturnType<typeof appRouter.createCaller>>;
 
   beforeAll(async () => {
-    const ctx = await createContext();
-    caller = appRouter.createCaller(ctx);
+    callerAs = async (role: Role) => {
+      const ctx = await createContext();
+      ctx.user = { id: `usr_${role.toLowerCase()}`, username: role.toLowerCase(), name: role, role };
+      return appRouter.createCaller(ctx);
+    };
+    caller = await callerAs(Role.PETUGAS_LAPANGAN);
+    anonymousCaller = appRouter.createCaller(await createContext());
   });
 
   afterAll(async () => {
@@ -52,5 +60,23 @@ describe("tRPC v11 API Routers (Health, Master)", () => {
     const v5279 = versions.find((v) => v.version === "V5.2.79");
     expect(v5279).toBeDefined();
     expect(v5279?.isActive).toBe(true);
+  });
+
+  it("rejects every master procedure for a visitor who is not logged in", async () => {
+    await expect(anonymousCaller.master.getUnits()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(anonymousCaller.master.getUlps()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(anonymousCaller.master.getVersions()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(anonymousCaller.master.getTargets()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("keeps report targets for Manager and Super Admin only", async () => {
+    for (const role of [Role.PETUGAS_LAPANGAN, Role.PEGAWAI]) {
+      const roleCaller = await callerAs(role);
+      await expect(roleCaller.master.getTargets()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    for (const role of [Role.MANAGER, Role.SUPER_ADMIN]) {
+      const roleCaller = await callerAs(role);
+      await expect(roleCaller.master.getTargets()).resolves.toBeInstanceOf(Array);
+    }
   });
 });

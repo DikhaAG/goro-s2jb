@@ -1,8 +1,8 @@
-import { router, publicProcedure } from "../trpc";
+import { router, protectedProcedure, executiveProcedure } from "../trpc";
 import { z } from "zod";
 
 export const masterRouter = router({
-  getUnits: publicProcedure.query(async ({ ctx }) => {
+  getUnits: protectedProcedure.query(async ({ ctx }) => {
     return ctx.prisma.uP3.findMany({
       orderBy: { code: "asc" },
       include: {
@@ -13,7 +13,7 @@ export const masterRouter = router({
     });
   }),
 
-  getUlps: publicProcedure
+  getUlps: protectedProcedure
     .input(
       z
         .object({
@@ -31,14 +31,14 @@ export const masterRouter = router({
       });
     }),
 
-  getVersions: publicProcedure.query(async ({ ctx }) => {
+  getVersions: protectedProcedure.query(async ({ ctx }) => {
     return ctx.prisma.appVersion.findMany({
       where: { isActive: true },
       orderBy: { version: "desc" },
     });
   }),
 
-  getTargets: publicProcedure
+  getTargets: executiveProcedure
     .input(
       z
         .object({
