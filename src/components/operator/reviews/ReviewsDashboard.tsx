@@ -311,10 +311,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         setDuplicateSplitViewItem(null);
       },
     },
-    {
-      enabled: true,
-      isModalOpen: !!lightboxItem || !!rejectDialogItem || !!duplicateSplitViewItem,
-    }
+    { isModalOpen: !!lightboxItem || !!rejectDialogItem || !!duplicateSplitViewItem }
   );
 
   // Filter Handlers

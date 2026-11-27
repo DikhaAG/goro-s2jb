@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 
 export interface TriageHotkeyActions {
   onApprove?: () => void;
@@ -15,7 +15,7 @@ export interface UseTriageHotkeysOptions {
 }
 
 export function dispatchTriageKey(
-  event: { key: string; preventDefault?: () => void; target?: any },
+  event: { key: string; preventDefault?: () => void; target?: unknown },
   actions: TriageHotkeyActions,
   options: UseTriageHotkeysOptions = { enabled: true, isModalOpen: false }
 ) {
@@ -85,20 +85,21 @@ export function dispatchTriageKey(
 
 export function useTriageHotkeys(
   actions: TriageHotkeyActions,
-  options: UseTriageHotkeysOptions = { enabled: true, isModalOpen: false }
+  options: UseTriageHotkeysOptions = {}
 ) {
   const { enabled = true, isModalOpen = false } = options;
+
+  // Always sees the latest actions and modal state, so the listener is added once
+  // instead of on every render (actions is a fresh object each time).
+  const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    dispatchTriageKey(event, actions, { enabled, isModalOpen });
+  });
 
   useEffect(() => {
     if (!enabled) return;
 
-    function handleKeyDown(event: KeyboardEvent) {
-      dispatchTriageKey(event, actions, options);
-    }
-
+    const handleKeyDown = (event: KeyboardEvent) => onKeyDown(event);
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [actions, enabled, isModalOpen, options]);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [enabled]);
 }
