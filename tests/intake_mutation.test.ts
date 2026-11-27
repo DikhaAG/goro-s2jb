@@ -62,7 +62,8 @@ describe("Intake Mutation Procedure (trpc.intake.submitReview)", () => {
   });
 
   it("should accept valid payload, save image to date directory, create RatingReview in PENDING state, and queue OCR job in <500ms", async () => {
-    const sampleBuffer = Buffer.from("dummy-image-content-for-intake-test");
+    // Real JPEG magic bytes: Pengumpulan Eviden decides the type from the bytes, not the data URL prefix.
+    const sampleBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01]);
     const sampleBase64 = "data:image/jpeg;base64," + sampleBuffer.toString("base64");
 
     const result = await caller.intake.submitReview({
@@ -75,7 +76,6 @@ describe("Intake Mutation Procedure (trpc.intake.submitReview)", () => {
       reviewerCategory: "Pelanggan",
       fieldNotes: "Ulasan dari pelanggan gardu 4",
       evidenceImageBase64: sampleBase64,
-      evidenceFilename: "bukti_hendra.jpg",
     });
 
     expect(result.success).toBe(true);

@@ -6,40 +6,36 @@ export const BASE_UPLOAD_DIR = path.resolve(
   process.env.STORAGE_PATH || path.join(process.cwd(), "uploads")
 );
 
-export const ALLOWED_MIME_TYPES: Record<string, string[]> = {
-  "image/jpeg": [".jpg", ".jpeg"],
-  "image/png": [".png"],
-  "image/webp": [".webp"],
-};
-
 export const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 
+const EXTENSION_BY_IMAGE_TYPE = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+} as const;
+
+export type EvidenceImageType = keyof typeof EXTENSION_BY_IMAGE_TYPE;
+
 /**
- * Validates whether the given MIME type and file extension are allowed evidence image types.
+ * Writes an evidence image to `<root>/evidence/YYYY/MM/DD/` and returns its path relative to root.
+ * It does not validate: callers pass a type already detected from the bytes.
  */
-export function validateEvidenceMime(mimeType: string, filename?: string): boolean {
-  const normalizedMime = mimeType.toLowerCase();
-  if (!ALLOWED_MIME_TYPES[normalizedMime]) {
-    return false;
-  }
-
-  if (filename) {
-    const ext = path.extname(filename).toLowerCase();
-    const allowedExts = ALLOWED_MIME_TYPES[normalizedMime];
-    return allowedExts.includes(ext);
-  }
-
-  return true;
+export async function storeEvidenceImage(
+  root: string,
+  bytes: Buffer,
+  type: EvidenceImageType,
+  entryDate: string
+): Promise<string> {
+  const [yyyy, mm, dd] = entryDate.split("-");
+  const relativeDir = path.posix.join("evidence", yyyy, mm, dd);
+  const filename = `eviden_${Date.now()}_${crypto.randomBytes(8).toString("hex")}${EXTENSION_BY_IMAGE_TYPE[type]}`;
+  await fs.promises.mkdir(path.join(root, relativeDir), { recursive: true });
+  await fs.promises.writeFile(path.join(root, relativeDir, filename), bytes);
+  return path.posix.join(relativeDir, filename);
 }
 
-/**
- * Returns date-based directory structure (YYYY/MM/DD).
- */
-export function getDateBasedSubdir(date: Date = new Date()): string {
-  const yyyy = date.getFullYear().toString();
-  const mm = (date.getMonth() + 1).toString().padStart(2, "0");
-  const dd = date.getDate().toString().padStart(2, "0");
-  return path.join("evidence", yyyy, mm, dd);
+export async function discardEvidenceImage(root: string, relativePath: string): Promise<void> {
+  await fs.promises.rm(path.join(root, relativePath), { force: true }).catch(() => {});
 }
 
 /**
@@ -73,59 +69,4 @@ export function resolveEvidencePath(relativePath: string): {
     isAllowed: isInside && isAllowedExt,
     contentType,
   };
-}
-
-/**
- * Saves an uploaded buffer into the date-based folder structure.
- */
-export async function saveEvidenceFile(
-  buffer: Buffer,
-  originalFilename: string,
-  mimeType: string,
-  targetDate: Date = new Date()
-): Promise<{ relativePath: string; absolutePath: string; filename: string }> {
-  if (!validateEvidenceMime(mimeType, originalFilename)) {
-    throw new Error(`Unsupported MIME type or extension: ${mimeType}`);
-  }
-
-  const dateSubdir = getDateBasedSubdir(targetDate);
-  const targetDir = path.join(BASE_UPLOAD_DIR, dateSubdir);
-
-  await fs.promises.mkdir(targetDir, { recursive: true });
-
-  const ext = path.extname(originalFilename).toLowerCase() || ".jpg";
-  const uniqueId = crypto.randomBytes(8).toString("hex");
-  const timestamp = Date.now();
-  const filename = `eviden_${timestamp}_${uniqueId}${ext}`;
-
-  const absolutePath = path.join(targetDir, filename);
-  await fs.promises.writeFile(absolutePath, buffer);
-
-  const relativePath = path.join(dateSubdir, filename).replace(/\\/g, "/");
-
-  return {
-    relativePath,
-    absolutePath,
-    filename,
-  };
-}
-
-/**
- * Deletes an evidence file if exists safely.
- */
-export async function deleteEvidenceFile(relativePath: string): Promise<boolean> {
-  const { safeAbsolutePath, isAllowed } = resolveEvidencePath(relativePath);
-  if (!isAllowed) {
-    throw new Error("Invalid or unsafe file path");
-  }
-
-  try {
-    if (fs.existsSync(safeAbsolutePath)) {
-      await fs.promises.unlink(safeAbsolutePath);
-      return true;
-    }
-  } catch (err) {
-    console.error("Failed to delete evidence file:", err);
-  }
-  return false;
 }

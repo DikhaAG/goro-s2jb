@@ -6,11 +6,14 @@ import { Role } from "@prisma/client";
 import { BASE_UPLOAD_DIR } from "@/lib/storage";
 import { session } from "@/server/session/live";
 
+// Eviden Ulasan goes through trpc.intake.submitReview. This route only stores Batch Migrasi spreadsheets.
+const MIGRATION_UPLOAD_DIR = path.join(BASE_UPLOAD_DIR, "migration");
+const MIGRATION_ROLES: Role[] = [Role.PEGAWAI, Role.SUPER_ADMIN];
+const MIGRATION_EXTENSIONS = [".csv", ".xlsx", ".xls"];
+
 export async function POST(req: NextRequest) {
   try {
-    // 1. Layer 3 Authentication Guard: Verify active JWT session
     const user = await session.getUser(req.headers);
-
     if (!user) {
       return NextResponse.json(
         { error: "Autentikasi diperlukan untuk mengunggah berkas." },
@@ -19,56 +22,40 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const uploadType = (formData.get("type") as string) || "evidence";
-
-    // 2. Layer 3 Authorization Guard: Check role permissions per upload category
-    if (uploadType === "migration") {
-      const allowedRoles: Role[] = [Role.PEGAWAI, Role.SUPER_ADMIN];
-      if (!allowedRoles.includes(user.role)) {
-        return NextResponse.json(
-          { error: "Akses ditolak. Hanya Pegawai Triase atau Super Admin yang diizinkan mengunggah berkas migrasi." },
-          { status: 403 }
-        );
-      }
-    } else {
-      // Default to evidence: field officer or super admin
-      const allowedRoles: Role[] = [Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN];
-      if (!allowedRoles.includes(user.role)) {
-        return NextResponse.json(
-          { error: "Akses ditolak. Hanya Petugas Lapangan atau Super Admin yang diizinkan mengunggah bukti." },
-          { status: 403 }
-        );
-      }
+    if (formData.get("type") !== "migration") {
+      return NextResponse.json(
+        { error: "Jenis unggahan tidak didukung. Rute ini hanya menerima berkas Batch Migrasi." },
+        { status: 400 }
+      );
     }
 
-    if (!file) {
+    if (!MIGRATION_ROLES.includes(user.role)) {
+      return NextResponse.json(
+        { error: "Akses ditolak. Hanya Pegawai Triase atau Super Admin yang diizinkan mengunggah berkas migrasi." },
+        { status: 403 }
+      );
+    }
+
+    const file = formData.get("file");
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     const originalName = file.name;
-    const ext = path.extname(originalName).toLowerCase();
-
-    // Check extension for migration
-    if (uploadType === "migration") {
-      if (ext !== ".csv" && ext !== ".xlsx" && ext !== ".xls") {
-        return NextResponse.json(
-          { error: "Only CSV and XLSX files are supported for migration" },
-          { status: 400 }
-        );
-      }
+    if (!MIGRATION_EXTENSIONS.includes(path.extname(originalName).toLowerCase())) {
+      return NextResponse.json(
+        { error: "Only CSV and XLSX files are supported for migration" },
+        { status: 400 }
+      );
     }
 
-    const targetSubdir = path.join(BASE_UPLOAD_DIR, uploadType);
-    await fs.promises.mkdir(targetSubdir, { recursive: true });
+    await fs.promises.mkdir(MIGRATION_UPLOAD_DIR, { recursive: true });
 
     const uniqueId = crypto.randomBytes(6).toString("hex");
     const sanitizedName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const filename = `${Date.now()}_${uniqueId}_${sanitizedName}`;
-    const destination = path.join(targetSubdir, filename);
+    const destination = path.join(MIGRATION_UPLOAD_DIR, `${Date.now()}_${uniqueId}_${sanitizedName}`);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.promises.writeFile(destination, buffer);
+    await fs.promises.writeFile(destination, Buffer.from(await file.arrayBuffer()));
 
     return NextResponse.json({
       success: true,

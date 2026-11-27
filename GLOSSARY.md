@@ -6,6 +6,10 @@ Sistem komando pengelolaan, triase OCR, dan pelaporan bukti ulasan rating pelang
 
 ### Pengumpulan Eviden (Field Intake)
 
+**Pengumpulan Eviden**:
+Penyerahan satu Eviden Ulasan beserta data ulasannya oleh Petugas Lapangan, yang berakhir diterima untuk Verifikasi Eviden atau ditolak dengan alasan yang jelas.
+_Avoid_: Upload, intake form, input eviden
+
 **Eviden Ulasan**:
 Bukti gambar ulasan rating PLN Mobile pada Google Play Store yang dikirim petugas untuk divalidasi, mencakup baik Foto Kamera Langsung maupun Tangkapan Layar.
 _Avoid_: Screenshot saja, foto mentah, lampiran

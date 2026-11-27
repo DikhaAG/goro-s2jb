@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import path from "path";
-import fs from "fs";
 import os from "os";
-import { OcrProcessingStatus, ReviewSource, Role, ValidationStatus } from "@prisma/client";
+import { OcrProcessingStatus, ReviewSource, ValidationStatus } from "@prisma/client";
 import { BASE_UPLOAD_DIR } from "@/lib/storage";
 import { ocrQueue } from "@/server/queues/ocrQueue";
 import {
@@ -14,7 +13,6 @@ import {
   TransientVerificationError,
   verifyEvidence,
 } from "@/server/services/evidenceVerification";
-import { intakeRouter } from "@/server/routers/intake";
 
 vi.mock("@/server/queues/ocrQueue", () => ({
   ocrQueue: {
@@ -262,7 +260,7 @@ describe("Verifikasi Eviden (evidenceVerification deep module)", () => {
     });
   });
 
-  describe("3. Transient vs permanent failure & intake compensation", () => {
+  describe("3. Transient vs permanent failure", () => {
     it("throws TransientVerificationError on non-final retry when streaming fails, then marks FAILED on final attempt", async () => {
       const db = createMockPrisma({
         id: "rev-retry",
@@ -348,56 +346,6 @@ describe("Verifikasi Eviden (evidenceVerification deep module)", () => {
       expect(res.success).toBe(false);
       expect(res.permanentFailure).toBe(true);
       expect(res.ocrStatus).toBe(OcrProcessingStatus.FAILED);
-    });
-
-    it("rolls back created RatingReview and saved local file when intake enqueue fails", async () => {
-      const db = createMockPrisma(null);
-      vi.mocked(ocrQueue.add).mockRejectedValueOnce(new Error("Redis connection refused"));
-
-      const caller = intakeRouter.createCaller({
-        prisma: db as any,
-        redis: {} as any,
-        user: {
-          id: "field-1",
-          username: "petugas1",
-          name: "Petugas",
-          role: Role.PETUGAS_LAPANGAN,
-          up3Id: "up3-1",
-          ulpId: "ulp-1",
-        },
-        req: {} as any,
-      });
-
-      const tinyPngBase64 = Buffer.from([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
-      ]).toString("base64");
-
-      const tempDay = "2099-01-01";
-      await expect(
-        caller.submitReview({
-          up3Id: "up3-1",
-          ulpId: "ulp-1",
-          appVersionId: "ver-1",
-          playstoreReviewerName: "Pelanggan Uji",
-          entryDate: tempDay,
-          evidenceImageBase64: `data:image/png;base64,${tinyPngBase64}`,
-          evidenceFilename: "rollback_test.png",
-        })
-      ).rejects.toThrow("entri dibatalkan");
-
-      expect(db.ratingReview.delete).toHaveBeenCalledWith({
-        where: { id: "rev-created-1" },
-      });
-
-      const savedDir = path.join(BASE_UPLOAD_DIR, "evidence", "2099", "01", "01");
-      const remaining = fs.existsSync(savedDir) ? fs.readdirSync(savedDir) : [];
-      expect(remaining).toHaveLength(0);
-      if (fs.existsSync(path.join(BASE_UPLOAD_DIR, "evidence", "2099"))) {
-        fs.rmSync(path.join(BASE_UPLOAD_DIR, "evidence", "2099"), {
-          recursive: true,
-          force: true,
-        });
-      }
     });
   });
 

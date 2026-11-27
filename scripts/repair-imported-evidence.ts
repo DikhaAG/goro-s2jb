@@ -1,9 +1,6 @@
 import prisma from "@/lib/prisma";
-import { saveEvidenceFile } from "@/lib/storage";
-import {
-  extractGoogleDriveFileId,
-  streamExternalEvidence,
-} from "@/server/services/evidenceAcquisition";
+import { BASE_UPLOAD_DIR, storeEvidenceImage, type EvidenceImageType } from "@/lib/storage";
+import { streamExternalEvidence } from "@/server/services/evidenceAcquisition";
 import { enqueueEvidenceVerification } from "@/server/services/evidenceVerification";
 
 async function repairImportedEvidence() {
@@ -38,35 +35,27 @@ async function repairImportedEvidence() {
       const streamResult = await streamExternalEvidence(review.evidenceImagePath);
 
       if (streamResult.success && streamResult.buffer) {
-        const mimeType = streamResult.mimeType || "image/jpeg";
-        const ext =
-          mimeType === "image/png"
-            ? ".png"
-            : mimeType === "image/webp"
-            ? ".webp"
-            : ".jpg";
-        const driveId = extractGoogleDriveFileId(review.evidenceImagePath);
-        const filename = driveId ? `gdrive_${driveId}${ext}` : `imported_${Date.now()}${ext}`;
-        const saved = await saveEvidenceFile(
+        const imageType = (streamResult.mimeType || "image/jpeg") as EvidenceImageType;
+        const savedPath = await storeEvidenceImage(
+          BASE_UPLOAD_DIR,
           streamResult.buffer,
-          filename,
-          mimeType,
-          review.entryDate
+          imageType,
+          review.entryDate.toISOString().slice(0, 10)
         );
 
-        console.log(`✅ Saved locally to: ${saved.relativePath}`);
+        console.log(`✅ Saved locally to: ${savedPath}`);
 
         await prisma.ratingReview.update({
           where: { id: review.id },
           data: {
-            evidenceImagePath: saved.relativePath,
+            evidenceImagePath: savedPath,
           },
         });
 
         const enqueued = await enqueueEvidenceVerification(
           {
             reviewId: review.id,
-            evidenceImagePath: saved.relativePath,
+            evidenceImagePath: savedPath,
             expectedReviewerName: review.playstoreReviewerName,
           },
           { priority: 2 }
