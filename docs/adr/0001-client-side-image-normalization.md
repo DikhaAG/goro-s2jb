@@ -22,6 +22,6 @@ Field officers (`Petugas Lapangan`) submit `Eviden Ulasan` via `/intake` on Andr
 ## Consequences
 
 - Client-side re-encoding slightly changes byte hashes compared to the original phone file, so duplicate detection (`pHash`) operates on the normalized visual representation rather than raw camera bytes.
-- Because `src/lib/storage.ts` validates both MIME type and filename extension, client-side JPEG conversion must rewrite `.heic`/`.heif` filenames to `.jpg` before submission.
+- ~~Because `src/lib/storage.ts` validates both MIME type and filename extension, client-side JPEG conversion must rewrite `.heic`/`.heif` filenames to `.jpg` before submission.~~ *Updated 2026-11-27:* Pengumpulan Eviden now decides the evidence type from the image bytes and ignores the client's MIME type and filename. The client must send JPEG, PNG or WebP bytes no larger than 5 MB. Renaming `.heic` to `.jpg` only affects what the form displays.
 - Cross-browser HEIC support on Android Chrome and Desktop requires a lazy-loaded client decoder dependency (`heic2any`), loaded only when a HEIC/HEIF file is chosen.
 
