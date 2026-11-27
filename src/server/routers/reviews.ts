@@ -1,15 +1,13 @@
 import { router, operatorProcedure } from "../trpc";
 import { z } from "zod";
 import { PrismaClient, ValidationStatus } from "@prisma/client";
-import {
-  createRedisCacheStampAdapter,
-  createReviewWorkflow,
-} from "../services/reviewWorkflow";
+import { createReviewWorkflow } from "../services/reviewWorkflow";
+import { createReportSyncStamp } from "../services/achievementReport";
 
 function workflowFromCtx(ctx: { prisma: PrismaClient; redis?: any }) {
   return createReviewWorkflow({
     prisma: ctx.prisma,
-    stampReportsCache: createRedisCacheStampAdapter(ctx.redis),
+    markReportsUpdated: createReportSyncStamp(() => ctx.redis).markUpdated,
   });
 }
 

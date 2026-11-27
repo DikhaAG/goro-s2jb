@@ -8,6 +8,7 @@ import redis from "@/lib/redis";
 import { BASE_UPLOAD_DIR, confineToRoot } from "@/lib/storage";
 import { IMPORT_QUEUE_NAME, importQueue } from "@/server/queues/importQueue";
 import { logAuditEvent } from "@/server/services/auditService";
+import { createReportSyncStamp } from "@/server/services/achievementReport";
 import { extractGoogleDriveFileId } from "@/server/services/evidenceAcquisition";
 import { enqueueEvidenceVerification } from "@/server/services/evidenceVerification";
 import { systemTelemetry } from "@/server/services/systemTelemetry";
@@ -1217,24 +1218,7 @@ export function createMigrationBatch(defaultDeps: MigrationBatchDeps = {}) {
           },
         });
 
-        try {
-          const syncTimestamp = Date.now().toString();
-          await redisClient.set("reports:last_update_timestamp", syncTimestamp);
-          await redisClient.set(
-            "reports:latest_completed_batch",
-            JSON.stringify({
-              id: importBatchId,
-              fileName: existingBatch.fileName,
-              completedAt: new Date().toISOString(),
-              processedRows: totalProcessedRows,
-            })
-          );
-        } catch (redisSyncErr: any) {
-          console.warn(
-            "[Batch Migrasi] Failed to set reports sync flag in Redis:",
-            redisSyncErr?.message
-          );
-        }
+        await createReportSyncStamp(() => redisClient).markUpdated();
 
         await recordTelemetry({
           kind: "queue_job",

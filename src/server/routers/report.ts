@@ -2,10 +2,18 @@ import { router, executiveProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import type { Context } from "../context";
-import { createAchievementReport, type AchievementReport } from "../services/achievementReport";
+import {
+  createAchievementReport,
+  createReportSyncStamp,
+  type AchievementReport,
+} from "../services/achievementReport";
 
 function reportFor(ctx: Context): AchievementReport {
-  return createAchievementReport({ db: ctx.prisma, now: () => new Date() });
+  return createAchievementReport({
+    db: ctx.prisma,
+    now: () => new Date(),
+    syncStamp: createReportSyncStamp(() => ctx.redis),
+  });
 }
 
 function posisiOrThrow(report: AchievementReport, input: string | undefined) {
@@ -65,11 +73,6 @@ export const reportRouter = router({
           },
         });
       }
-      try {
-        await ctx.redis.set("reports:last_update_timestamp", Date.now().toString());
-      } catch {
-        // Live refresh is best effort; the reports read the calendar directly.
-      }
       return result;
     }),
 
@@ -108,60 +111,5 @@ export const reportRouter = router({
       });
     }),
 
-  getSyncStatus: executiveProcedure.query(async ({ ctx }) => {
-    // 1. Ambil data batch migrasi terbaru untuk deteksi perubahan status impor
-    const latestBatch = await ctx.prisma.migrationBatch.findFirst({
-      orderBy: { updatedAt: "desc" },
-      select: {
-        id: true,
-        fileName: true,
-        status: true,
-        completedAt: true,
-        updatedAt: true,
-        processedRows: true,
-        totalRows: true,
-      },
-    });
-
-    // 2. Ambil tanggal ulasan disetujui (APPROVED) terbaru dan total ulasan
-    const [latestApprovedReview, totalApprovedCount, totalReviewsCount] = await Promise.all([
-      ctx.prisma.ratingReview.findFirst({
-        where: { validationStatus: "APPROVED" },
-        orderBy: { entryDate: "desc" },
-        select: {
-          id: true,
-          entryDate: true,
-          updatedAt: true,
-        },
-      }),
-      ctx.prisma.ratingReview.count({
-        where: { validationStatus: "APPROVED" },
-      }),
-      ctx.prisma.ratingReview.count(),
-    ]);
-
-    let redisTimestamp: string | null = null;
-    try {
-      const redis = (await import("@/lib/redis")).default;
-      redisTimestamp = await redis.get("reports:last_update_timestamp");
-    } catch {
-      // Non-critical fallback
-    }
-
-    const lastDataUpdate = latestApprovedReview?.updatedAt
-      ? new Date(latestApprovedReview.updatedAt).getTime()
-      : latestBatch?.updatedAt
-      ? new Date(latestBatch.updatedAt).getTime()
-      : Date.now();
-
-    return {
-      lastSyncTimestamp: redisTimestamp || lastDataUpdate.toString(),
-      latestBatch,
-      latestApprovedReviewDate: latestApprovedReview?.entryDate
-        ? new Date(latestApprovedReview.entryDate).toISOString()
-        : null,
-      totalApprovedCount,
-      totalReviewsCount,
-    };
-  }),
+  getSyncStatus: executiveProcedure.query(async ({ ctx }) => reportFor(ctx).syncStatus()),
 });

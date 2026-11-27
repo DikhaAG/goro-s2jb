@@ -1,12 +1,28 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import prisma from "@/lib/prisma";
-import { createAchievementReport } from "@/server/services/achievementReport";
+import {
+  createAchievementReport,
+  createReportSyncStamp,
+  isExportFormat,
+  type ReportSyncStamp,
+} from "@/server/services/achievementReport";
 
 // 2099-03-10T18:30Z is 2099-03-11 01:30 WIB: "today" is the 11th, not the 10th.
 const NOW = new Date("2099-03-10T18:30:00Z");
 
-function report(now: Date = NOW) {
-  return createAchievementReport({ db: prisma, now: () => now });
+function report(now: Date = NOW, syncStamp?: ReportSyncStamp) {
+  return createAchievementReport({ db: prisma, now: () => now, syncStamp });
+}
+
+function memorySyncStamp(now: Date = NOW) {
+  const store = new Map<string, string>();
+  return createReportSyncStamp(
+    () => ({
+      get: async (key: string) => store.get(key) ?? null,
+      set: async (key: string, value: string) => store.set(key, value),
+    }),
+    () => now
+  );
 }
 
 // Every fixture lives in 2099 so it never meets seeded or real data.
@@ -48,6 +64,18 @@ describe("Laporan Capaian: Kalender Target", () => {
     const march = await report().calendar(2099, 3);
     expect(march[9].isDefault).toBe(true);
     expect(march[12].isDefault).toBe(true);
+  });
+
+  it("stamps the sync time only when a calendar change is stored", async () => {
+    const stamp = memorySyncStamp();
+
+    const refused = await report(NOW, stamp).setCalendar([{ date: "2099-03-01", dailyTarget: 10 }]);
+    expect(refused.ok).toBe(false);
+    expect(await stamp.lastUpdated()).toBeNull();
+
+    const stored = await report(NOW, stamp).setCalendar([{ date: "2099-03-14", dailyTarget: 10 }]);
+    expect(stored.ok).toBe(true);
+    expect(await stamp.lastUpdated()).toBe(String(NOW.getTime()));
   });
 
   it("refuses targets that are not whole numbers between 0 and 10000", async () => {
@@ -234,6 +262,20 @@ describe("Laporan Capaian: reports", () => {
     await report().setCalendar([{ date: "2099-03-11", dailyTarget: 0 }]);
   });
 
+  it("exports the Laporan Harian and Laporan Bulanan as one workbook", async () => {
+    const doc = await report().exportDocument("excel", posisi("2099-03-10"), { up3Id });
+    expect(doc.contentType).toContain("spreadsheetml.sheet");
+    expect(doc.filename).toBe("GORO_S2JB_Laporan_Eksekutif_2099-03-10.xlsx");
+    expect(Buffer.isBuffer(doc.body) && doc.body.length).toBeGreaterThan(0);
+  });
+
+  it("exports a printable page for the same Posisi Tanggal", async () => {
+    const doc = await report().exportDocument("pdf", posisi("2099-03-10"), { up3Id });
+    expect(doc.contentType).toContain("text/html");
+    expect(doc.filename).toBeUndefined();
+    expect(String(doc.body)).toContain("ULP A");
+  });
+
   it("marks TERCAPAI once Realisasi reaches the target exactly", async () => {
     const onApril1 = report(new Date("2099-04-01T05:00:00Z"));
     const parsed = onApril1.parsePosisi("2099-04-01");
@@ -246,6 +288,31 @@ describe("Laporan Capaian: reports", () => {
 
     const monthly = await onApril1.monthly(parsed.posisi, { up3Id });
     expect(monthly.groups[0].ulps[1]).toMatchObject({ cumulativeTarget: 1, cumulativeRealization: 1, status: "TERCAPAI" });
+  });
+});
+
+describe("Laporan Capaian: sync status", () => {
+  it("reports the sync stamp when one was recorded", async () => {
+    const stamp = memorySyncStamp();
+    await stamp.markUpdated();
+    const status = await report(NOW, stamp).syncStatus();
+    expect(status.lastSyncTimestamp).toBe(String(NOW.getTime()));
+    expect(typeof status.totalApprovedCount).toBe("number");
+    expect(status.totalReviewsCount).toBeGreaterThanOrEqual(status.totalApprovedCount);
+  });
+
+  it("falls back to the latest data change when no stamp exists", async () => {
+    const status = await report(NOW, memorySyncStamp()).syncStatus();
+    expect(status.lastSyncTimestamp).toMatch(/^\d+$/);
+  });
+});
+
+describe("Laporan Capaian: export formats", () => {
+  it("knows excel and pdf, nothing else", () => {
+    expect(isExportFormat("excel")).toBe(true);
+    expect(isExportFormat("pdf")).toBe(true);
+    expect(isExportFormat("csv")).toBe(false);
+    expect(isExportFormat(undefined)).toBe(false);
   });
 });
 

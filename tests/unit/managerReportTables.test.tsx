@@ -1,12 +1,8 @@
 import React from "react";
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ReportTableMonthly } from "@/components/manager/ReportTableMonthly";
-import { ReportTableDaily } from "@/components/manager/ReportTableDaily";
-import {
-  calcReportPercentage,
-  calcReportStatus,
-} from "@/components/manager/ReportDataTable";
+import { ReportTable } from "@/components/manager/ReportTable";
+import { achievementPercentage, achievementStatus } from "@/lib/achievementMath";
 import type { Up3GroupDaily, Up3GroupMonthly } from "@/server/services/achievementReport";
 
 const monthlyGroups: Up3GroupMonthly[] = [
@@ -99,16 +95,16 @@ const dailyGrandTotal = {
 describe("Manager TanStack Report Tables", () => {
   it("computes unrounded achievement status and percentage accurately", () => {
     // 1999 / 2000 = 99.95% -> rounds display to 100.0% but status remains TIDAK TERCAPAI
-    expect(calcReportPercentage(1999, 2000)).toBe(100);
-    expect(calcReportStatus(1999, 2000)).toBe("TIDAK TERCAPAI");
-    expect(calcReportStatus(2000, 2000)).toBe("TERCAPAI");
-    expect(calcReportPercentage(10, 0)).toBe(0);
-    expect(calcReportStatus(10, 0)).toBe("TIDAK TERCAPAI");
+    expect(achievementPercentage(1999, 2000)).toBe(100);
+    expect(achievementStatus(1999, 2000)).toBe("TIDAK TERCAPAI");
+    expect(achievementStatus(2000, 2000)).toBe("TERCAPAI");
+    expect(achievementPercentage(10, 0)).toBe(0);
+    expect(achievementStatus(10, 0)).toBe("TIDAK TERCAPAI");
   });
 
-  it("renders ReportTableMonthly with UP3 grouping, aggregated subtotal, footer grand total, and responsive views", () => {
+  it("renders the monthly ReportTable with UP3 grouping, aggregated subtotal, footer grand total, and responsive views", () => {
     const html = renderToStaticMarkup(
-      <ReportTableMonthly groups={monthlyGroups} grandTotal={monthlyGrandTotal} />
+      <ReportTable mode="monthly" groups={monthlyGroups} grandTotal={monthlyGrandTotal} />
     );
 
     expect(html).toContain("UP3 PALEMBANG");
@@ -128,9 +124,9 @@ describe("Manager TanStack Report Tables", () => {
     expect(html).not.toContain("—");
   });
 
-  it("renders ReportTableDaily with UP3 grouping, daily metrics, and footer grand total", () => {
+  it("renders the daily ReportTable with UP3 grouping, daily metrics, and footer grand total", () => {
     const html = renderToStaticMarkup(
-      <ReportTableDaily groups={dailyGroups} grandTotal={dailyGrandTotal} />
+      <ReportTable mode="daily" groups={dailyGroups} grandTotal={dailyGrandTotal} />
     );
 
     expect(html).toContain("UP3 LAHAT");
@@ -143,9 +139,27 @@ describe("Manager TanStack Report Tables", () => {
     expect(html).not.toContain("—");
   });
 
+  it("each mode shows its own figures and judges status on its own pair", () => {
+    const monthly = renderToStaticMarkup(
+      <ReportTable mode="monthly" groups={monthlyGroups} grandTotal={monthlyGrandTotal} />
+    );
+    for (const header of ["TARGET HARIAN", "TARGET KUMULATIF", "REALISASI HARIAN", "REALISASI KUMULATIF", "% KUMULATIF"]) {
+      expect(monthly).toContain(header);
+    }
+    // ULP SUKARAMI: 999 of 1000 cumulative is 99.9%, and its daily 55 of 50 does not make it TERCAPAI.
+    expect(monthly).toContain("99.9%");
+
+    const daily = renderToStaticMarkup(
+      <ReportTable mode="daily" groups={dailyGroups} grandTotal={dailyGrandTotal} />
+    );
+    expect(daily).toContain("% HARIAN");
+    expect(daily).not.toContain("KUMULATIF");
+  });
+
   it("renders an explicit empty state when groups are empty", () => {
     const html = renderToStaticMarkup(
-      <ReportTableMonthly
+      <ReportTable
+        mode="monthly"
         groups={[]}
         grandTotal={{
           dailyTarget: 0,

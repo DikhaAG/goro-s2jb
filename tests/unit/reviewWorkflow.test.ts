@@ -2,13 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { OcrProcessingStatus, Role, ValidationStatus } from "@prisma/client";
 import {
   buildReviewWhereClause,
-  createRedisCacheStampAdapter,
   createReviewWorkflow,
 } from "@/server/services/reviewWorkflow";
 
 describe("Review Workflow Deep Module", () => {
   let mockPrisma: any;
-  let stampReportsCache: ReturnType<typeof vi.fn>;
+  let markReportsUpdated: ReturnType<typeof vi.fn>;
   let enqueueVerification: ReturnType<typeof vi.fn>;
 
   const operatorActor = {
@@ -20,7 +19,7 @@ describe("Review Workflow Deep Module", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    stampReportsCache = vi.fn().mockResolvedValue(undefined);
+    markReportsUpdated = vi.fn().mockResolvedValue(undefined);
     enqueueVerification = vi.fn().mockResolvedValue({
       enqueuedCount: 1,
       jobIds: ["job-1"],
@@ -101,7 +100,7 @@ describe("Review Workflow Deep Module", () => {
 
     const workflow = createReviewWorkflow({
       prisma: mockPrisma,
-      stampReportsCache,
+      markReportsUpdated,
       enqueueVerification,
     });
 
@@ -121,7 +120,7 @@ describe("Review Workflow Deep Module", () => {
   it("submitDecision records previous-state snapshot in AuditLog and stamps reports cache", async () => {
     const workflow = createReviewWorkflow({
       prisma: mockPrisma,
-      stampReportsCache,
+      markReportsUpdated,
       enqueueVerification,
     });
 
@@ -145,7 +144,7 @@ describe("Review Workflow Deep Module", () => {
         }),
       })
     );
-    expect(stampReportsCache).toHaveBeenCalledTimes(1);
+    expect(markReportsUpdated).toHaveBeenCalledTimes(1);
   });
 
   it("undoDecision restores exact state from server AuditLog snapshot even across non-NEEDS_REVIEW prior states", async () => {
@@ -172,7 +171,7 @@ describe("Review Workflow Deep Module", () => {
 
     const workflow = createReviewWorkflow({
       prisma: mockPrisma,
-      stampReportsCache,
+      markReportsUpdated,
       enqueueVerification,
     });
 
@@ -197,7 +196,7 @@ describe("Review Workflow Deep Module", () => {
         }),
       })
     );
-    expect(stampReportsCache).toHaveBeenCalledTimes(1);
+    expect(markReportsUpdated).toHaveBeenCalledTimes(1);
   });
 
   it("undoDecision falls back to input previousStatus when no decision snapshot log exists", async () => {
@@ -212,7 +211,7 @@ describe("Review Workflow Deep Module", () => {
 
     const workflow = createReviewWorkflow({
       prisma: mockPrisma,
-      stampReportsCache,
+      markReportsUpdated,
       enqueueVerification,
     });
 
@@ -224,13 +223,13 @@ describe("Review Workflow Deep Module", () => {
     expect(reverted.validationStatus).toBe(ValidationStatus.PENDING);
     expect(reverted.verifiedById).toBeNull();
     expect(reverted.verifiedAt).toBeNull();
-    expect(stampReportsCache).toHaveBeenCalledTimes(1);
+    expect(markReportsUpdated).toHaveBeenCalledTimes(1);
   });
 
   it("stamps reports cache on update, bulkUpdate, delete, bulkDelete, and deleteAll", async () => {
     const workflow = createReviewWorkflow({
       prisma: mockPrisma,
-      stampReportsCache,
+      markReportsUpdated,
       enqueueVerification,
     });
 
@@ -255,28 +254,6 @@ describe("Review Workflow Deep Module", () => {
       operatorActor
     );
 
-    expect(stampReportsCache).toHaveBeenCalledTimes(5);
-  });
-
-  it("Redis cache stamp adapter handles missing clients and swallows Redis errors safely", async () => {
-    const noopAdapter = createRedisCacheStampAdapter({});
-    await expect(noopAdapter()).resolves.toBeUndefined();
-
-    const failingAdapter = createRedisCacheStampAdapter({
-      status: "ready",
-      set: vi.fn().mockRejectedValue(new Error("Redis down")),
-    });
-    await expect(failingAdapter()).resolves.toBeUndefined();
-
-    const mockSet = vi.fn().mockResolvedValue("OK");
-    const workingAdapter = createRedisCacheStampAdapter({
-      status: "ready",
-      set: mockSet,
-    });
-    await workingAdapter();
-    expect(mockSet).toHaveBeenCalledWith(
-      "reports:last_update_timestamp",
-      expect.any(String)
-    );
+    expect(markReportsUpdated).toHaveBeenCalledTimes(5);
   });
 });

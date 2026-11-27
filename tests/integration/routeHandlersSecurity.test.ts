@@ -4,11 +4,15 @@ import { Role } from "@prisma/client";
 import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
 import { POST as postUpload } from "@/app/api/upload/route";
 import { GET as getUploadsFile } from "@/app/api/uploads/[...path]/route";
-import { GET as getExcelExport } from "@/app/api/export/excel/route";
-import { GET as getPdfExport } from "@/app/api/export/pdf/route";
+import { GET as getExport } from "@/app/api/export/[format]/route";
 import { GET as getHealth } from "@/app/api/health/route";
 
 import prisma from "@/lib/prisma";
+
+const exportAs = (format: string) => (req: NextRequest) =>
+  getExport(req, { params: Promise.resolve({ format }) });
+const getExcelExport = exportAs("excel");
+const getPdfExport = exportAs("pdf");
 
 vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 
@@ -251,6 +255,14 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
       const req = createRequest("http://localhost:3000/api/export/pdf?posisiTanggal=kemarin", "GET", managerToken);
       const res = await getPdfExport(req);
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe("4b. GET /api/export/[format] with an unknown format", () => {
+    it("should answer 404 without reading the report", async () => {
+      const req = createRequest("http://localhost:3000/api/export/csv", "GET", managerToken);
+      const res = await exportAs("csv")(req);
+      expect(res.status).toBe(404);
     });
   });
 

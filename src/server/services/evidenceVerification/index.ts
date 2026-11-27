@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { OcrProcessingStatus, ValidationStatus } from "@prisma/client";
 import { ocrQueue } from "@/server/queues/ocrQueue";
 import { acquireForVerification, isExternalUrl } from "../evidenceAcquisition";
+import { reportSyncStamp } from "../achievementReport.live";
 import {
   classifyVerificationOutcome,
   DEFAULT_DUPLICATE_HASH_THRESHOLD,
@@ -59,15 +60,6 @@ function isTransientOcrFailure(errorMessage?: string): boolean {
     lower.includes("abort") ||
     lower.includes("http 5")
   );
-}
-
-async function defaultNotifyReportsUpdated(): Promise<void> {
-  try {
-    const redisClient = (await import("@/lib/redis")).default;
-    await redisClient.set("reports:last_update_timestamp", Date.now().toString());
-  } catch {
-    // Non-critical cache stamp
-  }
 }
 
 async function markReviewVerificationFailed(
@@ -162,7 +154,7 @@ export async function verifyEvidence(
 ): Promise<VerifyEvidenceResult> {
   const db = deps.prismaClient ?? prisma;
   const visionEngine = deps.visionEngine ?? rustVisionEngineAdapter;
-  const notifyReports = deps.onReportApproved ?? defaultNotifyReportsUpdated;
+  const notifyReports = deps.onReportApproved ?? reportSyncStamp.markUpdated;
   const isFinalAttempt = input.isFinalAttempt ?? true;
 
   const existingReview = await db.ratingReview.findUnique({

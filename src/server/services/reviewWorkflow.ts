@@ -19,7 +19,8 @@ export interface ReviewActor {
 
 export interface ReviewWorkflowDeps {
   prisma: PrismaClient;
-  stampReportsCache?: () => Promise<void>;
+  /** The Laporan Capaian sync stamp; called after every change to a review's status. */
+  markReportsUpdated?: () => Promise<void>;
   enqueueVerification?: typeof enqueueEvidenceVerification;
 }
 
@@ -123,8 +124,6 @@ interface DecisionSnapshotMetadata {
   previousRemarks?: string | null;
 }
 
-const REPORTS_CACHE_KEY = "reports:last_update_timestamp";
-
 const VALID_VALIDATION_STATUSES = new Set<string>(
   Object.values(ValidationStatus)
 );
@@ -145,27 +144,6 @@ const duplicateOfSummarySelect = {
   up3: { select: { id: true, name: true } },
   ulp: { select: { id: true, name: true } },
 } as const;
-
-/**
- * Builds a non-critical Redis cache-stamp adapter from a Redis-like client.
- */
-export function createRedisCacheStampAdapter(redisClient?: {
-  set?: (key: string, value: string) => Promise<unknown>;
-  status?: string;
-} | null): () => Promise<void> {
-  if (!redisClient || typeof redisClient.set !== "function") {
-    return async () => {};
-  }
-
-  return async () => {
-    try {
-      if (redisClient.status === "end") return;
-      await redisClient.set!(REPORTS_CACHE_KEY, Date.now().toString());
-    } catch {
-      // Non-critical cache stamp
-    }
-  };
-}
 
 /**
  * Composes RatingReview filter conditions without overwriting `where.OR`
@@ -263,12 +241,12 @@ async function assertValidUnitPair(
 
 /**
  * Deep module encapsulating Review Triage & Management ("Triase Ulasan")
- * query composition, state transitions, AuditLog recording, and report cache stamping.
+ * query composition, state transitions, AuditLog recording, and Laporan Capaian sync stamping.
  */
 export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
   const {
     prisma,
-    stampReportsCache = async () => {},
+    markReportsUpdated = async () => {},
     enqueueVerification = enqueueEvidenceVerification,
   } = deps;
 
@@ -449,7 +427,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
         }),
       ]);
 
-      await stampReportsCache();
+      await markReportsUpdated();
       return updated;
     },
 
@@ -539,7 +517,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
         }),
       ]);
 
-      await stampReportsCache();
+      await markReportsUpdated();
       return reverted;
     },
 
@@ -636,7 +614,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
         }),
       ]);
 
-      await stampReportsCache();
+      await markReportsUpdated();
       return updatedReview;
     },
 
@@ -684,7 +662,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
         }),
       ]);
 
-      await stampReportsCache();
+      await markReportsUpdated();
       return {
         success: true,
         count: result.count,
@@ -828,7 +806,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
           }),
         ]);
 
-        await stampReportsCache();
+        await markReportsUpdated();
         return { success: true as const, mode: "PERMANENT" as const };
       }
 
@@ -860,7 +838,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
         }),
       ]);
 
-      await stampReportsCache();
+      await markReportsUpdated();
       return {
         success: true as const,
         mode: "SOFT_REJECT" as const,
@@ -896,7 +874,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
           }),
         ]);
 
-        await stampReportsCache();
+        await markReportsUpdated();
         return {
           success: true as const,
           mode: "PERMANENT" as const,
@@ -928,7 +906,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
         }),
       ]);
 
-      await stampReportsCache();
+      await markReportsUpdated();
       return {
         success: true as const,
         mode: "SOFT_REJECT" as const,
@@ -969,7 +947,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
           }),
         ]);
 
-        await stampReportsCache();
+        await markReportsUpdated();
         return {
           success: true as const,
           mode: "PERMANENT" as const,
@@ -1001,7 +979,7 @@ export function createReviewWorkflow(deps: ReviewWorkflowDeps) {
         }),
       ]);
 
-      await stampReportsCache();
+      await markReportsUpdated();
       return {
         success: true as const,
         mode: "SOFT_REJECT" as const,

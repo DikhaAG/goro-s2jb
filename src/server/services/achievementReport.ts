@@ -1,5 +1,12 @@
 import { ValidationStatus, type PrismaClient } from "@prisma/client";
 import { wibDateOf as wibDayKey, wibDayStart } from "@/lib/wibDate";
+import {
+  achievementPercentage as percentage,
+  achievementStatus as status,
+  type AchievementStatus,
+} from "@/lib/achievementMath";
+
+export type { AchievementStatus };
 
 /** A WIB calendar date as "YYYY-MM-DD". */
 type DayKey = string;
@@ -26,12 +33,6 @@ export type SetCalendarResult =
   | { ok: true; changedDates: DayKey[] }
   | { ok: false; reason: "past_dates" | "invalid_target"; dates: DayKey[] };
 
-/**
- * Fallback for dates without a Kalender Target entry. Deliberately a constant:
- * changing it would rewrite every past date that had no entry (ADR-0002).
- */
-export type AchievementStatus = "TERCAPAI" | "TIDAK TERCAPAI";
-
 export interface UnitFilter {
   up3Id?: string;
   ulpId?: string;
@@ -45,12 +46,85 @@ interface Figures {
   cumulativeRealization: number;
 }
 
+/**
+ * Fallback for dates without a Kalender Target entry. Deliberately a constant:
+ * changing it would rewrite every past date that had no entry (ADR-0002).
+ */
 const FALLBACK_TARGET = { weekday: 50, weekend: 20 } as const;
 const MAX_DAILY_TARGET = 10000;
+
+/** The Redis-like store that holds the sync stamp. Every method is optional so a bare client degrades to a no-op. */
+export interface SyncStampStore {
+  get?: (key: string) => Promise<string | null>;
+  set?: (key: string, value: string) => Promise<unknown>;
+  status?: string;
+}
+
+type SyncStampStoreSource = () => SyncStampStore | null | undefined | Promise<SyncStampStore | null | undefined>;
+
+const SYNC_STAMP_KEY = "reports:last_update_timestamp";
+
+/**
+ * When Laporan Capaian data last changed, so open dashboards know to refetch.
+ * Best effort: the reports read the database directly, so a missing or failing
+ * store only delays the live refresh and never fails the caller.
+ */
+export function createReportSyncStamp(loadStore: SyncStampStoreSource, now: () => Date = () => new Date()) {
+  async function store(): Promise<SyncStampStore | null> {
+    try {
+      const loaded = await loadStore();
+      return loaded && loaded.status !== "end" ? loaded : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return {
+    /** Call after anything that changes Realisasi or the Kalender Target. */
+    async markUpdated(): Promise<void> {
+      const target = await store();
+      if (!target?.set) return;
+      try {
+        await target.set(SYNC_STAMP_KEY, String(now().getTime()));
+      } catch {
+        // Best effort, see above.
+      }
+    },
+
+    /** Epoch milliseconds as a string, or null when nothing was stamped or the store is unreachable. */
+    async lastUpdated(): Promise<string | null> {
+      const target = await store();
+      if (!target?.get) return null;
+      try {
+        return (await target.get(SYNC_STAMP_KEY)) ?? null;
+      } catch {
+        return null;
+      }
+    },
+  };
+}
+
+export type ReportSyncStamp = ReturnType<typeof createReportSyncStamp>;
+
+const noSyncStamp: ReportSyncStamp = createReportSyncStamp(() => null);
+
+export type ExportFormat = "excel" | "pdf";
+
+export function isExportFormat(value: unknown): value is ExportFormat {
+  return value === "excel" || value === "pdf";
+}
+
+export interface ExportedDocument {
+  body: Buffer | string;
+  contentType: string;
+  /** Set when the document downloads as an attachment; the printable page opens inline. */
+  filename?: string;
+}
 
 export interface AchievementReportDeps {
   db: PrismaClient;
   now: () => Date;
+  syncStamp?: ReportSyncStamp;
 }
 
 /** Calendar dates are stored as Postgres DATE, which Prisma maps to UTC midnight. */
@@ -68,15 +142,6 @@ function daysInMonth(year: number, month: number): number {
 
 function nextDay(key: DayKey): DayKey {
   return new Date(dateColumn(key).getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-}
-
-function percentage(realization: number, target: number): number {
-  return target > 0 ? Math.round((realization / target) * 1000) / 10 : 0;
-}
-
-/** Compared on the unrounded counts, so 99.95% is not rounded up into TERCAPAI. */
-function status(realization: number, target: number): AchievementStatus {
-  return target > 0 && realization >= target ? "TERCAPAI" : "TIDAK TERCAPAI";
 }
 
 function sumFigures(list: Figures[]): Figures {
@@ -127,7 +192,7 @@ function isRealDate(value: string): boolean {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
-export function createAchievementReport({ db, now }: AchievementReportDeps) {
+export function createAchievementReport({ db, now, syncStamp = noSyncStamp }: AchievementReportDeps) {
   function today(): DayKey {
     return wibDayKey(now());
   }
@@ -340,7 +405,65 @@ export function createAchievementReport({ db, now }: AchievementReportDeps) {
         })
       )
     );
+    await syncStamp.markUpdated();
     return { ok: true, changedDates: entries.map((e) => e.date).sort() };
+  }
+
+  /** Laporan Harian and Laporan Bulanan together, as a workbook or a printable page. */
+  async function exportDocument(
+    format: ExportFormat,
+    posisi: PosisiTanggal,
+    filter: Pick<UnitFilter, "up3Id"> = {}
+  ): Promise<ExportedDocument> {
+    const [dailyReport, monthlyReport] = await Promise.all([daily(posisi, filter), monthly(posisi, filter)]);
+    const reports = { daily: dailyReport, monthly: monthlyReport };
+
+    // Loaded on demand so callers that only stamp or read reports never pull in ExcelJS.
+    if (format === "excel") {
+      const { generateExecutiveWorkbook } = await import("@/lib/export/excelExporter");
+      return {
+        body: await generateExecutiveWorkbook(reports),
+        contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename: `GORO_S2JB_Laporan_Eksekutif_${posisi.date}.xlsx`,
+      };
+    }
+    const { generatePrintableHtmlReport } = await import("@/lib/export/pdfExporter");
+    return { body: generatePrintableHtmlReport(reports), contentType: "text/html; charset=utf-8" };
+  }
+
+  /** What the dashboard polls to decide whether to refetch: the sync stamp, or the latest data change. */
+  async function syncStatus() {
+    const [latestBatch, latestApprovedReview, totalApprovedCount, totalReviewsCount, stamp] = await Promise.all([
+      db.migrationBatch.findFirst({
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          fileName: true,
+          status: true,
+          completedAt: true,
+          updatedAt: true,
+          processedRows: true,
+          totalRows: true,
+        },
+      }),
+      db.ratingReview.findFirst({
+        where: { validationStatus: ValidationStatus.APPROVED },
+        orderBy: { entryDate: "desc" },
+        select: { id: true, entryDate: true, updatedAt: true },
+      }),
+      db.ratingReview.count({ where: { validationStatus: ValidationStatus.APPROVED } }),
+      db.ratingReview.count(),
+      syncStamp.lastUpdated(),
+    ]);
+
+    const lastDataChange = latestApprovedReview?.updatedAt ?? latestBatch?.updatedAt ?? now();
+    return {
+      lastSyncTimestamp: stamp ?? String(lastDataChange.getTime()),
+      latestBatch,
+      latestApprovedReviewDate: latestApprovedReview?.entryDate.toISOString() ?? null,
+      totalApprovedCount,
+      totalReviewsCount,
+    };
   }
 
   return {
@@ -351,6 +474,8 @@ export function createAchievementReport({ db, now }: AchievementReportDeps) {
     kpis,
     calendar: monthTargets,
     setCalendar,
+    exportDocument,
+    syncStatus,
   };
 }
 

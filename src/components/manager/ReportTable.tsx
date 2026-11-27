@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  createColumnHelper,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
@@ -39,7 +40,12 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { AchievementStatus } from "@/server/services/achievementReport";
+import {
+  achievementPercentage,
+  achievementStatus,
+  type AchievementStatus,
+} from "@/lib/achievementMath";
+import type { DailyReport, MonthlyReport } from "@/server/services/achievementReport";
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -54,79 +60,142 @@ declare module "@tanstack/react-table" {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface TableMeta<TData extends RowData> {
-    grandTotal?: ReportSummaryTotals;
+    grandTotal?: ReportTotals;
     hasActiveLocalFilter?: boolean;
-    footerLabel?: string;
+    mode?: ReportMode;
   }
 }
 
-export interface BaseReportRow {
+export type ReportTableMode = "daily" | "monthly";
+
+type ReportTableProps =
+  | { mode: "daily"; groups: DailyReport["groups"]; grandTotal: DailyReport["grandTotal"] }
+  | { mode: "monthly"; groups: MonthlyReport["groups"]; grandTotal: MonthlyReport["grandTotal"] };
+
+type FigureKey = "dailyTarget" | "dailyRealization" | "cumulativeTarget" | "cumulativeRealization";
+
+/** One ULP row of either Laporan Harian or Laporan Bulanan; the daily rows carry no cumulative figures. */
+type ReportRow = {
   ulpId: string;
   ulpCode: string;
   ulpName: string;
   up3Id: string;
   up3Name: string;
-  dailyTarget: number;
-  dailyRealization: number;
   status: AchievementStatus;
-}
+} & { dailyTarget: number; dailyRealization: number } & Partial<Record<"cumulativeTarget" | "cumulativeRealization", number>>;
 
-export interface ReportSummaryTotals {
-  dailyTarget: number;
-  dailyRealization: number;
-  percentage: number;
-  status: AchievementStatus;
-  cumulativeTarget?: number;
-  cumulativeRealization?: number;
-}
+type ReportTotals = Record<FigureKey, number> & { percentage: number; status: AchievementStatus };
 
-export interface MobileMetricItem {
+/** How a figure column reads: muted context, the target the status is judged on, or the Realisasi being judged. */
+type FigureTone = "muted" | "basis" | "realization";
+
+interface FigureColumn {
+  key: FigureKey;
+  header: string;
   label: string;
-  value: string;
-  highlight?: boolean;
+  width: string;
+  tone: FigureTone;
 }
 
-interface ReportDataTableProps<TData extends BaseReportRow> {
-  data: TData[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: ColumnDef<TData, any>[];
-  grandTotal: ReportSummaryTotals;
+interface ReportMode {
   tableLabel: string;
-  searchPlaceholder?: string;
-  getMobileMetrics: (row: TData) => MobileMetricItem[];
-  getMobileGroupMetrics: (subRows: Row<TData>[]) => MobileMetricItem[];
-  getRowPercentage: (row: TData) => number;
-  getGroupPercentage: (subRows: Row<TData>[]) => number;
-  getGroupStatus: (subRows: Row<TData>[]) => AchievementStatus;
-  footerLabel?: string;
-  getFilteredTotals: (rows: Row<TData>[]) => ReportSummaryTotals;
-  renderMobileFooterMetrics: (totals: ReportSummaryTotals) => MobileMetricItem[];
+  /** Table columns, left to right. */
+  figures: FigureColumn[];
+  /** Mobile cards pair the daily and cumulative figures, so their order differs from the table. */
+  mobileFigures: FigureKey[];
+  /** Percentage and status are judged on this pair. */
+  realization: FigureKey;
+  target: FigureKey;
+  percentageHeader: string;
+  percentageLabel: string;
 }
 
-export function calcReportPercentage(realization: number, target: number): number {
-  return target > 0 ? Math.round((realization / target) * 1000) / 10 : 0;
+const MODES: Record<ReportTableMode, ReportMode> = {
+  daily: {
+    tableLabel: "Laporan Harian",
+    figures: [
+      { key: "dailyTarget", header: "TARGET HARIAN", label: "Target Harian", width: "w-36", tone: "muted" },
+      { key: "dailyRealization", header: "REALISASI HARIAN", label: "Realisasi Harian", width: "w-36", tone: "realization" },
+    ],
+    mobileFigures: ["dailyTarget", "dailyRealization"],
+    realization: "dailyRealization",
+    target: "dailyTarget",
+    percentageHeader: "% HARIAN",
+    percentageLabel: "% Harian",
+  },
+  monthly: {
+    tableLabel: "Laporan Bulanan Kumulatif",
+    figures: [
+      { key: "dailyTarget", header: "TARGET HARIAN", label: "Target Harian", width: "w-32", tone: "muted" },
+      { key: "cumulativeTarget", header: "TARGET KUMULATIF", label: "Target Kumulatif", width: "w-36", tone: "basis" },
+      { key: "dailyRealization", header: "REALISASI HARIAN", label: "Realisasi Harian", width: "w-32", tone: "muted" },
+      { key: "cumulativeRealization", header: "REALISASI KUMULATIF", label: "Realisasi Kumulatif", width: "w-36", tone: "realization" },
+    ],
+    mobileFigures: ["dailyTarget", "dailyRealization", "cumulativeTarget", "cumulativeRealization"],
+    realization: "cumulativeRealization",
+    target: "cumulativeTarget",
+    percentageHeader: "% KUMULATIF",
+    percentageLabel: "% Kumulatif",
+  },
+};
+
+const TONE_CLASSES: Record<FigureTone, { cell: string; aggregated: string; footer: string }> = {
+  muted: {
+    cell: "font-mono text-[#64748b]",
+    aggregated: "font-mono text-[#475569]",
+    footer: "font-mono text-[#475569]",
+  },
+  basis: {
+    cell: "font-mono text-[#0f172a]",
+    aggregated: "font-mono text-[#0f172a]",
+    footer: "font-mono text-[#0f172a]",
+  },
+  realization: {
+    cell: "font-mono font-bold text-[#0f172a]",
+    aggregated: "font-mono font-bold text-[#006877]",
+    footer: "font-mono font-bold text-sm text-[#006877]",
+  },
+};
+
+const FIGURE_KEYS: FigureKey[] = ["dailyTarget", "dailyRealization", "cumulativeTarget", "cumulativeRealization"];
+const FOOTER_LABEL = "TOTAL UID S2JB";
+const FILTERED_FOOTER_LABEL = "TOTAL HASIL FILTER";
+const SEARCH_PLACEHOLDER = "Cari nama atau kode ULP / UP3...";
+
+function toTotals(mode: ReportMode, figures: Partial<Record<FigureKey, number>>): ReportTotals {
+  const sums = Object.fromEntries(FIGURE_KEYS.map((key) => [key, figures[key] ?? 0])) as Record<FigureKey, number>;
+  return {
+    ...sums,
+    percentage: achievementPercentage(sums[mode.realization], sums[mode.target]),
+    status: achievementStatus(sums[mode.realization], sums[mode.target]),
+  };
 }
 
-export function calcReportStatus(realization: number, target: number): AchievementStatus {
-  return target > 0 && realization >= target ? "TERCAPAI" : "TIDAK TERCAPAI";
-}
-
-export function sumSubRowField<TData extends BaseReportRow>(
-  subRows: Row<TData>[],
-  selector: (row: TData) => number
-): number {
-  let total = 0;
-  for (const row of subRows) {
-    total += selector(row.original);
+function totalsOfRows(mode: ReportMode, rows: Row<ReportRow>[]): ReportTotals {
+  const sums: Partial<Record<FigureKey, number>> = {};
+  for (const row of rows) {
+    for (const key of FIGURE_KEYS) sums[key] = (sums[key] ?? 0) + (row.original[key] ?? 0);
   }
-  return total;
+  return toTotals(mode, sums);
 }
 
-function matchesReportQuery<TData extends BaseReportRow>(
-  row: Row<TData>,
-  _columnId: string,
-  filterValue: unknown
-): boolean {
+function mobileMetrics(mode: ReportMode, totals: ReportTotals, highlightRealization: boolean) {
+  return mode.mobileFigures.map((key) => ({
+    label: mode.figures.find((f) => f.key === key)!.label,
+    value: totals[key].toLocaleString("id-ID"),
+    highlight: highlightRealization && key === mode.realization,
+  }));
+}
+
+function footerTotals(table: Table<ReportRow>): { totals: ReportTotals; label: string } {
+  const meta = table.options.meta!;
+  if (meta.hasActiveLocalFilter) {
+    return { totals: totalsOfRows(meta.mode!, table.getFilteredRowModel().flatRows), label: FILTERED_FOOTER_LABEL };
+  }
+  return { totals: meta.grandTotal!, label: FOOTER_LABEL };
+}
+
+function matchesReportQuery(row: Row<ReportRow>, _columnId: string, filterValue: unknown): boolean {
   const query = String(filterValue ?? "").trim().toLowerCase();
   if (!query) return true;
   const item = row.original;
@@ -137,21 +206,125 @@ function matchesReportQuery<TData extends BaseReportRow>(
   );
 }
 
-export function ReportDataTable<TData extends BaseReportRow>({
-  data,
-  columns,
-  grandTotal,
-  tableLabel,
-  searchPlaceholder = "Cari nama atau kode ULP / UP3...",
-  getMobileMetrics,
-  getMobileGroupMetrics,
-  getRowPercentage,
-  getGroupPercentage,
-  getGroupStatus,
-  footerLabel = "TOTAL UID S2JB",
-  getFilteredTotals,
-  renderMobileFooterMetrics,
-}: ReportDataTableProps<TData>) {
+function StatusBadge({ status, className }: { status: AchievementStatus; className: string }) {
+  return (
+    <Badge variant={status === "TERCAPAI" ? "success" : "warning"} className={className}>
+      {status}
+    </Badge>
+  );
+}
+
+function statusTextClass(status: AchievementStatus): string {
+  return status === "TERCAPAI" ? "text-[#15803d]" : "text-[#b45309]";
+}
+
+const columnHelper = createColumnHelper<ReportRow>();
+
+function buildColumns(mode: ReportMode): ColumnDef<ReportRow, any>[] {
+  const rowPercentage = (row: ReportRow) =>
+    achievementPercentage(row[mode.realization] ?? 0, row[mode.target] ?? 0);
+
+  return [
+    columnHelper.display({
+      id: "no",
+      header: "NO",
+      enableSorting: false,
+      enableHiding: false,
+      meta: { align: "center", headerClassName: "w-12", label: "Nomor" },
+      footer: () => null,
+    }),
+    columnHelper.accessor("up3Name", {
+      id: "up3Name",
+      header: "UP3",
+      enableHiding: false,
+      meta: { align: "left", label: "UP3" },
+      cell: (info) => <span className="font-medium text-[#475569]">{info.getValue()}</span>,
+      footer: () => null,
+    }),
+    columnHelper.accessor("ulpName", {
+      id: "ulpName",
+      header: "NAMA ULP",
+      enableHiding: false,
+      meta: { align: "left", label: "Nama ULP" },
+      cell: (info) => <span className="font-semibold text-[#0f172a]">{info.getValue()}</span>,
+      footer: ({ table }) => (
+        <span className="text-[#006877] font-bold uppercase tracking-wider">{footerTotals(table).label}</span>
+      ),
+    }),
+    ...mode.figures.map((figure) =>
+      columnHelper.accessor((row) => row[figure.key] ?? 0, {
+        id: figure.key,
+        header: figure.header,
+        aggregationFn: "sum",
+        meta: { align: "right", headerClassName: figure.width, label: figure.label },
+        cell: (info) => (
+          <span className={TONE_CLASSES[figure.tone].cell}>{info.getValue().toLocaleString("id-ID")}</span>
+        ),
+        aggregatedCell: (info) => (
+          <span className={TONE_CLASSES[figure.tone].aggregated}>
+            {Number(info.getValue() ?? 0).toLocaleString("id-ID")}
+          </span>
+        ),
+        footer: ({ table }) => (
+          <span className={TONE_CLASSES[figure.tone].footer}>
+            {footerTotals(table).totals[figure.key].toLocaleString("id-ID")}
+          </span>
+        ),
+      })
+    ),
+    columnHelper.accessor(rowPercentage, {
+      id: "percentage",
+      header: mode.percentageHeader,
+      aggregationFn: (_columnId, leafRows) => totalsOfRows(mode, leafRows).percentage,
+      meta: { align: "right", headerClassName: "w-28", label: mode.percentageLabel },
+      cell: (info) => (
+        <span className={cn("font-mono font-bold", statusTextClass(info.row.original.status))}>
+          {info.getValue().toFixed(1)}%
+        </span>
+      ),
+      aggregatedCell: ({ row }) => {
+        const { percentage, status } = totalsOfRows(mode, row.subRows);
+        return <span className={cn("font-mono font-bold", statusTextClass(status))}>{percentage.toFixed(1)}%</span>;
+      },
+      footer: ({ table }) => (
+        <span className="font-mono font-bold text-sm text-[#006877]">
+          {footerTotals(table).totals.percentage.toFixed(1)}%
+        </span>
+      ),
+    }),
+    columnHelper.accessor("status", {
+      id: "status",
+      header: "KETERANGAN",
+      filterFn: "equalsString",
+      aggregationFn: (_columnId, leafRows) => totalsOfRows(mode, leafRows).status,
+      meta: { align: "center", headerClassName: "w-36", label: "Keterangan" },
+      cell: (info) => (
+        <StatusBadge status={info.getValue()} className="text-[10px] py-0 px-2 uppercase font-semibold" />
+      ),
+      aggregatedCell: ({ row }) => (
+        <StatusBadge
+          status={totalsOfRows(mode, row.subRows).status}
+          className="text-[10px] py-0 px-2 uppercase font-bold"
+        />
+      ),
+      footer: ({ table }) => (
+        <StatusBadge status={footerTotals(table).totals.status} className="text-xs font-bold" />
+      ),
+    }),
+  ];
+}
+
+/** Laporan Harian or Laporan Bulanan as one grouped, filterable table; the mode picks the figures and the basis for status. */
+export function ReportTable({ mode: modeKey, groups, grandTotal: serverGrandTotal }: ReportTableProps) {
+  const mode = MODES[modeKey];
+  const tableLabel = mode.tableLabel;
+  const data = useMemo<ReportRow[]>(
+    () => (groups as Array<{ ulps: ReportRow[] }>).flatMap((group) => group.ulps),
+    [groups]
+  );
+  const grandTotal = useMemo(() => toTotals(mode, serverGrandTotal), [mode, serverGrandTotal]);
+  const columns = useMemo(() => buildColumns(mode), [mode]);
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -198,7 +371,7 @@ export function ReportDataTable<TData extends BaseReportRow>({
     meta: {
       grandTotal,
       hasActiveLocalFilter,
-      footerLabel,
+      mode,
     },
     getRowId: (row) => row.ulpId,
     globalFilterFn: matchesReportQuery,
@@ -223,8 +396,8 @@ export function ReportDataTable<TData extends BaseReportRow>({
 
   const filteredLeafRows = table.getFilteredRowModel().flatRows;
   const activeTotals = useMemo(
-    () => (hasActiveLocalFilter ? getFilteredTotals(filteredLeafRows) : grandTotal),
-    [hasActiveLocalFilter, filteredLeafRows, getFilteredTotals, grandTotal]
+    () => (hasActiveLocalFilter ? totalsOfRows(mode, filteredLeafRows) : grandTotal),
+    [hasActiveLocalFilter, filteredLeafRows, mode, grandTotal]
   );
 
   // Count status facets across rows matching the current text search
@@ -309,7 +482,7 @@ export function ReportDataTable<TData extends BaseReportRow>({
               type="text"
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder={searchPlaceholder}
+              placeholder={SEARCH_PLACEHOLDER}
               aria-label={`Cari data di ${tableLabel}`}
               className="w-full bg-white border border-[#cbd5e1] text-[#0f172a] placeholder-[#64748b] text-xs rounded-xl pl-9 pr-9 min-h-[44px] sm:min-h-[38px] transition-all focus-utility-ring"
             />
@@ -746,9 +919,10 @@ export function ReportDataTable<TData extends BaseReportRow>({
               if (row.getIsGrouped()) {
                 const groupExpanded = row.getIsExpanded();
                 const groupLabel = String(row.groupingValue ?? "");
-                const groupPct = getGroupPercentage(row.subRows);
-                const groupStatus = getGroupStatus(row.subRows);
-                const groupMetrics = getMobileGroupMetrics(row.subRows);
+                const groupTotals = totalsOfRows(mode, row.subRows);
+                const groupPct = groupTotals.percentage;
+                const groupStatus = groupTotals.status;
+                const groupMetrics = mobileMetrics(mode, groupTotals, true);
 
                 return (
                   <div key={row.id} className="bg-[#f1f5f9]/90 p-4 space-y-2.5">
@@ -820,8 +994,9 @@ export function ReportDataTable<TData extends BaseReportRow>({
               // Leaf ULP Mobile Card
               const item = row.original;
               const leafNumber = leafIndexMap.get(row.id) ?? row.index + 1;
-              const pct = getRowPercentage(item);
-              const metrics = getMobileMetrics(item);
+              const itemTotals = toTotals(mode, item);
+              const pct = itemTotals.percentage;
+              const metrics = mobileMetrics(mode, itemTotals, true);
 
               return (
                 <div key={row.id} className="p-4 bg-white space-y-2.5">
@@ -887,7 +1062,7 @@ export function ReportDataTable<TData extends BaseReportRow>({
             <div className="p-4 bg-[#e7eeff] border-t-2 border-[#00a2b9] space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#006877]">
-                  {hasActiveLocalFilter ? "TOTAL HASIL FILTER" : footerLabel}
+                  {hasActiveLocalFilter ? FILTERED_FOOTER_LABEL : FOOTER_LABEL}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs font-bold text-[#006877]">
@@ -902,7 +1077,7 @@ export function ReportDataTable<TData extends BaseReportRow>({
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {renderMobileFooterMetrics(activeTotals).map((metric) => (
+                {mobileMetrics(mode, activeTotals, false).map((metric) => (
                   <div
                     key={metric.label}
                     className="bg-white/80 rounded-xl border border-[#cbd5e1] px-3 py-2"
@@ -922,21 +1097,4 @@ export function ReportDataTable<TData extends BaseReportRow>({
       )}
     </div>
   );
-}
-
-export function getEffectiveFooterTotals<TData extends BaseReportRow>(
-  table: Table<TData>,
-  computeFiltered: (rows: Row<TData>[]) => ReportSummaryTotals
-): { totals: ReportSummaryTotals; label: string } {
-  const meta = table.options.meta;
-  if (meta?.hasActiveLocalFilter) {
-    return {
-      totals: computeFiltered(table.getFilteredRowModel().flatRows),
-      label: "TOTAL HASIL FILTER",
-    };
-  }
-  return {
-    totals: meta?.grandTotal ?? computeFiltered(table.getFilteredRowModel().flatRows),
-    label: meta?.footerLabel ?? "TOTAL UID S2JB",
-  };
 }

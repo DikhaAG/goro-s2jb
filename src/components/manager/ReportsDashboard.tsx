@@ -4,8 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { ExecutiveKpiCards } from "./ExecutiveKpiCards";
-import { ReportTableDaily } from "./ReportTableDaily";
-import { ReportTableMonthly } from "./ReportTableMonthly";
+import { ReportTable } from "./ReportTable";
 import { PerformanceChart } from "./PerformanceChart";
 import { CumulativePacingChart } from "./CumulativePacingChart";
 import { TargetCalendarModal } from "./TargetCalendarModal";
@@ -456,7 +455,8 @@ export function ReportsDashboard() {
                 Target Kumulatif memakai nilai default untuk tanggal itu (hari kerja 50, akhir pekan 20).
               </DefaultTargetNote>
             )}
-            <ReportTableMonthly
+            <ReportTable
+              mode="monthly"
               groups={monthlyQuery.data.groups}
               grandTotal={monthlyQuery.data.grandTotal}
             />
@@ -496,7 +496,8 @@ export function ReportsDashboard() {
                 Tanggal ini belum diatur di Kalender Target, jadi target harian memakai nilai default (hari kerja 50, akhir pekan 20).
               </DefaultTargetNote>
             )}
-            <ReportTableDaily
+            <ReportTable
+              mode="daily"
               groups={dailyQuery.data.groups}
               grandTotal={dailyQuery.data.grandTotal}
             />

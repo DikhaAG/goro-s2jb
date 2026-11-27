@@ -3,10 +3,14 @@ import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
 import { proxy } from "@/proxy";
 import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
-import { GET as getExcelExport } from "@/app/api/export/excel/route";
-import { GET as getPdfExport } from "@/app/api/export/pdf/route";
+import { GET as getExport } from "@/app/api/export/[format]/route";
 import { POST as postUpload } from "@/app/api/upload/route";
 import { GET as getUploadsFile } from "@/app/api/uploads/[...path]/route";
+
+const exportAs = (format: string) => (req: NextRequest) =>
+  getExport(req, { params: Promise.resolve({ format }) });
+const getExcelExport = exportAs("excel");
+const getPdfExport = exportAs("pdf");
 
 vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 

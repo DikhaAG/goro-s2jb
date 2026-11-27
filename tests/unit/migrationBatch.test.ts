@@ -9,6 +9,7 @@ import {
   resolveMigrationFilePath,
   streamSpreadsheetRows,
 } from "@/server/services/migrationBatch";
+import { createReportSyncStamp } from "@/server/services/achievementReport";
 
 function createInMemoryRedis() {
   const store = new Map<string, string>();
@@ -380,7 +381,7 @@ describe("Batch Migrasi (migrationBatch deep module)", () => {
       ]),
       { priority: 2, markQueuedInDb: false }
     );
-    expect(redisClient.store.get("reports:last_update_timestamp")).toBeDefined();
+    expect(await createReportSyncStamp(() => redisClient).lastUpdated()).not.toBeNull();
     expect(recordTelemetry).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "queue_job", outcome: "completed" })
     );
