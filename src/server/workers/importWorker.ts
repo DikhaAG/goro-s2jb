@@ -1,42 +1,48 @@
-import { Worker, Job } from "bullmq";
-import redis from "@/lib/redis";
-import { IMPORT_QUEUE_NAME, ImportJobData } from "../queues/importQueue";
-import { migrationBatch } from "../services/migrationBatch";
+import type { ImportJobData } from "../queues/importQueue";
+import {
+  migrationBatch,
+  type IngestBatchResult,
+  type MigrationBatchDeps,
+} from "../services/migrationBatch";
+import { queueControl, type QueueControl } from "../services/queueControl";
 
-export function createImportWorker() {
-  const worker = new Worker<ImportJobData>(
-    IMPORT_QUEUE_NAME,
-    async (job: Job<ImportJobData>) => {
+export interface ImportWorkerDeps {
+  queueControl?: QueueControl;
+  batchDeps?: MigrationBatchDeps;
+}
+
+export function createImportWorker(deps: ImportWorkerDeps = {}) {
+  const control = deps.queueControl ?? queueControl;
+
+  return control.createWorker<ImportJobData, IngestBatchResult>({
+    queue: "import",
+    concurrency: 1,
+    label: "Import Worker",
+    classifyResult: (result) => (result.success ? "completed" : "skipped"),
+    processor: async (job) => {
       const { importBatchId, filePath, userId, startRowNumber } = job.data;
       console.log(
         `[Import Worker] Starting batch ${importBatchId} for file ${filePath} (startRow: ${startRowNumber || 0})`
       );
 
-      return migrationBatch.ingest({
-        importBatchId,
-        filePath,
-        userId,
-        startRowNumber,
-        onProgress: async (progress) => {
-          await job.updateProgress(progress);
+      return migrationBatch.ingest(
+        {
+          importBatchId,
+          filePath,
+          userId,
+          startRowNumber,
+          onProgress: async (progress) => {
+            await job.updateProgress(progress);
+          },
         },
-      });
+        {
+          ...deps.batchDeps,
+          // QueueControl owns worker outcome telemetry so worker-driven runs do not double-record.
+          recordTelemetry: async () => {},
+        }
+      );
     },
-    {
-      connection: redis,
-      concurrency: 1,
-    }
-  );
-
-  worker.on("failed", (job, err) => {
-    console.error(`[Import Worker] Job ${job?.id} failed with error:`, err);
   });
-
-  worker.on("error", (err) => {
-    console.error(`[Import Worker] BullMQ worker internal error:`, err);
-  });
-
-  return worker;
 }
 
 if (require.main === module) {

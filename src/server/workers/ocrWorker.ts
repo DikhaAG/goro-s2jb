@@ -1,34 +1,39 @@
-import { Worker, Job } from "bullmq";
-import redis from "@/lib/redis";
-import { OCR_QUEUE_NAME, OcrJobData } from "../queues/ocrQueue";
-import { verifyEvidence } from "../services/evidenceVerification";
-import { systemTelemetry } from "../services/systemTelemetry";
+import { OCR_QUEUE_NAME, type OcrJobData } from "../queues/ocrQueue";
+import {
+  verifyEvidence,
+  type VerifyEvidenceDeps,
+  type VerifyEvidenceResult,
+} from "../services/evidenceVerification";
+import {
+  queueControl,
+  type QueueControl,
+  type WorkerJobContext,
+} from "../services/queueControl";
 
-export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OCR_QUEUE_NAME) {
-  const jobStartTime = Date.now();
+export interface OcrWorkerDeps {
+  queueControl?: QueueControl;
+  verifyEvidenceDeps?: VerifyEvidenceDeps;
+}
+
+export async function processOcrJob(
+  job: WorkerJobContext<OcrJobData>,
+  verifyDeps?: VerifyEvidenceDeps
+): Promise<VerifyEvidenceResult> {
   console.log(`[OCR Worker] Processing job ${job.id} for reviewId: ${job.data.reviewId}`);
 
-  const maxAttempts = typeof job.opts?.attempts === "number" ? job.opts.attempts : 1;
-  const attemptsMade = typeof job.attemptsMade === "number" ? job.attemptsMade : 0;
-  const isFinalAttempt = attemptsMade + 1 >= maxAttempts;
-
-  const result = await verifyEvidence({
-    reviewId: job.data.reviewId,
-    evidenceImagePath: job.data.evidenceImagePath,
-    expectedReviewerName: job.data.expectedReviewerName,
-    isFinalAttempt,
-  });
+  const result = await verifyEvidence(
+    {
+      reviewId: job.data.reviewId,
+      evidenceImagePath: job.data.evidenceImagePath,
+      expectedReviewerName: job.data.expectedReviewerName,
+      isFinalAttempt: job.isFinalAttempt,
+    },
+    verifyDeps
+  );
 
   if (!result.success) {
     if (!result.skipped && !result.permanentFailure) {
       throw new Error(result.error || "Verifikasi Eviden gagal diproses");
-    }
-    if (result.permanentFailure && !result.skipped) {
-      await systemTelemetry.record({
-        kind: "queue_job",
-        queue: queueName,
-        outcome: "failed",
-      });
     }
     return result;
   }
@@ -37,43 +42,26 @@ export async function processOcrJob(job: Job<OcrJobData>, queueName: string = OC
     `[OCR Worker] Successfully processed review ${result.reviewId}: Zone ${result.zone}, Score ${result.score}%, Status: ${result.status}, Dup: ${result.isDuplicate}`
   );
 
-  const jobDurationMs = Date.now() - jobStartTime;
-  await systemTelemetry.record({
-    kind: "queue_job",
-    queue: queueName,
-    outcome: "completed",
-    durationMs: jobDurationMs,
-  });
-
   return result;
 }
 
-export function createOcrWorker(queueName: string = OCR_QUEUE_NAME) {
-  const worker = new Worker<OcrJobData>(
-    queueName,
-    async (job: Job<OcrJobData>) => {
-      return await processOcrJob(job, queueName);
+export function createOcrWorker(
+  queueName: string = OCR_QUEUE_NAME,
+  deps: OcrWorkerDeps = {}
+) {
+  const control = deps.queueControl ?? queueControl;
+
+  return control.createWorker<OcrJobData, VerifyEvidenceResult>({
+    queue: queueName,
+    concurrency: 4,
+    label: "OCR Worker",
+    classifyResult: (result) => {
+      if (result.success) return "completed";
+      if (result.permanentFailure && !result.skipped) return "failed";
+      return "skipped";
     },
-    {
-      connection: redis,
-      concurrency: 4,
-    }
-  );
-
-  worker.on("failed", (job, err) => {
-    void systemTelemetry.record({
-      kind: "queue_job",
-      queue: queueName,
-      outcome: "failed",
-    });
-    console.error(`[OCR Worker] Job ${job?.id} failed with error:`, err);
+    processor: (job) => processOcrJob(job, deps.verifyEvidenceDeps),
   });
-
-  worker.on("error", (err) => {
-    console.error(`[OCR Worker] BullMQ worker internal error:`, err);
-  });
-
-  return worker;
 }
 
 if (require.main === module) {
