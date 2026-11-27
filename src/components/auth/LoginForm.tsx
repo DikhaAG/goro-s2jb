@@ -17,7 +17,7 @@ import {
 import type { Role } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth-client";
-import { getDefaultRedirectForRole } from "@/lib/auth-constants";
+import { forRole } from "@/lib/routeAuthorization";
 
 export function LoginForm() {
   const router = useRouter();
@@ -55,7 +55,7 @@ export function LoginForm() {
       setSuccessInfo(`Selamat datang, ${data.user.name}! Mengalihkan...`);
 
       const role = (data.user as { role?: Role }).role;
-      const targetUrl = redirectParam || (role ? getDefaultRedirectForRole(role) : "/");
+      const targetUrl = forRole(role).resolveLanding(redirectParam);
 
       // Refresh and navigate
       router.refresh();

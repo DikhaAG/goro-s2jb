@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { hashPassword, verifyPassword } from "@/lib/auth";
-import { getRoleMaxAgeSeconds, getDefaultRedirectForRole } from "@/lib/auth-constants";
+import { getRoleMaxAgeSeconds } from "@/lib/auth-constants";
 import { Role } from "@prisma/client";
 
 describe("Authentication & Password Security Engine (AC-1, AC-2)", () => {
@@ -43,12 +43,5 @@ describe("Authentication & Password Security Engine (AC-1, AC-2)", () => {
     expect(getRoleMaxAgeSeconds(Role.PEGAWAI)).toBe(24 * 60 * 60);
     expect(getRoleMaxAgeSeconds(Role.MANAGER)).toBe(24 * 60 * 60);
     expect(getRoleMaxAgeSeconds(Role.SUPER_ADMIN)).toBe(24 * 60 * 60);
-  });
-
-  it("should return the exact dashboard route for each role", () => {
-    expect(getDefaultRedirectForRole(Role.PETUGAS_LAPANGAN)).toBe("/intake");
-    expect(getDefaultRedirectForRole(Role.PEGAWAI)).toBe("/reviews");
-    expect(getDefaultRedirectForRole(Role.MANAGER)).toBe("/reports");
-    expect(getDefaultRedirectForRole(Role.SUPER_ADMIN)).toBe("/users");
   });
 });

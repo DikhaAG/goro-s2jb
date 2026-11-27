@@ -1,8 +1,7 @@
-import { Role } from "@prisma/client";
 import { createRoleLayout } from "@/components/layout/RoleLayout";
 
 const AdminLayout = createRoleLayout({
-  allowedRoles: [Role.SUPER_ADMIN],
+  routeGroup: "admin",
   pageTitle: "Administrasi Sistem",
 });
 

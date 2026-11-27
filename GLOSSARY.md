@@ -86,5 +86,9 @@ _Avoid_: Token, JWT, cookie
 Pemblokiran sementara upaya masuk setelah 5 kegagalan untuk pasangan username+IP yang sama dalam 15 menit.
 _Avoid_: Rate limit, throttle, ban
 
+**Otorisasi Rute**:
+Aturan tunggal mengenai hak akses peran pada setiap rute halaman, pemetaan alias rute lama ke rute kanonik, tujuan awal setelah masuk, dan visibilitas navigasi antarmuka.
+_Avoid_: Middleware RBAC saja, daftar menu terpisah, tabel rute ganda
+
 
 

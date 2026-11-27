@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { NAV_ITEMS } from "@/components/layout/GlobalSidebar";
+import { Role } from "@prisma/client";
+import { forRole } from "@/lib/routeAuthorization";
 
 describe("Design System & Antislop Compliance", () => {
   it("verifies zero em-dash (—) characters exist in UI components and routes", () => {
@@ -51,28 +52,27 @@ describe("Design System & Antislop Compliance", () => {
     ).toHaveLength(0);
   });
 
-  it("verifies RBAC menu items permissions in GlobalSidebar specification", () => {
-    // Field Officer sees 2 items
-    const fieldItems = NAV_ITEMS.filter((i) => i.roles.includes("PETUGAS_LAPANGAN"));
-    expect(fieldItems.map((i) => i.href)).toEqual(["/", "/intake"]);
+  it("verifies RBAC menu items permissions in Otorisasi Rute specification", () => {
+    expect(forRole(Role.PETUGAS_LAPANGAN).sidebarItems("/").map((i) => i.href)).toEqual([
+      "/",
+      "/intake",
+    ]);
 
-    // Operator Verifikator sees 4 items
-    const operatorItems = NAV_ITEMS.filter((i) => i.roles.includes("PEGAWAI"));
-    expect(operatorItems.map((i) => i.href)).toEqual([
+    expect(forRole(Role.PEGAWAI).sidebarItems("/").map((i) => i.href)).toEqual([
       "/",
       "/reviews",
       "/migration",
       "/migration/monitor",
     ]);
 
-    // Manager sees 2 items
-    const managerItems = NAV_ITEMS.filter((i) => i.roles.includes("MANAGER"));
-    expect(managerItems.map((i) => i.href)).toEqual(["/", "/reports"]);
+    expect(forRole(Role.MANAGER).sidebarItems("/").map((i) => i.href)).toEqual([
+      "/",
+      "/reports",
+    ]);
 
-    // Super Admin sees all 9 items
-    const adminItems = NAV_ITEMS.filter((i) => i.roles.includes("SUPER_ADMIN"));
-    expect(adminItems).toHaveLength(9);
-    expect(adminItems.map((i) => i.href)).toEqual([
+    const adminHrefs = forRole(Role.SUPER_ADMIN).sidebarItems("/").map((i) => i.href);
+    expect(adminHrefs).toHaveLength(9);
+    expect(adminHrefs).toEqual([
       "/",
       "/intake",
       "/reviews",

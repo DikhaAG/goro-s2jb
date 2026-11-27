@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { Role } from "@prisma/client";
 import { proxy } from "@/proxy";
-import { isRouteAllowed, getRequiredRoleForRoute, isPublicRoute } from "@/lib/rbac";
 import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
 import { GET as getExcelExport } from "@/app/api/export/excel/route";
 import { GET as getPdfExport } from "@/app/api/export/pdf/route";
@@ -334,59 +333,6 @@ describe("Comprehensive Defense-in-Depth RBAC Penetration Matrix (Task 10)", () 
         });
         expect(res.status).toBe(401);
       });
-    });
-  });
-
-  describe("3. Core RBAC Matrix Utility Functions (src/lib/rbac.ts)", () => {
-    it("should correctly identify public vs protected routes", () => {
-      expect(isPublicRoute("/login")).toBe(true);
-      expect(isPublicRoute("/unauthorized")).toBe(true);
-      expect(isPublicRoute("/_next/static/chunk.js")).toBe(true);
-      expect(isPublicRoute("/favicon.ico")).toBe(true);
-
-      expect(isPublicRoute("/")).toBe(false);
-      expect(isPublicRoute("/intake")).toBe(false);
-      expect(isPublicRoute("/triage")).toBe(false);
-      expect(isPublicRoute("/reports")).toBe(false);
-      expect(isPublicRoute("/users")).toBe(false);
-    });
-
-    it("should return the exact required role for 403 reporting", () => {
-      expect(getRequiredRoleForRoute("/intake")).toBe(Role.PETUGAS_LAPANGAN);
-      expect(getRequiredRoleForRoute("/triage")).toBe(Role.PEGAWAI);
-      expect(getRequiredRoleForRoute("/reports")).toBe(Role.MANAGER);
-      expect(getRequiredRoleForRoute("/users")).toBe(Role.SUPER_ADMIN);
-      expect(getRequiredRoleForRoute("/migration")).toBe(Role.PEGAWAI);
-      expect(getRequiredRoleForRoute("/audit-logs")).toBe(Role.SUPER_ADMIN);
-    });
-
-    it("should correctly evaluate isRouteAllowed for all role permutations", () => {
-      // Guest (null role)
-      expect(isRouteAllowed("/", null)).toBe(false);
-      expect(isRouteAllowed("/intake", null)).toBe(false);
-      expect(isRouteAllowed("/login", null)).toBe(true);
-      expect(isRouteAllowed("/unauthorized", null)).toBe(true);
-
-      // Petugas Lapangan
-      expect(isRouteAllowed("/", Role.PETUGAS_LAPANGAN)).toBe(true);
-      expect(isRouteAllowed("/intake", Role.PETUGAS_LAPANGAN)).toBe(true);
-      expect(isRouteAllowed("/triage", Role.PETUGAS_LAPANGAN)).toBe(false);
-      expect(isRouteAllowed("/users", Role.PETUGAS_LAPANGAN)).toBe(false);
-
-      // Pegawai Triase
-      expect(isRouteAllowed("/", Role.PEGAWAI)).toBe(true);
-      expect(isRouteAllowed("/triage", Role.PEGAWAI)).toBe(true);
-      expect(isRouteAllowed("/migration", Role.PEGAWAI)).toBe(true);
-      expect(isRouteAllowed("/intake", Role.PEGAWAI)).toBe(false);
-      expect(isRouteAllowed("/users", Role.PEGAWAI)).toBe(false);
-
-      // Super Admin
-      expect(isRouteAllowed("/", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/intake", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/triage", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/reports", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/users", Role.SUPER_ADMIN)).toBe(true);
-      expect(isRouteAllowed("/migration", Role.SUPER_ADMIN)).toBe(true);
     });
   });
 });

@@ -12,24 +12,6 @@ export function getRoleMaxAgeSeconds(role: Role): number {
   return 24 * 60 * 60; // 24 hours
 }
 
-/**
- * Maps user role to their dedicated operational landing dashboard.
- */
-export function getDefaultRedirectForRole(role: Role): string {
-  switch (role) {
-    case Role.PETUGAS_LAPANGAN:
-      return "/intake";
-    case Role.PEGAWAI:
-      return "/reviews";
-    case Role.MANAGER:
-      return "/reports";
-    case Role.SUPER_ADMIN:
-      return "/users";
-    default:
-      return "/login";
-  }
-}
-
 export interface CookieRequestContext {
   headers?: Pick<Headers, "get">;
   nextUrl?: { protocol?: string };

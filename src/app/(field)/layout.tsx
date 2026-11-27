@@ -1,8 +1,7 @@
-import { Role } from "@prisma/client";
 import { createRoleLayout } from "@/components/layout/RoleLayout";
 
 const FieldLayout = createRoleLayout({
-  allowedRoles: [Role.PETUGAS_LAPANGAN, Role.SUPER_ADMIN],
+  routeGroup: "field",
   pageTitle: "Entri Eviden",
 });
 

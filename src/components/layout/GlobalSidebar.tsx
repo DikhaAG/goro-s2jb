@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   FileUp,
-  CheckSquare,
   BarChart3,
   Users,
   Database,
@@ -16,136 +15,29 @@ import {
   LogOut,
   LogIn,
   Zap,
-  Lock,
   Activity,
   Terminal,
   FolderKanban,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { signOut } from "@/lib/auth-client";
+import { forRole, type NavItemId } from "@/lib/routeAuthorization";
 
 interface GlobalSidebarProps {
   onClose?: () => void;
   className?: string;
 }
 
-export interface NavMenuItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles: string[];
-}
-
-export const NAV_ITEMS: NavMenuItem[] = [
-  {
-    label: "Beranda",
-    href: "/",
-    icon: LayoutDashboard,
-    roles: ["PETUGAS_LAPANGAN", "PEGAWAI", "MANAGER", "SUPER_ADMIN"],
-  },
-  {
-    label: "Entri Eviden",
-    href: "/intake",
-    icon: FileUp,
-    roles: ["PETUGAS_LAPANGAN", "SUPER_ADMIN"],
-  },
-  {
-    label: "Triase & Data Ulasan",
-    href: "/reviews",
-    icon: FolderKanban,
-    roles: ["PEGAWAI", "SUPER_ADMIN"],
-  },
-  {
-    label: "Laporan Eksekutif",
-    href: "/reports",
-    icon: BarChart3,
-    roles: ["MANAGER", "SUPER_ADMIN"],
-  },
-  {
-    label: "Manajemen Pengguna",
-    href: "/users",
-    icon: Users,
-    roles: ["SUPER_ADMIN"],
-  },
-  {
-    label: "Migrasi Data Eviden",
-    href: "/migration",
-    icon: Database,
-    roles: ["PEGAWAI", "SUPER_ADMIN"],
-  },
-  {
-    label: "Monitoring Worker",
-    href: "/migration/monitor",
-    icon: Activity,
-    roles: ["PEGAWAI", "SUPER_ADMIN"],
-  },
-  {
-    label: "Layanan & Proses Sistem",
-    href: "/system-processes",
-    icon: Terminal,
-    roles: ["SUPER_ADMIN"],
-  },
-  {
-    label: "Catatan Audit Log",
-    href: "/audit-logs",
-    icon: ShieldAlert,
-    roles: ["SUPER_ADMIN"],
-  },
-];
-
-export function filterNavItemsByRole(role: string): NavMenuItem[] {
-  return NAV_ITEMS.filter((item) => item.roles.includes(role));
-}
-
-/**
- * Accurately determines if a navigation item is active for the current pathname.
- * Handles exact matches, legacy route aliases, and prevents prefix collision
- * between parent and child routes (e.g. /migration vs /migration/monitor).
- */
-export function isNavItemActive(
-  itemHref: string,
-  pathname: string,
-  allItemHrefs: string[] = NAV_ITEMS.map((item) => item.href)
-): boolean {
-  if (itemHref === "/") {
-    return pathname === "/";
-  }
-
-  // Normalize path if legacy aliases exist
-  let normalizedPath = pathname;
-  if (pathname.startsWith("/operator/triage")) {
-    normalizedPath = "/reviews" + pathname.slice("/operator/triage".length);
-  } else if (pathname === "/triage" || pathname.startsWith("/triage/")) {
-    normalizedPath = "/reviews" + pathname.slice("/triage".length);
-  } else if (pathname.startsWith("/manager/reports")) {
-    normalizedPath = "/reports" + pathname.slice("/manager/reports".length);
-  } else if (pathname.startsWith("/admin/users")) {
-    normalizedPath = "/users" + pathname.slice("/admin/users".length);
-  } else if (pathname.startsWith("/admin/audit-logs")) {
-    normalizedPath = "/audit-logs" + pathname.slice("/admin/audit-logs".length);
-  } else if (pathname.startsWith("/admin/migration")) {
-    normalizedPath = "/migration" + pathname.slice("/admin/migration".length);
-  }
-
-  // 1. Exact match
-  if (normalizedPath === itemHref) {
-    return true;
-  }
-
-  // 2. Sub-path match (e.g. /migration/step-1 or /triage/review/123)
-  // Only active if no other more specific menu item matches the current pathname
-  if (normalizedPath.startsWith(itemHref + "/")) {
-    const hasMoreSpecificMatch = allItemHrefs.some(
-      (otherHref) =>
-        otherHref !== itemHref &&
-        otherHref.length > itemHref.length &&
-        (normalizedPath === otherHref || normalizedPath.startsWith(otherHref + "/"))
-    );
-    return !hasMoreSpecificMatch;
-  }
-
-  return false;
-}
+const NAV_ICONS: Record<NavItemId, React.ComponentType<{ className?: string }>> = {
+  home: LayoutDashboard,
+  intake: FileUp,
+  reviews: FolderKanban,
+  reports: BarChart3,
+  users: Users,
+  migration: Database,
+  "migration-monitor": Activity,
+  "system-processes": Terminal,
+  "audit-logs": ShieldAlert,
+};
 
 export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
   const pathname = usePathname();
@@ -154,10 +46,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
   const user = sessionQuery.data;
 
   const userRole = user?.role || "GUEST";
-
-  // Filter menu items by RBAC
-  const visibleItems = filterNavItemsByRole(userRole);
-  const visibleHrefs = visibleItems.map((i) => i.href);
+  const visibleItems = forRole(user?.role).sidebarItems(pathname);
 
   const handleLogout = async () => {
     try {
@@ -229,17 +118,16 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-1"
       >
         {visibleItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = isNavItemActive(item.href, pathname, visibleHrefs);
+          const Icon = NAV_ICONS[item.id];
 
           return (
             <Link
-              key={item.href}
+              key={item.id}
               href={item.href}
               onClick={onClose}
               className={cn(
                 "flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-150 focus-utility-ring min-h-[44px]",
-                isActive
+                item.active
                   ? "bg-[#e7eeff] text-[#006877] font-semibold ring-1 ring-[#cfdaf2]"
                   : "text-[#64748b] hover:text-[#1e293b] hover:bg-[#f8fafc]"
               )}
@@ -247,7 +135,7 @@ export function GlobalSidebar({ onClose, className }: GlobalSidebarProps) {
               <Icon
                 className={cn(
                   "w-5 h-5 shrink-0 transition-colors",
-                  isActive ? "text-[#00a2b9]" : "text-[#94a3b8]"
+                  item.active ? "text-[#00a2b9]" : "text-[#94a3b8]"
                 )}
               />
               <span className="truncate">{item.label}</span>

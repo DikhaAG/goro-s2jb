@@ -225,6 +225,20 @@ describe("Task 12.1: Layer 1 Edge Proxy Penetration Test Suite", () => {
           expect(res.status).toBe(200);
         }
       });
+
+      it("should block /system-processes for non-admin roles and return 404 on unknown routes for authenticated users", async () => {
+        for (const token of [fieldToken, operatorToken, managerToken]) {
+          const res = await proxy(createRequest("/system-processes", token));
+          expect(res.status).toBe(307);
+          expect(res.headers.get("location")).toContain("/unauthorized?required=SUPER_ADMIN");
+        }
+
+        const adminSystemRes = await proxy(createRequest("/system-processes", adminToken));
+        expect(adminSystemRes.status).toBe(200);
+
+        const unknownRes = await proxy(createRequest("/non-existent-route", adminToken));
+        expect(unknownRes.status).toBe(404);
+      });
     });
   });
 

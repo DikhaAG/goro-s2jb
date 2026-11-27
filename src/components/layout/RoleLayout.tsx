@@ -1,19 +1,20 @@
 import React from "react";
-import { Role } from "@prisma/client";
 import { AppShell } from "@/components/layout/AppShell";
+import { rolesForRouteGroup, type RouteGroup } from "@/lib/routeAuthorization";
 import { requireServerAuth } from "@/lib/server-auth";
 
 export interface RoleLayoutConfig {
-  allowedRoles: Role[];
+  routeGroup: RouteGroup;
   pageTitle: string;
 }
 
 /**
  * Higher-Order Server Component factory for role-protected route groups.
- * Enforces Layer 2 Server Authentication & Authorization before rendering AppShell.
- * Eliminates boilerplate duplication across route groups while maintaining strict isolation.
+ * Derives allowed roles from Otorisasi Rute before rendering AppShell.
  */
-export function createRoleLayout({ allowedRoles, pageTitle }: RoleLayoutConfig) {
+export function createRoleLayout({ routeGroup, pageTitle }: RoleLayoutConfig) {
+  const allowedRoles = [...rolesForRouteGroup(routeGroup)];
+
   return async function RoleProtectedLayout({
     children,
   }: {
@@ -33,10 +34,9 @@ export interface RoleLayoutProps extends RoleLayoutConfig {
  */
 export async function RoleLayout({
   children,
-  allowedRoles,
+  routeGroup,
   pageTitle,
 }: RoleLayoutProps) {
-  await requireServerAuth(allowedRoles);
+  await requireServerAuth([...rolesForRouteGroup(routeGroup)]);
   return <AppShell pageTitle={pageTitle}>{children}</AppShell>;
 }
-
