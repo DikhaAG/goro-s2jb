@@ -193,24 +193,29 @@ export const auth = betterAuth({
         type: "string",
         required: true,
         defaultValue: "PETUGAS_LAPANGAN",
+        input: false,
       },
       up3Id: {
         type: "string",
         required: false,
+        input: false,
       },
       ulpId: {
         type: "string",
         required: false,
+        input: false,
       },
       isActive: {
         type: "boolean",
         required: true,
         defaultValue: true,
+        input: false,
       },
     },
   },
   emailAndPassword: {
     enabled: true,
+    disableSignUp: true,
     password: {
       hash: async (pwd) => hashPassword(pwd),
       verify: async ({ password, hash }) => verifyPassword(password, hash),
