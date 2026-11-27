@@ -6,6 +6,7 @@ import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { downloadCsv } from "@/lib/client/csvDownload";
 import {
   FolderKanban,
   FilePlus,
@@ -42,6 +43,20 @@ import {
 type TriageDecision = "APPROVED" | "REJECTED";
 
 const UNDO_WINDOW_MS = 5000;
+
+const CSV_HEADERS = [
+  "ID",
+  "Nama Pengulas Play Store",
+  "Akun Google Form",
+  "UP3",
+  "ULP",
+  "Tanggal Entri",
+  "Skor OCR (%)",
+  "Status OCR",
+  "Status Validasi",
+  "Indikasi Duplikat",
+  "Catatan",
+];
 
 function toastError(fallback: string) {
   return (err: { message: string }) => {
@@ -397,57 +412,34 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
 
   // CSV Export Handler
   const handleExportCsv = (onlySelected = false) => {
-    const recordsToExport = onlySelected
+    const records = onlySelected
       ? currentItems.filter((i) => selectedIds.includes(i.id))
       : currentItems;
 
-    if (recordsToExport.length === 0) {
+    if (records.length === 0) {
       toast.error("Tidak ada baris data untuk diekspor.");
       return;
     }
 
-    const headers = [
-      "ID",
-      "Nama Pengulas Play Store",
-      "Akun Google Form",
-      "UP3",
-      "ULP",
-      "Tanggal Entri",
-      "Skor OCR (%)",
-      "Status OCR",
-      "Status Validasi",
-      "Indikasi Duplikat",
-      "Catatan",
-    ];
-
-    const rows = recordsToExport.map((item) => [
-      `"${item.id}"`,
-      `"${(item.playstoreReviewerName || "").replace(/"/g, '""')}"`,
-      `"${(item.originalReviewerName || "").replace(/"/g, '""')}"`,
-      `"${(item.up3?.name || "").replace(/"/g, '""')}"`,
-      `"${(item.ulp?.name || "").replace(/"/g, '""')}"`,
-      `"${new Date(item.entryDate).toISOString()}"`,
-      item.confidenceScore !== null ? item.confidenceScore.toFixed(1) : "-",
-      item.ocrStatus,
-      item.validationStatus,
-      item.isDuplicate ? "YA" : "TIDAK",
-      `"${(item.reviewRemarks || item.fieldNotes || "").replace(/"/g, '""')}"`,
+    const dateStr = new Date().toISOString().split("T")[0];
+    downloadCsv(`ulasan_export_${dateStr}.csv`, [
+      CSV_HEADERS,
+      ...records.map((item) => [
+        item.id,
+        item.playstoreReviewerName,
+        item.originalReviewerName,
+        item.up3?.name,
+        item.ulp?.name,
+        new Date(item.entryDate).toISOString(),
+        item.confidenceScore !== null ? item.confidenceScore.toFixed(1) : "-",
+        item.ocrStatus,
+        item.validationStatus,
+        item.isDuplicate ? "YA" : "TIDAK",
+        item.reviewRemarks || item.fieldNotes,
+      ]),
     ]);
 
-    const csvContent =
-      "data:text/csv;charset=utf-8,\uFEFF" +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    const dateStr = new Date().toISOString().split("T")[0];
-    link.setAttribute("download", `ulasan_export_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast.success(`${recordsToExport.length} baris ulasan berhasil diekspor ke CSV.`);
+    toast.success(`${records.length} baris ulasan berhasil diekspor ke CSV.`);
   };
 
   return (
