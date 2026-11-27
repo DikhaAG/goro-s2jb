@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import fs from "fs";
 import path from "path";
 import os from "os";
 import { OcrProcessingStatus, ReviewSource, ValidationStatus } from "@prisma/client";
-import { BASE_UPLOAD_DIR } from "@/lib/storage";
 import { ocrQueue } from "@/server/queues/ocrQueue";
 import {
   buildRustBatchDuplicatePayload,
@@ -47,10 +47,11 @@ describe("Verifikasi Eviden (evidenceVerification deep module)", () => {
   });
 
   describe("1. Enqueue seam & path normalization", () => {
-    it("normalizes absolute BASE_UPLOAD_DIR paths to relative paths and preserves external URLs", async () => {
-      const absPath = path.join(BASE_UPLOAD_DIR, "evidence", "2026", "11", "26", "sample.jpg");
-      expect(normalizeEvidenceQueuePath(absPath)).toBe("evidence/2026/11/26/sample.jpg");
-      expect(normalizeEvidenceQueuePath("https://drive.google.com/open?id=abc123")).toBe(
+    it("normalizes absolute storageRoot paths to relative paths and preserves external URLs", async () => {
+      const storageRoot = path.join(os.tmpdir(), "goro-ev-verify-norm");
+      const absPath = path.join(storageRoot, "evidence", "2026", "11", "26", "sample.jpg");
+      expect(normalizeEvidenceQueuePath(absPath, storageRoot)).toBe("evidence/2026/11/26/sample.jpg");
+      expect(normalizeEvidenceQueuePath("https://drive.google.com/open?id=abc123", storageRoot)).toBe(
         "https://drive.google.com/open?id=abc123"
       );
 
@@ -61,7 +62,7 @@ describe("Verifikasi Eviden (evidenceVerification deep module)", () => {
           evidenceImagePath: absPath,
           expectedReviewerName: "Budi Santoso",
         },
-        { markQueuedInDb: false, prismaClient: db }
+        { markQueuedInDb: false, prismaClient: db, storageRoot }
       );
 
       expect(res.enqueuedCount).toBe(1);
@@ -74,6 +75,58 @@ describe("Verifikasi Eviden (evidenceVerification deep module)", () => {
         },
         { priority: 1, attempts: 3 }
       );
+    });
+
+    it("verifies a local evidence image from an injected temp storageRoot", async () => {
+      const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), "goro-verify-local-"));
+      try {
+        const relPath = "evidence/2026/11/27/local.jpg";
+        const absPath = path.join(tempRoot, relPath);
+        await fs.promises.mkdir(path.dirname(absPath), { recursive: true });
+        await fs.promises.writeFile(absPath, Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+
+        const db = createMockPrisma({
+          id: "rev-local-temp",
+          source: ReviewSource.INTAKE,
+          validationStatus: ValidationStatus.PENDING,
+          verifiedAt: null,
+          reviewRemarks: null,
+          entryDate: new Date("2026-11-27"),
+          evidenceImagePath: relPath,
+          playstoreReviewerName: "Budi Santoso",
+        });
+
+        const visionEngine = createInMemoryVisionEngineAdapter({
+          ocrResult: {
+            success: true,
+            extracted_text: "Budi Santoso",
+            phash: "1010101010101010",
+            similarity_score: 96,
+            zone: "GREEN",
+            recommended_status: ValidationStatus.APPROVED,
+            execution_time_ms: 15,
+          },
+        });
+
+        const result = await verifyEvidence(
+          {
+            reviewId: "rev-local-temp",
+            evidenceImagePath: absPath,
+            expectedReviewerName: "Budi Santoso",
+          },
+          {
+            prismaClient: db,
+            storageRoot: tempRoot,
+            visionEngine,
+            onReportApproved: async () => {},
+          }
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.status).toBe(ValidationStatus.APPROVED);
+      } finally {
+        await fs.promises.rm(tempRoot, { recursive: true, force: true });
+      }
     });
 
     it("enqueues bulk verification jobs uniformly and marks QUEUED in DB", async () => {

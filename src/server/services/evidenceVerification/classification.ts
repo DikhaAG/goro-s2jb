@@ -1,6 +1,5 @@
-import path from "path";
 import { ValidationStatus } from "@prisma/client";
-import { BASE_UPLOAD_DIR } from "@/lib/storage";
+import { confineToRoot, resolveStorageRoot } from "@/lib/storage";
 import {
   calculateHammingDistance,
   calculateVisualSimilarity,
@@ -17,20 +16,18 @@ export const DEFAULT_DUPLICATE_HASH_THRESHOLD = 5;
 export const MAX_DUPLICATE_CANDIDATES = 50000;
 
 /**
- * Normalizes an evidence path so queue payloads never leak host-specific BASE_UPLOAD_DIR.
- * External HTTP(S) URLs are preserved verbatim; local paths are stored relative to BASE_UPLOAD_DIR.
+ * Normalizes an evidence path so queue payloads never leak host-specific storage roots.
+ * External HTTP(S) URLs are preserved verbatim; local paths are stored relative to storageRoot.
  */
-export function normalizeEvidenceQueuePath(pathOrUrl: string): string {
+export function normalizeEvidenceQueuePath(pathOrUrl: string, storageRoot?: string): string {
   const trimmed = pathOrUrl.trim();
   if (!trimmed || isExternalUrl(trimmed)) {
     return trimmed;
   }
 
-  if (path.isAbsolute(trimmed)) {
-    const relative = path.relative(BASE_UPLOAD_DIR, trimmed);
-    if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
-      return relative.replace(/\\/g, "/");
-    }
+  const confined = confineToRoot(resolveStorageRoot(storageRoot), trimmed);
+  if (confined.isAllowed) {
+    return confined.relativePath;
   }
 
   return trimmed.replace(/\\/g, "/").replace(/^\/+/, "");

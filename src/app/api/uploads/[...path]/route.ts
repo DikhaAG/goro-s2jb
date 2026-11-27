@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import fs from "fs";
-import { resolveEvidencePath } from "@/lib/storage";
+import { acquireBytes } from "@/server/services/evidenceAcquisition";
 import { session } from "@/server/session/live";
 
 export async function GET(
@@ -8,7 +7,7 @@ export async function GET(
   props: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    // 1. Layer 3 Authentication Guard: Block public scraping of sensitive evidence files
+    // Layer 3 Authentication Guard: Block public scraping of sensitive evidence files
     const user = await session.getUser(req.headers);
 
     if (!user) {
@@ -23,27 +22,16 @@ export async function GET(
       return new Response("Bad Request: File path missing", { status: 400 });
     }
 
-    const relativePath = pathSegments.join("/");
-    const { safeAbsolutePath, isAllowed, contentType } = resolveEvidencePath(relativePath);
+    const result = await acquireBytes(pathSegments.join("/"), { allowExternal: false });
 
-    if (!isAllowed) {
-      return new Response("Forbidden: Invalid file path or directory traversal detected", {
-        status: 403,
-      });
+    if (!result.ok) {
+      return new Response(result.error, { status: result.status });
     }
 
-    if (!fs.existsSync(safeAbsolutePath)) {
-      return new Response("Not Found: Evidence file does not exist", {
-        status: 404,
-      });
-    }
-
-    const fileBuffer = await fs.promises.readFile(safeAbsolutePath);
-
-    return new Response(fileBuffer, {
+    return new Response(new Uint8Array(result.buffer), {
       status: 200,
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": result.mimeType,
         "Cache-Control": "private, max-age=86400",
         "X-Content-Type-Options": "nosniff",
       },

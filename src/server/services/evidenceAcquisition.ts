@@ -55,6 +55,7 @@ export interface EvidenceAcquisitionDeps {
   recordTelemetry?: (event: TelemetryEvent) => Promise<void>;
   timeoutMs?: number;
   streamExternal?: (urlOrPath: string) => Promise<ExternalStreamResult>;
+  storageRoot?: string;
 }
 
 const DEFAULT_TIMEOUT_MS = 15_000;
@@ -385,6 +386,38 @@ export async function streamExternalEvidence(
   };
 }
 
+function resolveLocalEvidence(
+  relativePath: string,
+  storageRoot?: string
+):
+  | { ok: true; absolutePath: string; mimeType: string }
+  | { ok: false; status: 403 | 404; error: string } {
+  const { safeAbsolutePath, isAllowed, contentType } = resolveEvidencePath(
+    relativePath,
+    storageRoot
+  );
+  if (!isAllowed) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Jalur berkas eviden tidak sah",
+    };
+  }
+  if (!fs.existsSync(safeAbsolutePath)) {
+    return {
+      ok: false,
+      status: 404,
+      error: "Berkas lokal tidak ditemukan",
+    };
+  }
+
+  return {
+    ok: true,
+    absolutePath: safeAbsolutePath,
+    mimeType: contentType,
+  };
+}
+
 /**
  * Acquires Eviden Ulasan for Verifikasi Eviden: returns safe local path for engine passthrough,
  * or fetches and validates remote bytes in memory with zero disk footprint.
@@ -421,8 +454,8 @@ export async function acquireForVerification(
     };
   }
 
-  const { safeAbsolutePath, isAllowed, contentType } = resolveEvidencePath(trimmed);
-  if (!isAllowed || !fs.existsSync(safeAbsolutePath)) {
+  const local = resolveLocalEvidence(trimmed, deps.storageRoot);
+  if (!local.ok) {
     return {
       ok: false,
       kind: "missing_local",
@@ -433,8 +466,8 @@ export async function acquireForVerification(
   return {
     ok: true,
     kind: "local_path",
-    absolutePath: safeAbsolutePath,
-    mimeType: contentType,
+    absolutePath: local.absolutePath,
+    mimeType: local.mimeType,
   };
 }
 
@@ -443,7 +476,7 @@ export async function acquireForVerification(
  */
 export async function acquireBytes(
   pathOrUrl: string,
-  deps: EvidenceAcquisitionDeps = {}
+  deps: EvidenceAcquisitionDeps & { allowExternal?: boolean } = {}
 ): Promise<EvidenceBytesResult> {
   const trimmed = (pathOrUrl || "").trim();
   if (!trimmed) {
@@ -451,27 +484,24 @@ export async function acquireBytes(
   }
 
   if (!isExternalUrl(trimmed)) {
-    const { safeAbsolutePath, isAllowed, contentType } = resolveEvidencePath(trimmed);
-    if (!isAllowed) {
-      return {
-        ok: false,
-        status: 403,
-        error: "Jalur berkas eviden tidak sah",
-      };
-    }
-    if (!fs.existsSync(safeAbsolutePath)) {
-      return {
-        ok: false,
-        status: 404,
-        error: "Berkas lokal tidak ditemukan",
-      };
+    const local = resolveLocalEvidence(trimmed, deps.storageRoot);
+    if (!local.ok) {
+      return local;
     }
 
-    const buffer = await fs.promises.readFile(safeAbsolutePath);
+    const buffer = await fs.promises.readFile(local.absolutePath);
     return {
       ok: true,
       buffer,
-      mimeType: contentType,
+      mimeType: local.mimeType,
+    };
+  }
+
+  if (deps.allowExternal === false) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Jalur berkas eviden tidak sah",
     };
   }
 

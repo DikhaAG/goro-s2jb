@@ -1,10 +1,11 @@
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { OcrProcessingStatus, ReviewSource, Role, ValidationStatus } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
-import { BASE_UPLOAD_DIR } from "@/lib/storage";
+import { BASE_UPLOAD_DIR, confineToRoot } from "@/lib/storage";
 import { IMPORT_QUEUE_NAME, importQueue } from "@/server/queues/importQueue";
 import { logAuditEvent } from "@/server/services/auditService";
 import { extractGoogleDriveFileId } from "@/server/services/evidenceAcquisition";
@@ -26,6 +27,8 @@ import type {
   RawReviewRow,
   StartMigrationInput,
   StopSignal,
+  StoreMigrationUploadInput,
+  StoreMigrationUploadResult,
 } from "./types";
 
 export type * from "./types";
@@ -39,60 +42,21 @@ export {
 } from "./spreadsheet";
 
 const ALLOWED_MIGRATION_EXTENSIONS = new Set([".csv", ".xlsx", ".xls"]);
-
-function isInsideDirectory(candidatePath: string, rootDir: string): boolean {
-  const resolvedRoot = path.resolve(rootDir);
-  const resolvedCandidate = path.resolve(candidatePath);
-  return (
-    resolvedCandidate.startsWith(resolvedRoot + path.sep) ||
-    resolvedCandidate === resolvedRoot
-  );
-}
+const MIGRATION_UPLOAD_ROLES = new Set<Role>([Role.PEGAWAI, Role.SUPER_ADMIN]);
 
 /**
- * Confines migration source paths to BASE_UPLOAD_DIR and resolves host-vs-Docker mount prefixes.
+ * Confines migration source paths to `baseUploadDir` and resolves host-vs-Docker mount prefixes.
  */
 export function resolveMigrationFilePath(
   rawPath: string,
   baseUploadDir: string = BASE_UPLOAD_DIR
 ): { safeAbsolutePath: string; isAllowed: boolean } {
-  const trimmed = (rawPath || "").trim();
-  if (!trimmed || trimmed.includes("\0")) {
-    return { safeAbsolutePath: "", isAllowed: false };
-  }
-
-  const resolvedBase = path.resolve(baseUploadDir);
-
-  if (path.isAbsolute(trimmed)) {
-    const resolvedInput = path.resolve(trimmed);
-    if (isInsideDirectory(resolvedInput, resolvedBase)) {
-      return { safeAbsolutePath: resolvedInput, isAllowed: true };
-    }
-
-    // Handle cross-environment paths (e.g. host path vs Docker /app/uploads)
-    const normalizedSlashes = trimmed.replace(/\\/g, "/");
-    const marker = "/uploads/";
-    const markerIdx = normalizedSlashes.lastIndexOf(marker);
-    if (markerIdx !== -1) {
-      const relativeAfterUploads = normalizedSlashes
-        .slice(markerIdx + marker.length)
-        .replace(/^(\.\.(\/|\\|$))+/, "");
-      const remapped = path.resolve(resolvedBase, relativeAfterUploads);
-      if (isInsideDirectory(remapped, resolvedBase)) {
-        return { safeAbsolutePath: remapped, isAllowed: true };
-      }
-    }
-
-    return { safeAbsolutePath: resolvedInput, isAllowed: false };
-  }
-
-  const normalizedRelative = path
-    .normalize(trimmed)
-    .replace(/^(\.\.(\/|\\|$))+/, "");
-  const resolvedRelative = path.resolve(resolvedBase, normalizedRelative);
+  const confined = confineToRoot(baseUploadDir, rawPath, {
+    remapUploadsMount: true,
+  });
   return {
-    safeAbsolutePath: resolvedRelative,
-    isAllowed: isInsideDirectory(resolvedRelative, resolvedBase),
+    safeAbsolutePath: confined.safeAbsolutePath,
+    isAllowed: confined.isAllowed,
   };
 }
 
@@ -167,6 +131,58 @@ export function createMigrationBatch(defaultDeps: MigrationBatchDeps = {}) {
   });
 
   return {
+    async storeUpload(
+      actor: MigrationActor,
+      input: StoreMigrationUploadInput,
+      overrideDeps: MigrationBatchDeps = {}
+    ): Promise<StoreMigrationUploadResult> {
+      if (!MIGRATION_UPLOAD_ROLES.has(actor.role)) {
+        return {
+          ok: false,
+          status: 403,
+          error:
+            "Akses ditolak. Hanya Pegawai Triase atau Super Admin yang diizinkan mengunggah berkas migrasi.",
+        };
+      }
+
+      const originalName = path.basename(input.fileName || "");
+      const ext = path.extname(originalName).toLowerCase();
+      if (!originalName || !ALLOWED_MIGRATION_EXTENSIONS.has(ext)) {
+        return {
+          ok: false,
+          status: 400,
+          error: "Only CSV and XLSX files are supported for migration",
+        };
+      }
+
+      const { baseUploadDir } = resolveDeps(overrideDeps);
+      const uniqueId = crypto.randomBytes(6).toString("hex");
+      const sanitizedName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const relativeTarget = path.posix.join(
+        "migration",
+        `${Date.now()}_${uniqueId}_${sanitizedName}`
+      );
+      const confined = confineToRoot(baseUploadDir, relativeTarget);
+      if (!confined.isAllowed) {
+        return {
+          ok: false,
+          status: 400,
+          error: "Jalur berkas migrasi tidak sah.",
+        };
+      }
+
+      await fs.promises.mkdir(path.dirname(confined.safeAbsolutePath), { recursive: true });
+      await fs.promises.writeFile(confined.safeAbsolutePath, input.bytes);
+
+      return {
+        ok: true,
+        filePath: confined.safeAbsolutePath,
+        relativePath: confined.relativePath,
+        fileName: input.fileName,
+        fileSize: input.fileSize ?? input.bytes.length,
+      };
+    },
+
     async start(
       actor: MigrationActor,
       input: StartMigrationInput,

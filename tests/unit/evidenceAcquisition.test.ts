@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "fs";
+import os from "os";
 import path from "path";
-import { BASE_UPLOAD_DIR } from "@/lib/storage";
 import {
   acquireBytes,
   acquireForVerification,
@@ -140,54 +140,80 @@ describe("Akuisisi Eviden (evidenceAcquisition deep module)", () => {
   });
 
   describe("Unified verification and review evidence acquisition", () => {
-    it("returns local_path for Verifikasi Eviden and loads bytes for HTTP streaming", async () => {
-      const testDir = path.join(BASE_UPLOAD_DIR, "evidence", "test-acq");
+    let storageRoot: string;
+
+    beforeEach(async () => {
+      storageRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), "evidence-acq-"));
+    });
+
+    afterEach(async () => {
+      await fs.promises.rm(storageRoot, { recursive: true, force: true });
+    });
+
+    it("returns local_path for Verifikasi Eviden and loads bytes for HTTP streaming from injected root", async () => {
+      const testDir = path.join(storageRoot, "evidence", "test-acq");
       await fs.promises.mkdir(testDir, { recursive: true });
       const filePath = path.join(testDir, "sample_acq.jpg");
       const jpegBytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
       await fs.promises.writeFile(filePath, jpegBytes);
 
-      try {
-        const relPath = "evidence/test-acq/sample_acq.jpg";
-        const forVerify = await acquireForVerification(relPath);
-        expect(forVerify).toMatchObject({
-          ok: true,
-          kind: "local_path",
-          absolutePath: filePath,
-          mimeType: "image/jpeg",
-        });
+      const relPath = "evidence/test-acq/sample_acq.jpg";
+      const forVerify = await acquireForVerification(relPath, { storageRoot });
+      expect(forVerify).toMatchObject({
+        ok: true,
+        kind: "local_path",
+        absolutePath: filePath,
+        mimeType: "image/jpeg",
+      });
 
-        const bytesRes = await acquireBytes(relPath);
-        expect(bytesRes).toMatchObject({
-          ok: true,
-          mimeType: "image/jpeg",
-        });
-        if (bytesRes.ok) {
-          expect(bytesRes.buffer).toEqual(jpegBytes);
-        }
-
-        const reviewRes = await loadReviewEvidence("rev-local-1", {
-          prisma: {
-            ratingReview: {
-              findUnique: vi.fn().mockResolvedValue({
-                id: "rev-local-1",
-                evidenceImagePath: relPath,
-              }),
-            } as any,
-          },
-        });
-        expect(reviewRes.ok).toBe(true);
-      } finally {
-        await fs.promises.rm(testDir, { recursive: true, force: true });
+      const bytesRes = await acquireBytes(relPath, { storageRoot });
+      expect(bytesRes).toMatchObject({
+        ok: true,
+        mimeType: "image/jpeg",
+      });
+      if (bytesRes.ok) {
+        expect(bytesRes.buffer).toEqual(jpegBytes);
       }
+
+      const reviewRes = await loadReviewEvidence("rev-local-1", {
+        storageRoot,
+        prisma: {
+          ratingReview: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: "rev-local-1",
+              evidenceImagePath: relPath,
+            }),
+          } as any,
+        },
+      });
+      expect(reviewRes.ok).toBe(true);
     });
 
-    it("rejects traversal paths with 403", async () => {
-      const res = await acquireBytes("../../etc/passwd");
-      expect(res).toEqual({
+    it("rejects traversal paths and external URLs when allowExternal is false with 403, and missing files with 404", async () => {
+      expect(await acquireBytes("../../etc/passwd", { storageRoot })).toEqual({
         ok: false,
         status: 403,
         error: "Jalur berkas eviden tidak sah",
+      });
+      expect(await acquireBytes("../../etc/secret.jpg", { storageRoot })).toEqual({
+        ok: false,
+        status: 403,
+        error: "Jalur berkas eviden tidak sah",
+      });
+      expect(
+        await acquireBytes("https://drive.google.com/open?id=abc", {
+          storageRoot,
+          allowExternal: false,
+        })
+      ).toEqual({
+        ok: false,
+        status: 403,
+        error: "Jalur berkas eviden tidak sah",
+      });
+      expect(await acquireBytes("evidence/missing.jpg", { storageRoot })).toEqual({
+        ok: false,
+        status: 404,
+        error: "Berkas lokal tidak ditemukan",
       });
     });
   });

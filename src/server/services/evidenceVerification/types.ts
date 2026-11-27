@@ -59,6 +59,7 @@ export interface EnqueueVerificationOptions {
   attempts?: number;
   markQueuedInDb?: boolean;
   prismaClient?: any;
+  storageRoot?: string;
 }
 
 export interface EnqueueVerificationResult {
@@ -83,6 +84,7 @@ export interface EvidenceStreamResult {
 export interface VerifyEvidenceDeps {
   visionEngine?: VisionEnginePort;
   prismaClient?: any;
+  storageRoot?: string;
   streamExternalEvidence?: (url: string) => Promise<EvidenceStreamResult>;
   onReportApproved?: () => Promise<void>;
 }

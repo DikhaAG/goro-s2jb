@@ -109,7 +109,7 @@ export async function enqueueEvidenceVerification(
 
   const normalizedTargets = targetList.map((target) => ({
     reviewId: target.reviewId,
-    evidenceImagePath: normalizeEvidenceQueuePath(target.evidenceImagePath),
+    evidenceImagePath: normalizeEvidenceQueuePath(target.evidenceImagePath, options.storageRoot),
     expectedReviewerName: target.expectedReviewerName,
   }));
 
@@ -189,7 +189,7 @@ export async function verifyEvidence(
     };
   }
 
-  const normalizedPath = normalizeEvidenceQueuePath(input.evidenceImagePath);
+  const normalizedPath = normalizeEvidenceQueuePath(input.evidenceImagePath, deps.storageRoot);
   const usesExternalStream =
     existingReview.source === "MIGRATION" || isExternalUrl(normalizedPath);
 
@@ -203,6 +203,7 @@ export async function verifyEvidence(
   }
 
   const acquired = await acquireForVerification(normalizedPath, {
+    storageRoot: deps.storageRoot,
     streamExternal: deps.streamExternalEvidence,
   });
 

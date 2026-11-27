@@ -101,7 +101,7 @@ export function createEvidenceIntake(deps: EvidenceIntakeDeps) {
             evidenceImagePath: evidencePath,
             expectedReviewerName: input.playstoreReviewerName,
           },
-          { priority: 1, markQueuedInDb: false, prismaClient: prisma }
+          { priority: 1, markQueuedInDb: false, prismaClient: prisma, storageRoot }
         );
       } catch (cause) {
         await prisma.ratingReview.delete({ where: { id: review.id } }).catch(() => {});

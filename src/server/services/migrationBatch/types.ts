@@ -63,6 +63,26 @@ export interface MigrationBatchDeps {
   audit?: (payload: AuditEventPayload) => Promise<unknown>;
 }
 
+export interface StoreMigrationUploadInput {
+  fileName: string;
+  bytes: Buffer;
+  fileSize?: number;
+}
+
+export type StoreMigrationUploadResult =
+  | {
+      ok: true;
+      filePath: string;
+      relativePath: string;
+      fileName: string;
+      fileSize: number;
+    }
+  | {
+      ok: false;
+      status: 400 | 403;
+      error: string;
+    };
+
 export interface StartMigrationInput {
   filePath: string;
   fileName: string;

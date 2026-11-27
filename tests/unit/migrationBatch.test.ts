@@ -207,7 +207,7 @@ describe("Batch Migrasi (migrationBatch deep module)", () => {
     await fs.promises.rm(tempDir, { recursive: true, force: true });
   });
 
-  it("enforces path containment within BASE_UPLOAD_DIR and remaps cross-host /uploads/ mounts", () => {
+  it("enforces path containment within storage root and remaps cross-host /uploads/ mounts", () => {
     const inside = resolveMigrationFilePath("migration/test.csv", tempDir);
     expect(inside.isAllowed).toBe(true);
     expect(inside.safeAbsolutePath).toBe(path.join(tempDir, "migration", "test.csv"));
@@ -217,11 +217,46 @@ describe("Batch Migrasi (migrationBatch deep module)", () => {
     expect(crossHost.safeAbsolutePath).toBe(path.join(tempDir, "migration", "test.csv"));
 
     const traversal = resolveMigrationFilePath("../../etc/passwd", tempDir);
-    expect(traversal.isAllowed).toBe(true); // stripped to <tempDir>/etc/passwd
-    expect(traversal.safeAbsolutePath.startsWith(tempDir)).toBe(true);
+    expect(traversal.isAllowed).toBe(false);
 
     const outsideAbs = resolveMigrationFilePath("/etc/passwd", tempDir);
     expect(outsideAbs.isAllowed).toBe(false);
+  });
+
+  it("persists spreadsheet uploads inside <baseUploadDir>/migration with RBAC and extension checks", async () => {
+    const module = createMigrationBatch({
+      prisma: createInMemoryMigrationDb(),
+      redis: createInMemoryRedis(),
+      baseUploadDir: tempDir,
+      importQueue: { add: vi.fn().mockResolvedValue({ id: "job-1" }) },
+      audit: vi.fn().mockResolvedValue({}),
+    });
+
+    const fieldDenied = await module.storeUpload(
+      { id: "field-1", name: "Field", role: Role.PETUGAS_LAPANGAN },
+      { fileName: "raw.csv", bytes: Buffer.from("a,b") }
+    );
+    expect(fieldDenied.ok).toBe(false);
+    if (!fieldDenied.ok) expect(fieldDenied.status).toBe(403);
+
+    const badExt = await module.storeUpload(pegawaiOwner, {
+      fileName: "payload.exe",
+      bytes: Buffer.from("MZ"),
+    });
+    expect(badExt.ok).toBe(false);
+    if (!badExt.ok) expect(badExt.status).toBe(400);
+
+    const stored = await module.storeUpload(pegawaiOwner, {
+      fileName: "../../GORO (2026).xlsx",
+      bytes: Buffer.from("xlsx-bytes"),
+      fileSize: 10,
+    });
+    expect(stored.ok).toBe(true);
+    if (stored.ok) {
+      expect(stored.relativePath).toMatch(/^migration\/\d+_[0-9a-f]{12}_GORO__2026_\.xlsx$/);
+      expect(stored.filePath).toBe(path.join(tempDir, stored.relativePath));
+      expect(fs.readFileSync(stored.filePath).toString()).toBe("xlsx-bytes");
+    }
   });
 
   it("rejects unsupported targetType, outside filePath, and records audit on start", async () => {
