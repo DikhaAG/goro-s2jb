@@ -112,7 +112,6 @@ model ULP {
   up3Id     String
   up3       UP3      @relation(fields: [up3Id], references: [id])
   reviews   RatingReview[]
-  targets   TargetMaster[]
   users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,19 +126,12 @@ model AppVersion {
   updatedAt DateTime @updatedAt
 }
 
-model TargetMaster {
-  id               String   @id @default(cuid())
-  ulpId            String
-  ulp              ULP      @relation(fields: [ulpId], references: [id])
-  targetDate       DateTime
-  dailyTarget      Float    @default(0)
-  cumulativeTarget Float    @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@unique([ulpId, targetDate])
-  @@index([targetDate])
-  @@index([ulpId])
+// Kalender Target: one daily target per WIB calendar date, applied to every ULP (ADR-0002).
+model TargetCalendarEntry {
+  date        DateTime @id @db.Date
+  dailyTarget Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum ReviewSource {

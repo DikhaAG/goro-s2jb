@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Role } from "@prisma/client";
 import { generateExecutiveWorkbook } from "@/lib/export/excelExporter";
 import { session } from "@/server/session/live";
+import { achievementReport } from "@/server/services/achievementReport.live";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,20 +25,18 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get("date");
-    const date = dateParam ? new Date(dateParam) : new Date();
-    const year = parseInt(searchParams.get("year") || String(date.getFullYear()), 10);
-    const month = parseInt(searchParams.get("month") || String(date.getMonth() + 1), 10);
-    const up3Id = searchParams.get("up3Id") || undefined;
+    const parsed = achievementReport.parsePosisi(searchParams.get("posisiTanggal") ?? undefined);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const filter = { up3Id: searchParams.get("up3Id") || undefined };
+    const [daily, monthly] = await Promise.all([
+      achievementReport.daily(parsed.posisi, filter),
+      achievementReport.monthly(parsed.posisi, filter),
+    ]);
 
-    const buffer = await generateExecutiveWorkbook({
-      date,
-      year,
-      month,
-      up3Id,
-    });
-
-    const filename = `GORO_S2JB_Laporan_Eksekutif_${year}_${String(month).padStart(2, "0")}.xlsx`;
+    const buffer = await generateExecutiveWorkbook({ daily, monthly });
+    const filename = `GORO_S2JB_Laporan_Eksekutif_${parsed.posisi.date}.xlsx`;
 
     return new Response(buffer, {
       status: 200,

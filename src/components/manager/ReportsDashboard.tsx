@@ -8,7 +8,7 @@ import { ReportTableDaily } from "./ReportTableDaily";
 import { ReportTableMonthly } from "./ReportTableMonthly";
 import { PerformanceChart } from "./PerformanceChart";
 import { CumulativePacingChart } from "./CumulativePacingChart";
-import { TargetSettingsModal } from "./TargetSettingsModal";
+import { TargetCalendarModal } from "./TargetCalendarModal";
 import { Button } from "@/components/ui/button";
 import {
   FileSpreadsheet,
@@ -28,9 +28,11 @@ import {
   Database,
   Clock,
   ArrowRight,
-  Sliders,
+  CalendarDays,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { wibToday } from "@/lib/wibDate";
 
 type ReportTab = "MONTHLY" | "DAILY" | "CHARTS";
 
@@ -40,14 +42,11 @@ export function ReportsDashboard() {
   const user = sessionQuery.data;
 
   const now = new Date();
-  const [selectedDate, setSelectedDate] = useState<string>(
-    now.toISOString().split("T")[0]
-  );
-  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+  // Posisi Tanggal: the one reporting date. The server derives the month from it.
+  const [selectedDate, setSelectedDate] = useState<string>(() => wibToday(now));
   const [selectedUp3Id, setSelectedUp3Id] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ReportTab>("MONTHLY");
-  const [isTargetSettingsOpen, setIsTargetSettingsOpen] = useState<boolean>(false);
+  const [isTargetCalendarOpen, setIsTargetCalendarOpen] = useState<boolean>(false);
 
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(now);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -79,31 +78,22 @@ export function ReportsDashboard() {
 
   // Report Queries with background auto-refresh
   const kpiQuery = trpc.report.getKpis.useQuery(
-    { date: selectedDate },
+    { posisiTanggal: selectedDate },
     { enabled: isAuthorized, refetchInterval: 10000 }
   );
 
   const dailyQuery = trpc.report.getDaily.useQuery(
-    { date: selectedDate, up3Id: selectedUp3Id || undefined },
+    { posisiTanggal: selectedDate, up3Id: selectedUp3Id || undefined },
     { enabled: isAuthorized && (activeTab === "DAILY" || activeTab === "CHARTS"), refetchInterval: 10000 }
   );
 
   const monthlyQuery = trpc.report.getMonthly.useQuery(
-    {
-      year: selectedYear,
-      month: selectedMonth,
-      up3Id: selectedUp3Id || undefined,
-      asOfDate: selectedDate,
-    },
+    { posisiTanggal: selectedDate, up3Id: selectedUp3Id || undefined },
     { enabled: isAuthorized && (activeTab === "MONTHLY" || activeTab === "CHARTS"), refetchInterval: 10000 }
   );
 
   const pacingQuery = trpc.report.getPacing.useQuery(
-    {
-      year: selectedYear,
-      month: selectedMonth,
-      up3Id: selectedUp3Id || undefined,
-    },
+    { posisiTanggal: selectedDate, up3Id: selectedUp3Id || undefined },
     { enabled: isAuthorized && activeTab === "CHARTS", refetchInterval: 10000 }
   );
 
@@ -124,9 +114,6 @@ export function ReportsDashboard() {
     if (!syncStatusQuery.data?.latestApprovedReviewDate) return;
     const latestDateStr = syncStatusQuery.data.latestApprovedReviewDate.split("T")[0];
     setSelectedDate(latestDateStr);
-    const d = new Date(latestDateStr);
-    setSelectedYear(d.getFullYear());
-    setSelectedMonth(d.getMonth() + 1);
   };
 
   const formatTime = (date: Date) => {
@@ -167,13 +154,13 @@ export function ReportsDashboard() {
     (dailyQuery.data?.grandTotal.dailyRealization === 0 || kpiQuery.data?.dailyRealizationToday === 0);
 
   const handleExportExcel = () => {
-    let url = `/api/export/excel?date=${selectedDate}&year=${selectedYear}&month=${selectedMonth}`;
+    let url = `/api/export/excel?posisiTanggal=${selectedDate}`;
     if (selectedUp3Id) url += `&up3Id=${selectedUp3Id}`;
     window.open(url, "_blank");
   };
 
   const handleExportPdf = () => {
-    let url = `/api/export/pdf?date=${selectedDate}&year=${selectedYear}&month=${selectedMonth}`;
+    let url = `/api/export/pdf?posisiTanggal=${selectedDate}`;
     if (selectedUp3Id) url += `&up3Id=${selectedUp3Id}`;
     window.open(url, "_blank");
   };
@@ -261,12 +248,12 @@ export function ReportsDashboard() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setIsTargetSettingsOpen(true)}
+            onClick={() => setIsTargetCalendarOpen(true)}
             className="h-9 min-h-[36px] text-xs gap-2 bg-white border-slate-200 hover:border-teal-600 text-slate-700 hover:text-teal-700 font-medium rounded-xl shadow-2xs transition-all cursor-pointer active:scale-[0.98]"
-            title="Atur target kuota harian kerja dan akhir pekan"
+            title="Atur target harian per tanggal"
           >
-            <Sliders className="w-4 h-4 text-teal-600" />
-            <span>Atur Target</span>
+            <CalendarDays className="w-4 h-4 text-teal-600" aria-hidden />
+            <span>Kalender Target</span>
           </Button>
 
           <Button
@@ -428,12 +415,7 @@ export function ReportsDashboard() {
               value={selectedDate}
               onChange={(e) => {
                 const val = e.target.value;
-                setSelectedDate(val);
-                if (val) {
-                  const d = new Date(val);
-                  setSelectedYear(d.getFullYear());
-                  setSelectedMonth(d.getMonth() + 1);
-                }
+                if (val) setSelectedDate(val);
               }}
               className="bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] text-xs rounded-xl px-2.5 py-1.5 min-h-[38px] focus-utility-ring"
             />
@@ -450,10 +432,18 @@ export function ReportsDashboard() {
               <span className="text-xs text-[#64748b]">Memuat laporan bulanan kumulatif...</span>
             </div>
           ) : monthlyQuery.data ? (
+            <>
+            {monthlyQuery.data.defaultTargetDates.length > 0 && (
+              <DefaultTargetNote onOpenCalendar={() => setIsTargetCalendarOpen(true)}>
+                {monthlyQuery.data.defaultTargetDates.length} tanggal sejak awal bulan belum diatur di Kalender Target, jadi
+                Target Kumulatif memakai nilai default untuk tanggal itu (hari kerja 50, akhir pekan 20).
+              </DefaultTargetNote>
+            )}
             <ReportTableMonthly
               groups={monthlyQuery.data.groups}
               grandTotal={monthlyQuery.data.grandTotal}
             />
+            </>
           ) : null}
         </div>
       )}
@@ -466,10 +456,17 @@ export function ReportsDashboard() {
               <span className="text-xs text-[#64748b]">Memuat laporan harian...</span>
             </div>
           ) : dailyQuery.data ? (
+            <>
+            {dailyQuery.data.targetIsDefault && (
+              <DefaultTargetNote onOpenCalendar={() => setIsTargetCalendarOpen(true)}>
+                Tanggal ini belum diatur di Kalender Target, jadi target harian memakai nilai default (hari kerja 50, akhir pekan 20).
+              </DefaultTargetNote>
+            )}
             <ReportTableDaily
               groups={dailyQuery.data.groups}
               grandTotal={dailyQuery.data.grandTotal}
             />
+            </>
           ) : null}
         </div>
       )}
@@ -486,11 +483,30 @@ export function ReportsDashboard() {
         </div>
       )}
 
-      {/* Target Settings Configuration Modal */}
-      <TargetSettingsModal
-        isOpen={isTargetSettingsOpen}
-        onClose={() => setIsTargetSettingsOpen(false)}
+      <TargetCalendarModal
+        isOpen={isTargetCalendarOpen}
+        onClose={() => setIsTargetCalendarOpen(false)}
+        initialDate={selectedDate}
       />
+    </div>
+  );
+}
+
+/** Says when a report used the fixed default target because the Kalender Target had no entry (ADR-0002). */
+function DefaultTargetNote({ children, onOpenCalendar }: { children: React.ReactNode; onOpenCalendar: () => void }) {
+  return (
+    <div className="mb-3 flex flex-col gap-3 rounded-2xl bg-[#f8fafc] p-4 sm:flex-row sm:items-center">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#475569] text-white">
+        <Info className="h-5 w-5" aria-hidden />
+      </div>
+      <p className="flex-1 text-xs text-[#334155]">{children}</p>
+      <button
+        type="button"
+        onClick={onOpenCalendar}
+        className="min-h-[44px] self-start rounded-xl px-3 text-xs font-semibold text-[#006877] hover:underline focus-utility-ring cursor-pointer sm:self-auto"
+      >
+        Atur Kalender Target
+      </button>
     </div>
   );
 }

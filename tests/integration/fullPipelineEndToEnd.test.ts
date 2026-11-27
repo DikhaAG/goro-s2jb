@@ -117,7 +117,6 @@ describe("Comprehensive End-to-End Integration Test Suite: UI + Rust Vision Engi
         originalReviewerName: testName,
         entryDate: new Date().toISOString().split("T")[0],
         evidenceImageBase64: `data:image/png;base64,${testBase64}`,
-        evidenceFilename: "e2e_full_pipeline.png",
       });
 
       expect(submitRes.success).toBe(true);

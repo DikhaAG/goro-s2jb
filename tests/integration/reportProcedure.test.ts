@@ -8,25 +8,19 @@ describe("Task 5: Report Router & Target Immutability Integration", () => {
   let managerUser: { id: string; username: string; name: string; role: any };
   let pegawaiUser: { id: string; username: string; name: string; role: any };
   let fieldUser: { id: string; username: string; name: string; role: any };
-  let testUlpId: string;
-  let futureTargetId: string | null = null;
 
   beforeAll(async () => {
     const manager = await prisma.user.findFirst({ where: { role: "MANAGER" } });
     const pegawai = await prisma.user.findFirst({ where: { role: "PEGAWAI" } });
     const field = await prisma.user.findFirst({ where: { role: "PETUGAS_LAPANGAN" } });
-    const ulp = await prisma.uLP.findFirst({ where: { code: "ULP_RIV" } });
 
     managerUser = manager!;
     pegawaiUser = pegawai!;
     fieldUser = field!;
-    testUlpId = ulp!.id;
   });
 
   afterAll(async () => {
-    if (futureTargetId) {
-      await prisma.targetMaster.delete({ where: { id: futureTargetId } }).catch(() => {});
-    }
+    await prisma.targetCalendarEntry.deleteMany({ where: { date: new Date("2099-12-31") } });
     await prisma.$disconnect();
     redis.disconnect();
   });
@@ -76,48 +70,31 @@ describe("Task 5: Report Router & Target Immutability Integration", () => {
     expect(typeof monthly.grandTotal.cumulativeTarget).toBe("number");
   });
 
-  it("should preserve AC-4 Target Immutability: future target adjustments do not alter historical reports", async () => {
-    const managerCaller = appRouter.createCaller({
-      prisma,
-      redis,
-      user: managerUser,
-      req: undefined,
+  it("rejects a Posisi Tanggal that is not a YYYY-MM-DD date", async () => {
+    const managerCaller = appRouter.createCaller({ prisma, redis, user: managerUser, req: undefined });
+    await expect(managerCaller.report.getDaily({ posisiTanggal: "bukan-tanggal" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
     });
+  });
 
-    const historicalDate = new Date("2026-05-01");
+  it("should preserve AC-4 Target Immutability: past targets are locked and later changes leave past reports unchanged", async () => {
+    const managerCaller = appRouter.createCaller({ prisma, redis, user: managerUser, req: undefined });
 
-    // 1. Fetch report for historical date
-    const reportBefore = await managerCaller.report.getDaily({
-      date: historicalDate.toISOString(),
+    const reportBefore = await managerCaller.report.getDaily({ posisiTanggal: "2026-05-01" });
+
+    await expect(
+      managerCaller.report.setTargetCalendar({ entries: [{ date: "2026-05-01", dailyTarget: 999 }] })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+    await managerCaller.report.setTargetCalendar({ entries: [{ date: "2099-12-31", dailyTarget: 999 }] });
+
+    const reportAfter = await managerCaller.report.getDaily({ posisiTanggal: "2026-05-01" });
+    expect(reportAfter).toEqual(reportBefore);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: { userId: managerUser.id, action: "UPDATE_TARGET_CALENDAR" },
+      orderBy: { createdAt: "desc" },
     });
-    const rivaiBefore = reportBefore.groups
-      .flatMap((g) => g.ulps)
-      .find((u) => u.ulpId === testUlpId);
-
-    const targetBefore = rivaiBefore?.dailyTarget;
-
-    // 2. Insert a drastic target change far in the future
-    const futureDate = new Date("2026-12-31");
-    const newTarget = await prisma.targetMaster.create({
-      data: {
-        ulpId: testUlpId,
-        targetDate: futureDate,
-        dailyTarget: 999.0, // Drastically higher
-        cumulativeTarget: 25000.0,
-      },
-    });
-    futureTargetId = newTarget.id;
-
-    // 3. Re-query the historical report for 2026-05-01
-    const reportAfter = await managerCaller.report.getDaily({
-      date: historicalDate.toISOString(),
-    });
-    const rivaiAfter = reportAfter.groups
-      .flatMap((g) => g.ulps)
-      .find((u) => u.ulpId === testUlpId);
-
-    // Historical target must be completely unchanged
-    expect(rivaiAfter?.dailyTarget).toBe(targetBefore);
-    expect(rivaiAfter?.dailyTarget).not.toBe(999.0);
+    expect(audit?.metadata).toEqual({ entries: [{ date: "2099-12-31", dailyTarget: 999 }] });
   });
 });

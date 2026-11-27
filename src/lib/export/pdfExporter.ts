@@ -1,27 +1,19 @@
-import { getMonthlyReport, getDailyReport } from "@/server/services/reportService";
+import type { DailyReport, MonthlyReport } from "@/server/services/achievementReport";
 
-export async function generatePrintableHtmlReport(params: {
-  date: Date;
-  year: number;
-  month: number;
-  up3Id?: string;
-}) {
-  const { date, year, month, up3Id } = params;
-
-  const [dailyData, monthlyData] = await Promise.all([
-    getDailyReport(date, up3Id),
-    getMonthlyReport(year, month, up3Id, date),
-  ]);
+export function generatePrintableHtmlReport(params: { daily: DailyReport; monthly: MonthlyReport }) {
+  const { daily: dailyData, monthly: monthlyData } = params;
+  const { year, month } = monthlyData;
 
   const monthNames = [
     "Januari", "Februari", "Maret", "April", "Mei", "Juni",
     "Juli", "Agustus", "September", "Oktober", "November", "Desember"
   ];
-  const formattedDate = date.toLocaleDateString("id-ID", {
+  const formattedDate = new Date(`${monthlyData.posisiTanggal}T00:00:00Z`).toLocaleDateString("id-ID", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   });
 
   return `<!DOCTYPE html>

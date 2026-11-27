@@ -29,7 +29,7 @@ async function main() {
 
   // 1. Bersihkan data lama jika fresh database atau FORCE_SEED=true
   await prisma.ratingReview.deleteMany();
-  await prisma.targetMaster.deleteMany();
+  await prisma.targetCalendarEntry.deleteMany();
   await prisma.session.deleteMany();
   await prisma.account.deleteMany();
   await prisma.verification.deleteMany();
@@ -127,21 +127,21 @@ async function main() {
   }
   console.log(`✅ Berhasil membuat ${versions.length} versi aplikasi PLN Mobile.`);
 
-  // 4. Seed Target Master Awal
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  for (const ulpCode of Object.keys(createdUlps)) {
-    await prisma.targetMaster.create({
-      data: {
-        ulpId: createdUlps[ulpCode],
-        targetDate: today,
-        dailyTarget: 50.0,
-        cumulativeTarget: 1100.0,
-      },
-    });
+  // 4. Seed Kalender Target (ADR-0002): current and next month, weekday 50 / weekend 20.
+  // Managers then adjust holidays from the target modal.
+  const wibToday = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const calendarEntries: { date: Date; dailyTarget: number }[] = [];
+  for (let offset = 0; offset < 2; offset++) {
+    const first = new Date(Date.UTC(wibToday.getUTCFullYear(), wibToday.getUTCMonth() + offset, 1));
+    const days = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+    for (let d = 1; d <= days; d++) {
+      const date = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), d));
+      const weekend = date.getUTCDay() === 0 || date.getUTCDay() === 6;
+      calendarEntries.push({ date, dailyTarget: weekend ? 20 : 50 });
+    }
   }
-  console.log(`✅ Berhasil menginisialisasi Target Master harian & kumulatif.`);
+  await prisma.targetCalendarEntry.createMany({ data: calendarEntries });
+  console.log(`✅ Berhasil mengisi Kalender Target untuk ${calendarEntries.length} tanggal.`);
 
   // 5. Seed Users untuk 3 Role RBAC + Super Admin
   const defaultPassword = hashPassword('password123');

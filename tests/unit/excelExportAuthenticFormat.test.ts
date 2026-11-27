@@ -1,42 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import ExcelJS from "exceljs";
 import { generateExecutiveWorkbook } from "@/lib/export/excelExporter";
-import {
-  getTargetConfig,
-  saveTargetConfig,
-  DEFAULT_TARGET_CONFIG,
-} from "@/server/services/reportService";
+import { achievementReport } from "@/server/services/achievementReport.live";
 
-describe("Executive Report Excel Export & Configurable Target Specifications", () => {
-  it("should have default target configuration of 50 for weekdays and 20 for weekends", async () => {
-    const config = await getTargetConfig();
-    expect(config.weekdayTarget).toBe(50);
-    expect(config.weekendTarget).toBe(20);
-  });
-
-  it("should allow updating target configuration dynamically", async () => {
-    const updated = await saveTargetConfig({
-      weekdayTarget: 60,
-      weekendTarget: 25,
-    });
-    expect(updated.weekdayTarget).toBe(60);
-    expect(updated.weekendTarget).toBe(25);
-
-    // Reset back to baseline default
-    const reset = await saveTargetConfig({
-      weekdayTarget: DEFAULT_TARGET_CONFIG.weekdayTarget,
-      weekendTarget: DEFAULT_TARGET_CONFIG.weekendTarget,
-    });
-    expect(reset.weekdayTarget).toBe(50);
-    expect(reset.weekendTarget).toBe(20);
-  });
-
+describe("Executive Report Excel Export", () => {
   it("should generate authentic Excel workbook conforming strictly to official reference", async () => {
-    const testDate = new Date("2026-08-05T00:00:00Z"); // Wednesday (weekday)
+    const parsed = achievementReport.parsePosisi("2026-08-05");
+    if (!parsed.ok) throw new Error(parsed.error);
     const buffer = await generateExecutiveWorkbook({
-      date: testDate,
-      year: 2026,
-      month: 8,
+      daily: await achievementReport.daily(parsed.posisi),
+      monthly: await achievementReport.monthly(parsed.posisi),
     });
 
     expect(buffer).toBeDefined();

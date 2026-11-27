@@ -1,4 +1,4 @@
-import { router, protectedProcedure, executiveProcedure } from "../trpc";
+import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 
 export const masterRouter = router({
@@ -37,30 +37,4 @@ export const masterRouter = router({
       orderBy: { version: "desc" },
     });
   }),
-
-  getTargets: executiveProcedure
-    .input(
-      z
-        .object({
-          ulpId: z.string().optional(),
-          targetDate: z.string().optional(),
-        })
-        .optional()
-    )
-    .query(async ({ ctx, input }) => {
-      return ctx.prisma.targetMaster.findMany({
-        where: {
-          ...(input?.ulpId ? { ulpId: input.ulpId } : {}),
-          ...(input?.targetDate ? { targetDate: new Date(input.targetDate) } : {}),
-        },
-        include: {
-          ulp: {
-            include: {
-              up3: true,
-            },
-          },
-        },
-        orderBy: { targetDate: "asc" },
-      });
-    }),
 });

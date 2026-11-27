@@ -66,17 +66,21 @@ describe("tRPC v11 API Routers (Health, Master)", () => {
     await expect(anonymousCaller.master.getUnits()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await expect(anonymousCaller.master.getUlps()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await expect(anonymousCaller.master.getVersions()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-    await expect(anonymousCaller.master.getTargets()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("keeps report targets for Manager and Super Admin only", async () => {
+  it("keeps the Kalender Target for Manager and Super Admin only", async () => {
+    const month = { year: 2099, month: 3 };
+    await expect(anonymousCaller.report.getTargetCalendar(month)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     for (const role of [Role.PETUGAS_LAPANGAN, Role.PEGAWAI]) {
       const roleCaller = await callerAs(role);
-      await expect(roleCaller.master.getTargets()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(roleCaller.report.getTargetCalendar(month)).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        roleCaller.report.setTargetCalendar({ entries: [{ date: "2099-03-01", dailyTarget: 1 }] })
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
     for (const role of [Role.MANAGER, Role.SUPER_ADMIN]) {
       const roleCaller = await callerAs(role);
-      await expect(roleCaller.master.getTargets()).resolves.toBeInstanceOf(Array);
+      await expect(roleCaller.report.getTargetCalendar(month)).resolves.toHaveLength(31);
     }
   });
 });

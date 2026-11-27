@@ -3,17 +3,18 @@ import ExcelJS from "exceljs";
 import { generateExecutiveWorkbook } from "@/lib/export/excelExporter";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
+import { achievementReport } from "@/server/services/achievementReport.live";
 
 describe("Task 5: Excel Exporter Architecture & Formula Verification", () => {
   let excelBuffer: Buffer;
   let workbook: ExcelJS.Workbook;
 
   beforeAll(async () => {
-    const testDate = new Date();
+    const parsed = achievementReport.parsePosisi(undefined);
+    if (!parsed.ok) throw new Error(parsed.error);
     excelBuffer = await generateExecutiveWorkbook({
-      date: testDate,
-      year: testDate.getFullYear(),
-      month: testDate.getMonth() + 1,
+      daily: await achievementReport.daily(parsed.posisi),
+      monthly: await achievementReport.monthly(parsed.posisi),
     });
 
     workbook = new ExcelJS.Workbook();
