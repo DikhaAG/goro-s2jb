@@ -43,6 +43,12 @@ type TriageDecision = "APPROVED" | "REJECTED";
 
 const UNDO_WINDOW_MS = 5000;
 
+function toastError(fallback: string) {
+  return (err: { message: string }) => {
+    toast.error(err.message || fallback);
+  };
+}
+
 export interface ReviewsDashboardProps {
   initialSession?: SessionUser | null;
 }
@@ -85,7 +91,6 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   const [isPurgeAllModalOpen, setIsPurgeAllModalOpen] = useState(false);
 
   const [isBulkReassignModalOpen, setIsBulkReassignModalOpen] = useState(false);
-  const [retryingSingleId, setRetryingSingleId] = useState<string | null>(null);
 
   // Queries
   const { data: filterOptions } = trpc.reviews.getFilterOptions.useQuery();
@@ -138,46 +143,40 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   }, [currentItems, activeId]);
 
   // Mutations
+  const utils = trpc.useUtils();
+  const refreshReviews = () => utils.reviews.invalidate();
+
   const submitDecisionMutation = trpc.reviews.submitDecision.useMutation({
-    onSuccess: () => {
-      refetchList();
-    },
-    onError: (err) => {
-      toast.error(err.message || "Gagal memperbarui status verifikasi.");
-    },
+    onSuccess: refreshReviews,
+    onError: toastError("Gagal memperbarui status verifikasi."),
   });
 
   const undoDecisionMutation = trpc.reviews.undoDecision.useMutation({
     onSuccess: () => {
       toast.success("Keputusan verifikasi berhasil dibatalkan.");
-      refetchList();
+      return refreshReviews();
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal membatalkan keputusan verifikasi.");
-    },
+    onError: toastError("Gagal membatalkan keputusan verifikasi."),
   });
 
   const retryOcrMutation = trpc.reviews.retryOcr.useMutation({
     onSuccess: () => {
       toast.success("Pekerjaan OCR berhasil di-enqueue ulang ke worker.");
-      setRetryingSingleId(null);
-      refetchList();
+      return refreshReviews();
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal memicu ulang OCR.");
-      setRetryingSingleId(null);
-    },
+    onError: toastError("Gagal memicu ulang OCR."),
   });
+  const retryingSingleId = retryOcrMutation.isPending
+    ? (retryOcrMutation.variables?.reviewId ?? null)
+    : null;
 
   const bulkRetryOcrMutation = trpc.reviews.bulkRetryOcr.useMutation({
     onSuccess: (res) => {
       toast.success(`${res.count} pekerjaan OCR berhasil dimasukkan ke antrean.`);
       setSelectedIds([]);
-      refetchList();
+      return refreshReviews();
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal memicu ulang OCR massal.");
-    },
+    onError: toastError("Gagal memicu ulang OCR massal."),
   });
 
   const bulkUpdateMutation = trpc.reviews.bulkUpdate.useMutation({
@@ -185,59 +184,51 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       toast.success(`${res.count} baris data ulasan berhasil diperbarui.`);
       setSelectedIds([]);
       setIsBulkReassignModalOpen(false);
-      refetchList();
+      return refreshReviews();
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal memperbarui ulasan massal.");
-    },
+    onError: toastError("Gagal memperbarui ulasan massal."),
   });
 
   const deleteMutation = trpc.reviews.delete.useMutation({
     onSuccess: (res) => {
-      if (res.mode === "PERMANENT") {
-        toast.success("Ulasan berhasil dihapus secara permanen dari basis data.");
-      } else {
-        toast.success("Ulasan berhasil ditandai REJECTED (kuratif).");
-      }
+      toast.success(
+        res.mode === "PERMANENT"
+          ? "Ulasan berhasil dihapus secara permanen dari basis data."
+          : "Ulasan berhasil ditandai REJECTED (kuratif)."
+      );
       setIsDeleteModalOpen(false);
       setReviewToDelete(null);
-      refetchList();
+      return refreshReviews();
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal melakukan tindakan kuratif.");
-    },
+    onError: toastError("Gagal melakukan tindakan kuratif."),
   });
 
   const bulkDeleteMutation = trpc.reviews.bulkDelete.useMutation({
     onSuccess: (res) => {
-      if (res.mode === "PERMANENT") {
-        toast.success(`${res.count} baris ulasan berhasil dihapus secara permanen.`);
-      } else {
-        toast.success(`${res.count} baris ulasan berhasil ditandai REJECTED (kuratif massal).`);
-      }
+      toast.success(
+        res.mode === "PERMANENT"
+          ? `${res.count} baris ulasan berhasil dihapus secara permanen.`
+          : `${res.count} baris ulasan berhasil ditandai REJECTED (kuratif massal).`
+      );
       setIsBulkDeleteModalOpen(false);
       setSelectedIds([]);
-      refetchList();
+      return refreshReviews();
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal melakukan tindakan kuratif massal.");
-    },
+    onError: toastError("Gagal melakukan tindakan kuratif massal."),
   });
 
   const deleteAllMutation = trpc.reviews.deleteAll.useMutation({
     onSuccess: (res) => {
-      if (res.mode === "PERMANENT") {
-        toast.success(`Seluruh data ulasan (${res.count} baris) berhasil dihapus permanen.`);
-      } else {
-        toast.success(`Seluruh data ulasan (${res.count} baris) berhasil ditandai REJECTED.`);
-      }
+      toast.success(
+        res.mode === "PERMANENT"
+          ? `Seluruh data ulasan (${res.count} baris) berhasil dihapus permanen.`
+          : `Seluruh data ulasan (${res.count} baris) berhasil ditandai REJECTED.`
+      );
       setIsPurgeAllModalOpen(false);
       setSelectedIds([]);
-      refetchList();
+      return refreshReviews();
     },
-    onError: (err) => {
-      toast.error(err.message || "Gagal melakukan tindakan pada seluruh data ulasan.");
-    },
+    onError: toastError("Gagal melakukan tindakan pada seluruh data ulasan."),
   });
 
   // The decision is saved right away; the toast only offers a short window to revert it.
@@ -457,11 +448,6 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   const handleOpenDetail = (review: ReviewItem) => {
     setSelectedReviewForDrawer(review.id);
     setIsDrawerOpen(true);
-  };
-
-  const handleRetrySingleOcr = (reviewId: string) => {
-    setRetryingSingleId(reviewId);
-    retryOcrMutation.mutate({ reviewId });
   };
 
   const handleOpenDelete = (review: ReviewItem) => {
@@ -722,7 +708,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
           if (isReviewPageSize(ps)) setParams({ pageSize: ps, page: null });
         }}
         onOpenDetail={handleOpenDetail}
-        onRetryOcr={handleRetrySingleOcr}
+        onRetryOcr={(reviewId) => retryOcrMutation.mutate({ reviewId })}
         onOpenDelete={handleOpenDelete}
         onOpenDuplicateSplitView={(item) => setDuplicateSplitViewItem(item)}
         isRetryingOcrId={retryingSingleId}
@@ -744,7 +730,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         }}
         onActionComplete={() => {
           toast.success("Tindakan verifikasi pada ulasan duplikat berhasil diproses.");
-          refetchList();
+          refreshReviews();
         }}
       />
 
@@ -779,7 +765,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         up3s={filterOptions?.up3s || []}
         ulps={filterOptions?.ulps || []}
         onReviewUpdated={() => {
-          refetchList();
+          refreshReviews();
         }}
       />
 
