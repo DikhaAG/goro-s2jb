@@ -3,17 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { Search, X, Filter, RotateCcw, Copy, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type {
+  OcrStatusFilter,
+  ValidationStatusFilter,
+  ValidationZoneFilter,
+} from "./reviewsSearchParams";
 
 export interface FilterState {
   search: string;
-  validationStatus: string;
-  ocrStatus: string;
-  validationZone: string;
+  validationStatus: ValidationStatusFilter;
+  ocrStatus: OcrStatusFilter;
+  validationZone: ValidationZoneFilter;
   up3Id: string;
   ulpId: string;
   isDuplicate?: boolean;
-  startDate?: string;
-  endDate?: string;
 }
 
 interface Up3Option {
@@ -154,7 +157,7 @@ export function ReviewsFilterBar({
         {/* 1. Status Validasi */}
         <select
           value={filters.validationStatus}
-          onChange={(e) => onFilterChange({ validationStatus: e.target.value })}
+          onChange={(e) => onFilterChange({ validationStatus: e.target.value as ValidationStatusFilter })}
           className="bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] text-xs rounded-xl px-3 py-2 min-h-[38px] focus-utility-ring font-medium"
         >
           <option value="ALL">Semua Status Validasi</option>
@@ -167,7 +170,7 @@ export function ReviewsFilterBar({
         {/* 2. Status Pemrosesan OCR */}
         <select
           value={filters.ocrStatus}
-          onChange={(e) => onFilterChange({ ocrStatus: e.target.value })}
+          onChange={(e) => onFilterChange({ ocrStatus: e.target.value as OcrStatusFilter })}
           className="bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] text-xs rounded-xl px-3 py-2 min-h-[38px] focus-utility-ring font-medium"
         >
           <option value="ALL">Semua Status OCR</option>
@@ -181,7 +184,7 @@ export function ReviewsFilterBar({
         {/* 3. Zona Validasi Konfiden */}
         <select
           value={filters.validationZone}
-          onChange={(e) => onFilterChange({ validationZone: e.target.value })}
+          onChange={(e) => onFilterChange({ validationZone: e.target.value as ValidationZoneFilter })}
           className="bg-[#f8fafc] border border-[#cbd5e1] text-[#0f172a] text-xs rounded-xl px-3 py-2 min-h-[38px] focus-utility-ring font-medium"
         >
           <option value="ALL">Semua Zona Konfiden</option>

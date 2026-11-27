@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import type { OcrStatusFilter, ValidationStatusFilter } from "./reviewsSearchParams";
 import {
   Database,
   CheckCircle2,
@@ -25,12 +26,12 @@ export interface ReviewsKpiData {
 interface ReviewsKpiRibbonProps {
   kpi?: ReviewsKpiData;
   isLoading?: boolean;
-  selectedValidationStatus?: string;
-  selectedOcrStatus?: string;
+  selectedValidationStatus?: ValidationStatusFilter;
+  selectedOcrStatus?: OcrStatusFilter;
   selectedDuplicateOnly?: boolean;
   onSelectQuickFilter: (filter: {
-    validationStatus?: string;
-    ocrStatus?: string;
+    validationStatus?: ValidationStatusFilter;
+    ocrStatus?: OcrStatusFilter;
     isDuplicate?: boolean;
   }) => void;
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,12 @@ import { RejectReasonDialog } from "@/components/operator/RejectReasonDialog";
 import { OperatorPipelineStatusBar } from "./OperatorPipelineStatusBar";
 import { useTriageHotkeys } from "@/hooks/useTriageHotkeys";
 import { SessionUser } from "@/types";
+import {
+  CLEARED_FILTERS,
+  isReviewPageSize,
+  isReviewSortColumn,
+  reviewsSearchParams,
+} from "./reviewsSearchParams";
 
 type TriageDecision = "APPROVED" | "REJECTED";
 
@@ -54,22 +61,11 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
     setIsMounted(true);
   }, []);
 
-  // Filter State
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    validationStatus: "ALL",
-    ocrStatus: "ALL",
-    validationZone: "ALL",
-    up3Id: "",
-    ulpId: "",
-    isDuplicate: undefined,
-  });
+  // Filters, paging and sort live in the URL, so a refresh or a shared link keeps them.
+  const [params, setParams] = useQueryStates(reviewsSearchParams);
+  const { page, pageSize, sortBy, sortOrder, isDuplicate, ...filterParams } = params;
+  const filters: FilterState = { ...filterParams, isDuplicate: isDuplicate ?? undefined };
 
-  // Table State
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [sortBy, setSortBy] = useState<string>("entryDate");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Triage Active Row & Modals State
@@ -94,22 +90,19 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   // Queries
   const { data: filterOptions } = trpc.reviews.getFilterOptions.useQuery();
 
-  const listQueryInput = useMemo(
-    () => ({
-      page,
-      pageSize,
-      sortBy: sortBy as any,
-      sortOrder,
-      search: filters.search.trim() || undefined,
-      validationStatus: (filters.validationStatus as any) || "ALL",
-      ocrStatus: (filters.ocrStatus as any) || "ALL",
-      validationZone: (filters.validationZone as any) || "ALL",
-      up3Id: filters.up3Id || undefined,
-      ulpId: filters.ulpId || undefined,
-      isDuplicate: filters.isDuplicate,
-    }),
-    [page, pageSize, sortBy, sortOrder, filters]
-  );
+  const listQueryInput = {
+    page,
+    pageSize,
+    sortBy,
+    sortOrder,
+    search: filters.search.trim() || undefined,
+    validationStatus: filters.validationStatus,
+    ocrStatus: filters.ocrStatus,
+    validationZone: filters.validationZone,
+    up3Id: filters.up3Id || undefined,
+    ulpId: filters.ulpId || undefined,
+    isDuplicate: filters.isDuplicate,
+  };
 
   const {
     data: listData,
@@ -412,47 +405,29 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
 
   // Filter Handlers
   const handleFilterChange = (updates: Partial<FilterState>) => {
-    setFilters((prev) => ({ ...prev, ...updates }));
-    setPage(1); // reset to page 1 on filter change
-    setSelectedIds([]); // clear selection
-  };
-
-  const handleResetFilters = () => {
-    setFilters({
-      search: "",
-      validationStatus: "ALL",
-      ocrStatus: "ALL",
-      validationZone: "ALL",
-      up3Id: "",
-      ulpId: "",
-      isDuplicate: undefined,
+    const { isDuplicate: duplicateUpdate, ...rest } = updates;
+    setParams({
+      ...rest,
+      // An undefined duplicate flag means "no filter", which nuqs spells as null.
+      ...("isDuplicate" in updates && { isDuplicate: duplicateUpdate ?? null }),
+      page: null,
     });
-    setPage(1);
     setSelectedIds([]);
   };
 
-  const handleQuickKpiFilter = (quickFilter: {
-    validationStatus?: string;
-    ocrStatus?: string;
-    isDuplicate?: boolean;
-  }) => {
-    setFilters((prev) => ({
-      ...prev,
-      ...quickFilter,
-    }));
-    setPage(1);
+  const handleResetFilters = () => {
+    setParams(CLEARED_FILTERS);
     setSelectedIds([]);
   };
 
   // Sort Handler
   const handleSortChange = (column: string) => {
-    if (sortBy === column) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(column);
-      setSortOrder("desc");
-    }
-    setPage(1);
+    if (!isReviewSortColumn(column)) return;
+    setParams({
+      sortBy: column,
+      sortOrder: sortBy === column && sortOrder === "desc" ? "asc" : "desc",
+      page: null,
+    });
   };
 
   // Selection Handlers
@@ -714,7 +689,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         selectedValidationStatus={filters.validationStatus}
         selectedOcrStatus={filters.ocrStatus}
         selectedDuplicateOnly={filters.isDuplicate}
-        onSelectQuickFilter={handleQuickKpiFilter}
+        onSelectQuickFilter={handleFilterChange}
       />
 
       {/* Multidimensional Filter Bar */}
@@ -742,10 +717,9 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         pageSize={pageSize}
         totalPages={listData?.totalPages || 1}
         totalCount={listData?.totalCount || 0}
-        onPageChange={(p) => setPage(p)}
+        onPageChange={(p) => setParams({ page: p })}
         onPageSizeChange={(ps) => {
-          setPageSize(ps);
-          setPage(1);
+          if (isReviewPageSize(ps)) setParams({ pageSize: ps, page: null });
         }}
         onOpenDetail={handleOpenDetail}
         onRetryOcr={handleRetrySingleOcr}

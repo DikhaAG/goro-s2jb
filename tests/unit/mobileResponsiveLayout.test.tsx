@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 
 const trpcProxy: any = vi.hoisted(() => {
   const proxy: any = new Proxy(
@@ -90,14 +91,16 @@ describe("Mobile responsive & layout regression guards", () => {
 
   it("prevents ReviewsDashboard header title crush and button clipping across tablet/laptop widths", () => {
     const html = renderToStaticMarkup(
-      <ReviewsDashboard
-        initialSession={{
-          id: "u1",
-          username: "admin",
-          name: "Super Administrator GORO",
-          role: "SUPER_ADMIN",
-        }}
-      />
+      <NuqsTestingAdapter>
+        <ReviewsDashboard
+          initialSession={{
+            id: "u1",
+            username: "admin",
+            name: "Super Administrator GORO",
+            role: "SUPER_ADMIN",
+          }}
+        />
+      </NuqsTestingAdapter>
     );
 
     expect(html).toContain("Pusat Triase &amp; Kelola Data Ulasan");

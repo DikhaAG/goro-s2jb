@@ -1,4 +1,5 @@
-import React from "react";
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { ReviewsDashboard } from "@/components/operator/reviews/ReviewsDashboard";
 import { getServerSession } from "@/lib/server-auth";
 
@@ -10,6 +11,17 @@ export const metadata = {
 
 export default async function OperatorReviewsPage() {
   const session = await getServerSession();
-  return <ReviewsDashboard initialSession={session} />;
+  // ReviewsDashboard reads its filters from the URL, which needs a Suspense boundary.
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 min-h-[400px] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#00a2b9]" />
+        </div>
+      }
+    >
+      <ReviewsDashboard initialSession={session} />
+    </Suspense>
+  );
 }
 
