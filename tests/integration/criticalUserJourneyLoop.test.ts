@@ -65,7 +65,6 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
       originalReviewerName: testReviewerName,
       entryDate: new Date().toISOString().split("T")[0],
       evidenceImageBase64: dummyBase64,
-      evidenceFilename: "e2e_eviden.jpg",
     });
 
     expect(submitRes.success).toBe(true);
@@ -191,7 +190,6 @@ describe("Task 7.1: Automated Critical User Journey Full Loop Integration (AC-1,
       originalReviewerName: testReviewerName + " Clone",
       entryDate: new Date().toISOString().split("T")[0],
       evidenceImageBase64: dummyBase64,
-      evidenceFilename: "e2e_duplicate.jpg",
     });
 
     // Allow intake job to be enqueued and settle
