@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Role } from "@prisma/client";
 import { generatePrintableHtmlReport } from "@/lib/export/pdfExporter";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { session } from "@/server/session/live";
 
 export async function GET(request: NextRequest) {
   try {
     // 1. Layer 3 Authentication Guard: Verify active session token
-    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-    const user = token ? await verifySessionToken(token) : null;
+    const user = await session.getUser(request.headers);
 
     if (!user) {
       return NextResponse.json(

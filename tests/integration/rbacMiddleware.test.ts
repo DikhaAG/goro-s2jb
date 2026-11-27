@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy as middleware } from "@/proxy";
 import { appRouter } from "@/server/routers/_app";
 import { Role } from "@prisma/client";
-import { signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
 import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
+
+vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 
 describe("Integrated RBAC Matrix & Route Protection (AC-2, AC-3, AC-4)", () => {
   let fieldToken: string;

@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 import { Role } from "@prisma/client";
-import { signSessionToken, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { signSessionToken, SESSION_COOKIE_NAME } from "../helpers/fakeSession";
 import { requireServerAuth } from "@/lib/server-auth";
 import FieldLayout from "@/app/(field)/layout";
 import OperatorLayout from "@/app/(operator)/layout";
 import ManagerLayout from "@/app/(manager)/layout";
 import AdminLayout from "@/app/(admin)/layout";
+
+vi.mock("@/server/session/live", async () => (await import("../helpers/fakeSession")).liveSessionModule());
 
 // Mock next/navigation redirect
 const mockRedirect = vi.fn((url: string) => {
@@ -18,14 +20,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
-// Mock next/headers cookies
+// Mock next/headers: the session is read from the request Cookie header
 let mockCookieStore: Record<string, string> = {};
 
 vi.mock("next/headers", () => ({
-  cookies: vi.fn(async () => ({
-    get: (name: string) =>
-      mockCookieStore[name] ? { name, value: mockCookieStore[name] } : undefined,
-  })),
+  headers: vi.fn(async () => {
+    const cookie = Object.entries(mockCookieStore)
+      .map(([name, value]) => `${name}=${value}`)
+      .join("; ");
+    return new Headers(cookie ? { cookie } : {});
+  }),
 }));
 
 // Mock AppShell to keep unit isolation simple

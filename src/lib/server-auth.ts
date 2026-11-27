@@ -1,23 +1,14 @@
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Role } from "@prisma/client";
 import { SessionUser } from "@/types";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "./auth";
+import { session } from "@/server/session/live";
 
 /**
- * Retrieves the current session user from incoming HTTP request cookies.
- * Runs on the server side (Server Components, Layouts, Server Actions).
+ * Retrieves the current Sesi Pengguna in Server Components, Layouts and Server Actions.
  */
 export async function getServerSession(): Promise<SessionUser | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-    if (!token) return null;
-    return await verifySessionToken(token);
-  } catch (error) {
-    console.error("[getServerSession Error]", error);
-    return null;
-  }
+  return session.getUser(await headers());
 }
 
 /**
@@ -27,16 +18,14 @@ export async function getServerSession(): Promise<SessionUser | null> {
  * If unauthorized, immediately redirects to /unauthorized.
  */
 export async function requireServerAuth(allowedRoles?: Role[]): Promise<SessionUser> {
-  const user = await getServerSession();
+  const result = await session.check(await headers(), allowedRoles);
 
-  if (!user) {
+  if (result.status === "unauthenticated") {
     redirect("/login");
   }
-
-  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    const primaryRequiredRole = allowedRoles[0];
-    redirect(`/unauthorized?required=${primaryRequiredRole}`);
+  if (result.status === "forbidden") {
+    redirect(`/unauthorized?required=${result.requiredRole}`);
   }
 
-  return user;
+  return result.user;
 }

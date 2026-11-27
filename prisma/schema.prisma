@@ -38,7 +38,6 @@ model User {
   email           String    @unique
   emailVerified   Boolean   @default(false)
   image           String?
-  passwordHash    String?
   role            Role      @default(PETUGAS_LAPANGAN)
   isActive        Boolean   @default(true)
   up3Id           String?

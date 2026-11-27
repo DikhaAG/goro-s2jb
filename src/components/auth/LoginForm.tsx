@@ -14,7 +14,10 @@ import {
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
+import type { Role } from "@prisma/client";
 import { Button } from "@/components/ui/button";
+import { signIn } from "@/lib/auth-client";
+import { getDefaultRedirectForRole } from "@/lib/auth-constants";
 
 export function LoginForm() {
   const router = useRouter();
@@ -40,27 +43,19 @@ export function LoginForm() {
     setErrorMessage(null);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), password }),
-      });
+      const { data, error } = await signIn.username({ username: username.trim(), password });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (data.locked) {
-          setIsLocked(true);
-        }
-        setErrorMessage(data.error || "Gagal masuk ke sistem.");
+      if (error || !data) {
+        setIsLocked(error?.code === "LOGIN_LOCKED");
+        setErrorMessage(error?.message || "Gagal masuk ke sistem.");
         setIsLoading(false);
         return;
       }
 
       setSuccessInfo(`Selamat datang, ${data.user.name}! Mengalihkan...`);
 
-      // Determine redirect destination
-      const targetUrl = redirectParam || data.redirectUrl || "/";
+      const role = (data.user as { role?: Role }).role;
+      const targetUrl = redirectParam || (role ? getDefaultRedirectForRole(role) : "/");
 
       // Refresh and navigate
       router.refresh();

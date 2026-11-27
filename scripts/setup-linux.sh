@@ -87,12 +87,22 @@ OCR_SERVICE_URL="http://127.0.0.1:8001"
 NODE_ENV="development"
 NEXTAUTH_SECRET="goro-s2jb-secret-key-2026-production-ready"
 NEXTAUTH_URL="http://localhost:3000"
-BETTER_AUTH_SECRET="goro-s2jb-command-center-secret-key-pln-2026-production-secured-32chars"
 BETTER_AUTH_URL="http://localhost:3000"
 EOF
     fi
 else
     echo -e "${GREEN}✓ File .env sudah tersedia.${NC}"
+fi
+
+# BETTER_AUTH_SECRET wajib ada; isi dengan nilai acak bila masih kosong.
+if ! grep -qE '^BETTER_AUTH_SECRET="?[^"[:space:]]+' .env; then
+    SECRET="$(openssl rand -base64 32)"
+    if grep -q '^BETTER_AUTH_SECRET=' .env; then
+        sed -i.bak "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=\"${SECRET}\"|" .env && rm -f .env.bak
+    else
+        echo "BETTER_AUTH_SECRET=\"${SECRET}\"" >> .env
+    fi
+    echo -e "${GREEN}✓ BETTER_AUTH_SECRET acak dibuat di .env.${NC}"
 fi
 
 # 4. Instalasi Dependensi Node.js

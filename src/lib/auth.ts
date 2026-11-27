@@ -5,31 +5,11 @@ import prisma from "@/lib/prisma";
 import redis from "@/lib/redis";
 import bcrypt from "bcryptjs";
 import * as crypto from "crypto";
-import { SignJWT, jwtVerify } from "jose";
-import { Role } from "@prisma/client";
-import { SessionUser } from "@/types";
-
-import {
-  SESSION_COOKIE_NAME,
-  USER_ID_COOKIE_NAME,
-  getRoleMaxAgeSeconds,
-  getDefaultRedirectForRole,
-  shouldUseSecureCookie,
-} from "./auth-constants";
-
-export {
-  SESSION_COOKIE_NAME,
-  USER_ID_COOKIE_NAME,
-  getRoleMaxAgeSeconds,
-  getDefaultRedirectForRole,
-  shouldUseSecureCookie,
-};
-
-export const BETTER_AUTH_COOKIE_NAME = "better-auth.session_token";
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "goro-s2jb-command-center-secret-key-pln-2026-production-secured"
-);
+import { rateLimits } from "@/server/rateLimits/live";
+import { logAuditEvent } from "@/server/services/auditService";
+import { createAuthHooks } from "@/server/session/authHooks";
+import { logger } from "@/lib/logger";
+import { getRoleMaxAgeSeconds, shouldUseSecureCookie } from "./auth-constants";
 
 /**
  * Hashes a plain-text password using bcrypt with 10 salt rounds.
@@ -64,53 +44,6 @@ export async function verifyPassword(password: string, storedHash: string): Prom
 }
 
 /**
- * Issues a signed JWT session token.
- */
-export async function signSessionToken(
-  user: SessionUser,
-  customMaxAgeSeconds?: number
-): Promise<string> {
-  const maxAge = customMaxAgeSeconds ?? getRoleMaxAgeSeconds(user.role);
-
-  return new SignJWT({
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    role: user.role,
-    up3Id: user.up3Id || null,
-    ulpId: user.ulpId || null,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(`${Math.floor(Date.now() / 1000) + maxAge}s`)
-    .sign(JWT_SECRET);
-}
-
-/**
- * Verifies and decodes a JWT session token.
- * Returns decoded SessionUser or null if expired or invalid.
- */
-export async function verifySessionToken(token: string): Promise<SessionUser | null> {
-  if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    if (!payload.id || !payload.role || !payload.username) {
-      return null;
-    }
-    return {
-      id: payload.id as string,
-      username: payload.username as string,
-      name: (payload.name as string) || (payload.username as string),
-      role: payload.role as Role,
-      up3Id: (payload.up3Id as string | null) || null,
-      ulpId: (payload.ulpId as string | null) || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Better Auth Core Server Configuration (Task 11).
  * Features:
  * - Prisma PostgreSQL Adapter with User, Session, Account, Verification
@@ -119,10 +52,40 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
  * - Hybrid Password Hashing supporting bcrypt and legacy SHA-256
  * - StoreSessionInDatabase: true for dual persistence
  */
+const BCRYPT_PREFIXES = ["$2a$", "$2b$", "$2y$"];
+
+const authHooks = createAuthHooks({
+  loginLockout: rateLimits.loginLockout,
+  audit: logAuditEvent,
+  findUserByUsername: (name) =>
+    prisma.user.findUnique({ where: { username: name }, select: { id: true, isActive: true } }),
+  upgradeLegacyHash: async (userId, password) => {
+    const account = await prisma.account.findFirst({
+      where: { userId, providerId: "credential" },
+      select: { id: true, password: true },
+    });
+    if (!account?.password || BCRYPT_PREFIXES.some((p) => account.password!.startsWith(p))) return;
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { password: await hashPassword(password) },
+    });
+    const remaining = await prisma.account.count({
+      where: {
+        providerId: "credential",
+        NOT: BCRYPT_PREFIXES.map((prefix) => ({ password: { startsWith: prefix } })),
+      },
+    });
+    logger.info(`Legacy SHA-256 password upgraded to bcrypt; ${remaining} legacy hash(es) remain.`, {
+      module: "auth",
+    });
+  },
+});
+
 export const auth = betterAuth({
   appName: "GORO S2JB Command Center",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  secret: process.env.BETTER_AUTH_SECRET || "goro-s2jb-command-center-secret-key-pln-2026-production-secured-32chars",
+  // No fallback: better-auth refuses to start without BETTER_AUTH_SECRET outside tests.
+  secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -225,16 +188,39 @@ export const auth = betterAuth({
     username({
       minUsernameLength: 3,
       maxUsernameLength: 32,
+      // Usernames are stored as typed by Super Admin; keep sign-in an exact match.
+      usernameNormalization: false,
     }),
   ],
   session: {
-    expiresIn: 7 * 24 * 60 * 60, // 7 days
-    updateAge: 24 * 60 * 60,
+    // Upper bound only; the real lifetime is set per role in databaseHooks.
+    expiresIn: 7 * 24 * 60 * 60,
+    disableSessionRefresh: true,
     storeSessionInDatabase: true,
-    cookieCache: {
-      enabled: true,
-      maxAge: 5 * 60,
+    cookieCache: { enabled: false },
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          const user = await prisma.user.findUnique({
+            where: { id: session.userId },
+            select: { role: true, isActive: true },
+          });
+          if (!user?.isActive) return false;
+          return {
+            data: {
+              ...session,
+              expiresAt: new Date(Date.now() + getRoleMaxAgeSeconds(user.role) * 1000),
+            },
+          };
+        },
+      },
     },
+  },
+  hooks: {
+    before: authHooks.before,
+    after: authHooks.after,
   },
   advanced: {
     useSecureCookies: shouldUseSecureCookie(),

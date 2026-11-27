@@ -217,11 +217,9 @@ REDIS_URL="redis://localhost:6379"
 STORAGE_PATH="./uploads"
 OCR_SERVICE_URL="http://127.0.0.1:8001"
 NODE_ENV="development"
-BETTER_AUTH_SECRET="goro-s2jb-better-auth-secret-key-2026-production-ready"
 BETTER_AUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="goro-s2jb-secret-key-2026-production-ready"
 NEXTAUTH_URL="http://localhost:3000"
-JWT_SECRET="goro-s2jb-jwt-secret-key-2026-production-ready"
 PORT="3000"
 SKIP_DB_INIT="false"
 "@ | Out-File -FilePath ".env" -Encoding utf8
@@ -229,6 +227,21 @@ SKIP_DB_INIT="false"
     }
 } else {
     Write-Host "✓ Berkas .env sudah tersedia." -ForegroundColor Green
+}
+
+# BETTER_AUTH_SECRET wajib ada; isi dengan nilai acak bila masih kosong.
+$EnvContent = Get-Content ".env" -Raw
+if ($EnvContent -notmatch '(?m)^BETTER_AUTH_SECRET="?[^"\s]+') {
+    $Bytes = New-Object byte[] 32
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($Bytes)
+    $Secret = [Convert]::ToBase64String($Bytes)
+    if ($EnvContent -match '(?m)^BETTER_AUTH_SECRET=') {
+        $EnvContent = $EnvContent -replace '(?m)^BETTER_AUTH_SECRET=.*$', "BETTER_AUTH_SECRET=`"$Secret`""
+        Set-Content -Path ".env" -Value $EnvContent -NoNewline -Encoding utf8
+    } else {
+        Add-Content -Path ".env" -Value "BETTER_AUTH_SECRET=`"$Secret`"" -Encoding utf8
+    }
+    Write-Host "✓ BETTER_AUTH_SECRET acak dibuat di .env." -ForegroundColor Green
 }
 
 # 4. Instalasi Dependensi Node.js

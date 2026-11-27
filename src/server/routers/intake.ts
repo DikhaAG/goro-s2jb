@@ -4,15 +4,15 @@ import { deleteEvidenceFile, saveEvidenceFile } from "@/lib/storage";
 import { enqueueEvidenceVerification } from "../services/evidenceVerification";
 import { TRPCError } from "@trpc/server";
 import { ReviewSource } from "@prisma/client";
-import { checkUploadRateLimit } from "@/lib/rateLimit";
+import { rateLimits } from "@/server/rateLimits/live";
 
 export const intakeRouter = router({
   submitReview: fieldProcedure
     .input(intakeReviewSchema)
     .mutation(async ({ ctx, input }) => {
       // 1. Anti-Flooding Upload Rate Limiter (max 60/min per field officer)
-      const rateLimitRes = await checkUploadRateLimit(ctx.user.id);
-      if (!rateLimitRes.success) {
+      const quota = await rateLimits.uploadQuota.consume(ctx.user.id);
+      if (!quota.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Batas frekuensi unggahan terlampaui (maksimal 60 berkas per menit).",

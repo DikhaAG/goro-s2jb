@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import fs from "fs";
 import { resolveEvidencePath } from "@/lib/storage";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { session } from "@/server/session/live";
 
 export async function GET(
   req: NextRequest,
@@ -9,8 +9,7 @@ export async function GET(
 ) {
   try {
     // 1. Layer 3 Authentication Guard: Block public scraping of sensitive evidence files
-    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-    const user = token ? await verifySessionToken(token) : null;
+    const user = await session.getUser(req.headers);
 
     if (!user) {
       return new Response("Unauthorized: Sesi autentikasi diperlukan untuk mengakses berkas bukti.", {

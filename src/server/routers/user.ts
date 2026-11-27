@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, adminProcedure } from "../trpc";
-import { hashPassword } from "@/lib/auth";
+import { randomBytes } from "crypto";
+import { session } from "@/server/session/live";
 import { logAuditEvent, getAuditLogs } from "../services/auditService";
 import { Role } from "@prisma/client";
 
@@ -93,8 +94,6 @@ export const userRouter = router({
         });
       }
 
-      const passwordHash = await hashPassword(input.password);
-
       const email = `${input.username.toLowerCase()}@goro.pln.co.id`;
       const newUser = await ctx.prisma.user.create({
         data: {
@@ -102,18 +101,10 @@ export const userRouter = router({
           displayUsername: input.username,
           email,
           name: input.name,
-          passwordHash,
           role: input.role,
           up3Id: input.up3Id || null,
           ulpId: input.ulpId || null,
           isActive: true,
-          accounts: {
-            create: {
-              accountId: input.username,
-              providerId: "credential",
-              password: passwordHash,
-            },
-          },
         },
         select: {
           id: true,
@@ -125,6 +116,8 @@ export const userRouter = router({
           ulpId: true,
         },
       });
+
+      await session.setInitialPassword(newUser.id, input.password);
 
       await logAuditEvent({
         userId: ctx.user.id,
@@ -181,6 +174,10 @@ export const userRouter = router({
         },
       });
 
+      if (!updated.isActive) {
+        await session.revokeAll(updated.id);
+      }
+
       await logAuditEvent({
         userId: ctx.user.id,
         action: "USER_UPDATE",
@@ -218,6 +215,10 @@ export const userRouter = router({
         select: { id: true, username: true, isActive: true },
       });
 
+      if (!updated.isActive) {
+        await session.revokeAll(updated.id);
+      }
+
       await logAuditEvent({
         userId: ctx.user.id,
         action: "USER_STATUS_TOGGLE",
@@ -242,14 +243,16 @@ export const userRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const passwordToSet = input.newPassword || "PLN_2026_Temp!";
-      const passwordHash = await hashPassword(passwordToSet);
-
-      const updated = await ctx.prisma.user.update({
+      const updated = await ctx.prisma.user.findUnique({
         where: { id: input.id },
-        data: { passwordHash },
         select: { id: true, username: true },
       });
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Pengguna tidak ditemukan." });
+      }
+
+      const passwordToSet = input.newPassword || randomBytes(12).toString("base64url");
+      await session.resetPassword(updated.id, passwordToSet);
 
       await logAuditEvent({
         userId: ctx.user.id,

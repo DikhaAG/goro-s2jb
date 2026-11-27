@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { hashPassword, verifyPassword, signSessionToken, verifySessionToken, getRoleMaxAgeSeconds, getDefaultRedirectForRole } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/auth";
+import { getRoleMaxAgeSeconds, getDefaultRedirectForRole } from "@/lib/auth-constants";
 import { Role } from "@prisma/client";
 
 describe("Authentication & Password Security Engine (AC-1, AC-2)", () => {
@@ -35,32 +36,6 @@ describe("Authentication & Password Security Engine (AC-1, AC-2)", () => {
 
     const isWrong = await verifyPassword("wrongpassword", legacyHash);
     expect(isWrong).toBe(false);
-  });
-
-  it("should sign and verify valid JWT session token", async () => {
-    const mockUser = {
-      id: "usr_test_123",
-      username: "petugas_palembang",
-      name: "Budi Surveyor",
-      role: Role.PETUGAS_LAPANGAN,
-      up3Id: "up3_plg",
-      ulpId: "ulp_riv",
-    };
-
-    const token = await signSessionToken(mockUser, 3600);
-    expect(typeof token).toBe("string");
-    expect(token.length).toBeGreaterThan(20);
-
-    const payload = await verifySessionToken(token);
-    expect(payload).not.toBeNull();
-    expect(payload?.id).toBe(mockUser.id);
-    expect(payload?.username).toBe(mockUser.username);
-    expect(payload?.role).toBe(Role.PETUGAS_LAPANGAN);
-  });
-
-  it("should reject invalid or tampered JWT token", async () => {
-    const payload = await verifySessionToken("invalid.tampered.token");
-    expect(payload).toBeNull();
   });
 
   it("should enforce distinct session duration per role (7 days for field officer, 24h for others)", () => {

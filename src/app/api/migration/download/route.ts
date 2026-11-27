@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TRPCError } from "@trpc/server";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { session } from "@/server/session/live";
 import { migrationBatch } from "@/server/services/migrationBatch";
 
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-    const user = token ? await verifySessionToken(token) : null;
+    const user = await session.getUser(req.headers);
 
     if (!user) {
       return new NextResponse(
