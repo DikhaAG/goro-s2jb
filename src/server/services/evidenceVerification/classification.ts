@@ -1,18 +1,16 @@
 import { ValidationStatus } from "@prisma/client";
 import { confineToRoot, resolveStorageRoot } from "@/lib/storage";
 import {
-  calculateHammingDistance,
-  calculateVisualSimilarity,
-  calculateTextSimilarity,
-  calculateReviewerSimilarity,
-} from "@/lib/similarity";
-import { extractGoogleDriveFileId, isExternalUrl } from "../evidenceAcquisition";
+  assessDuplicateBatch,
+  DEFAULT_DUPLICATE_HASH_THRESHOLD,
+} from "@/lib/duplicateAssessment";
+import { isExternalUrl } from "../evidenceAcquisition";
 import { OcrResultPayload } from "@/types";
 import { AntiFraudCheckResult, BatchDuplicateQuery } from "./types";
 
 export const GREEN_ZONE_THRESHOLD = 90.0;
 export const YELLOW_ZONE_THRESHOLD = 70.0;
-export const DEFAULT_DUPLICATE_HASH_THRESHOLD = 5;
+export { DEFAULT_DUPLICATE_HASH_THRESHOLD };
 export const MAX_DUPLICATE_CANDIDATES = 50000;
 
 /**
@@ -94,95 +92,17 @@ export function classifyVerificationOutcome(params: {
  * Local JS multimodal duplicate check used only when the Rust HTTP engine is unreachable.
  */
 export function evaluateLocalDuplicates(query: BatchDuplicateQuery): AntiFraudCheckResult {
-  const { reviewId, imageHash, threshold, candidates, evidenceImagePath, reviewerName, extractedText } = query;
-
-  if (!imageHash || imageHash.length !== 16) {
-    return {
-      isDuplicate: false,
-      duplicateOfId: null,
-      minDistance: 64,
-      visualSimilarity: 0,
-      textSimilarity: 0,
-      reviewerSimilarity: 0,
-    };
-  }
-
-  const currentDriveId = extractGoogleDriveFileId(evidenceImagePath || "");
-  let closestMatchId: string | null = null;
-  let minDistance = 64;
-  let bestVisualSim = 0;
-  let bestTextSim = 0;
-  let bestReviewerSim = 0;
-
-  for (const candidate of candidates) {
-    if (!candidate.evidenceImageHash) continue;
-    const distance = calculateHammingDistance(imageHash, candidate.evidenceImageHash);
-    const visualSim = calculateVisualSimilarity(imageHash, candidate.evidenceImageHash);
-
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestMatchId = candidate.id;
-      bestVisualSim = visualSim;
-    }
-
-    if (distance <= threshold) {
-      const candidateDriveId = extractGoogleDriveFileId(candidate.evidenceImagePath || "");
-      const isSameDriveId = Boolean(
-        currentDriveId && candidateDriveId && currentDriveId === candidateDriveId
-      );
-
-      const reviewerSim = calculateReviewerSimilarity(reviewerName, candidate.playstoreReviewerName);
-      const textSim = calculateTextSimilarity(extractedText, candidate.extractedOcrText);
-
-      bestTextSim = Math.max(bestTextSim, textSim);
-      bestReviewerSim = Math.max(bestReviewerSim, reviewerSim);
-
-      const hasReviewerInfo = Boolean(reviewerName && candidate.playstoreReviewerName);
-      const hasTextInfo = Boolean(extractedText && candidate.extractedOcrText);
-      const hasDifferentiatingInfo = hasReviewerInfo || hasTextInfo;
-
-      let isTrueDuplicate = false;
-      let matchReason = "Citra Visual Identik";
-
-      if (isSameDriveId) {
-        isTrueDuplicate = true;
-        matchReason = "Berkas Eviden Identik";
-      } else if (hasDifferentiatingInfo) {
-        if (hasReviewerInfo && reviewerSim >= 75) {
-          isTrueDuplicate = true;
-          matchReason = "Nama Pengulas & Visual Identik";
-        } else if (hasTextInfo && textSim >= 70) {
-          isTrueDuplicate = true;
-          matchReason = "Teks Ulasan & Visual Identik";
-        }
-      } else {
-        isTrueDuplicate = true;
-      }
-
-      if (isTrueDuplicate) {
-        return {
-          isDuplicate: true,
-          duplicateOfId: candidate.duplicateOfId || candidate.id,
-          minDistance: distance,
-          visualSimilarity: visualSim,
-          textSimilarity: textSim,
-          reviewerSimilarity: reviewerSim,
-          matchReason,
-        };
-      }
-
+  return assessDuplicateBatch(query, {
+    onTemplateCollisionDismissed: ({
+      reviewId,
+      candidateId,
+      visualSimilarity,
+      textSimilarity,
+      reviewerSimilarity,
+    }) => {
       console.log(
-        `[Verifikasi Eviden] Template collision dismissed between review ${reviewId} and candidate ${candidate.id}: Visual=${visualSim}%, Text=${textSim}%, Reviewer=${reviewerSim}%`
+        `[Verifikasi Eviden] Template collision dismissed between review ${reviewId} and candidate ${candidateId}: Visual=${visualSimilarity}%, Text=${textSimilarity}%, Reviewer=${reviewerSimilarity}%`
       );
-    }
-  }
-
-  return {
-    isDuplicate: false,
-    duplicateOfId: null,
-    minDistance,
-    visualSimilarity: bestVisualSim,
-    textSimilarity: bestTextSim,
-    reviewerSimilarity: bestReviewerSim,
-  };
+    },
+  });
 }

@@ -1,6 +1,7 @@
 import fs from "fs";
 import net from "net";
 import prisma from "@/lib/prisma";
+import { extractGoogleDriveFileId } from "@/lib/duplicateAssessment";
 import { resolveEvidencePath } from "@/lib/storage";
 import { systemTelemetry } from "./systemTelemetry";
 import type {
@@ -158,20 +159,7 @@ function classifyCandidateEndpoint(candidateUrl: string): DownloaderEndpoint {
   return "directUrl";
 }
 
-/**
- * Extracts Google Drive file ID from open?id=, /file/d/, /d/, or uc?id= URLs.
- */
-export function extractGoogleDriveFileId(url: string): string | null {
-  if (!url || typeof url !== "string") return null;
-
-  const idParamMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (idParamMatch?.[1]) return idParamMatch[1];
-
-  const fileDMatch = url.match(/\/(?:file\/)?d\/([a-zA-Z0-9_-]+)/);
-  if (fileDMatch?.[1]) return fileDMatch[1];
-
-  return null;
-}
+export { extractGoogleDriveFileId };
 
 /**
  * Checks whether an Eviden Ulasan reference points to an external HTTP/HTTPS URL.

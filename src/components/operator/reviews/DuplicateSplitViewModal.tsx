@@ -42,11 +42,9 @@ import {
   getValidationStatusMeta,
 } from "@/lib/evidenceDisplay";
 import {
-  calculateHammingDistance,
-  calculateVisualSimilarity,
-  calculateTextSimilarity,
-  calculateReviewerSimilarity,
-} from "@/lib/similarity";
+  assessDuplicatePair,
+  normalizeDuplicateSourcePreview,
+} from "@/lib/duplicateAssessment";
 
 export interface DuplicateSplitViewModalProps {
   isOpen: boolean;
@@ -206,66 +204,20 @@ export function DuplicateSplitViewModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, lightboxItem, duplicateReview, duplicateOfId]);
 
-  // Derived original review record with fallback to partial data from table item
-  const originalReview = useMemo(() => {
-    if (originalDetailData?.review) {
-      return originalDetailData.review;
-    }
-    if (duplicateReview?.duplicateOf) {
-      return {
-        id: duplicateReview.duplicateOf.id,
-        source: duplicateReview.duplicateOf.source || "MIGRATION",
-        timestamp: duplicateReview.duplicateOf.timestamp || null,
-        createdAt: duplicateReview.duplicateOf.createdAt || null,
-        playstoreReviewerName: duplicateReview.duplicateOf.playstoreReviewerName,
-        originalReviewerName: duplicateReview.duplicateOf.originalReviewerName || null,
-        entryDate: duplicateReview.duplicateOf.entryDate,
-        evidenceImagePath: duplicateReview.duplicateOf.evidenceImagePath,
-        evidenceImageHash: duplicateReview.duplicateOf.evidenceImageHash ?? null,
-        confidenceScore: duplicateReview.duplicateOf.confidenceScore ?? null,
-        validationStatus: duplicateReview.duplicateOf.validationStatus as any,
-        extractedOcrText: duplicateReview.duplicateOf.extractedOcrText ?? null,
-        up3: duplicateReview.duplicateOf.up3 || { name: "-" },
-        ulp: duplicateReview.duplicateOf.ulp || { name: "-" },
-        appVersion: { version: "-" },
-        fieldNotes: null,
-        reviewRemarks: null,
-      };
-    }
-    return null;
-  }, [originalDetailData, duplicateReview]);
+  // Derived original review record with fallback to normalized summary from table item
+  const originalReview = useMemo(
+    () =>
+      normalizeDuplicateSourcePreview(
+        originalDetailData?.review ?? duplicateReview?.duplicateOf
+      ),
+    [originalDetailData, duplicateReview]
+  );
 
-  // Multimodal Similarity Comparisons (Visual pHash, OCR Text, and Reviewer Name)
-  const visualSimilarity = useMemo(() => {
-    return calculateVisualSimilarity(
-      originalReview?.evidenceImageHash,
-      duplicateReview?.evidenceImageHash
-    );
-  }, [originalReview?.evidenceImageHash, duplicateReview?.evidenceImageHash]);
-
-  const textSimilarity = useMemo(() => {
-    return calculateTextSimilarity(
-      originalReview?.extractedOcrText,
-      duplicateReview?.extractedOcrText
-    );
-  }, [originalReview?.extractedOcrText, duplicateReview?.extractedOcrText]);
-
-  const reviewerSimilarity = useMemo(() => {
-    return calculateReviewerSimilarity(
-      originalReview?.playstoreReviewerName,
-      duplicateReview?.playstoreReviewerName
-    );
-  }, [originalReview?.playstoreReviewerName, duplicateReview?.playstoreReviewerName]);
-
-  const hammingDistance = useMemo(() => {
-    return calculateHammingDistance(
-      originalReview?.evidenceImageHash,
-      duplicateReview?.evidenceImageHash
-    );
-  }, [originalReview?.evidenceImageHash, duplicateReview?.evidenceImageHash]);
-
-  const isLikelyTemplateCollision =
-    visualSimilarity >= 90 && textSimilarity < 70 && reviewerSimilarity < 75;
+  // Multimodal duplicate assessment (scores, threshold flags, and template-collision verdict)
+  const assessment = useMemo(
+    () => assessDuplicatePair(originalReview, duplicateReview),
+    [originalReview, duplicateReview]
+  );
 
   if (!isOpen || !duplicateReview) return null;
 
@@ -578,16 +530,16 @@ export function DuplicateSplitViewModal({
               <div
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold",
-                  visualSimilarity >= 90
+                  assessment.isVisualMatch
                     ? "bg-[#faf5ff] text-[#7e22ce] border-[#e9d5ff]"
                     : "bg-[#f8fafc] text-[#475569] border-[#e2e8f0]"
                 )}
-                title={`Hamming Distance pHash: ${hammingDistance} dari 64 bit`}
+                title={`Hamming Distance pHash: ${assessment.hammingDistance} dari 64 bit`}
               >
                 <span className="text-[#64748b]">Citra Visual:</span>
-                <span className="font-mono font-bold">{visualSimilarity}%</span>
+                <span className="font-mono font-bold">{assessment.visualSimilarity}%</span>
                 <span className="text-xs text-[#64748b]">
-                  {visualSimilarity >= 90 ? "(Identik)" : "(Beda)"}
+                  {assessment.isVisualMatch ? "(Identik)" : "(Beda)"}
                 </span>
               </div>
 
@@ -595,16 +547,16 @@ export function DuplicateSplitViewModal({
               <div
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold",
-                  textSimilarity >= 70
+                  assessment.isTextMatch
                     ? "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]"
                     : "bg-[#ecfdf5] text-[#15803d] border-[#a7f3d0]"
                 )}
                 title="Kesamaan kata ulasan non-template (Jaccard)"
               >
                 <span className="text-[#64748b]">Teks OCR:</span>
-                <span className="font-mono font-bold">{textSimilarity}%</span>
+                <span className="font-mono font-bold">{assessment.textSimilarity}%</span>
                 <span>
-                  {textSimilarity >= 70 ? "(Konten Mirip)" : "(Konten Unik)"}
+                  {assessment.isTextMatch ? "(Konten Mirip)" : "(Konten Unik)"}
                 </span>
               </div>
 
@@ -612,29 +564,29 @@ export function DuplicateSplitViewModal({
               <div
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold",
-                  reviewerSimilarity >= 75
+                  assessment.isReviewerMatch
                     ? "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]"
                     : "bg-[#ecfdf5] text-[#15803d] border-[#a7f3d0]"
                 )}
                 title="Kesamaan nama pengulas Play Store (Levenshtein)"
               >
                 <span className="text-[#64748b]">Nama Pengulas:</span>
-                <span className="font-mono font-bold">{reviewerSimilarity}%</span>
+                <span className="font-mono font-bold">{assessment.reviewerSimilarity}%</span>
                 <span>
-                  {reviewerSimilarity >= 75 ? "(Nama Sama)" : "(Pengulas Beda)"}
+                  {assessment.isReviewerMatch ? "(Nama Sama)" : "(Pengulas Beda)"}
                 </span>
               </div>
             </div>
 
             {/* Smart Detection Callout */}
-            {isLikelyTemplateCollision ? (
+            {assessment.verdict === "TEMPLATE_COLLISION" ? (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#f0fdf4] border border-[#bbf7d0] text-xs text-[#166534] font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#16a34a] shrink-0" />
                 <span>
                   <strong>False-Positive Template Play Store:</strong> Visual identik, namun teks dan pengulas berbeda.
                 </span>
               </div>
-            ) : visualSimilarity >= 90 && (textSimilarity >= 70 || reviewerSimilarity >= 75) ? (
+            ) : assessment.verdict === "CONFIRMED_DUPLICATE" ? (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#fef2f2] border border-[#fecaca] text-xs text-[#991b1b] font-medium">
                 <AlertTriangle className="w-3.5 h-3.5 text-[#dc2626] shrink-0" />
                 <span>
@@ -745,25 +697,7 @@ export function DuplicateSplitViewModal({
                       {originalReview && (
                         <button
                           type="button"
-                          onClick={() =>
-                            setLightboxItem({
-                              id: originalReview.id,
-                              playstoreReviewerName: originalReview.playstoreReviewerName,
-                              originalReviewerName: originalReview.originalReviewerName || null,
-                              entryDate: originalReview.entryDate,
-                              evidenceImagePath: originalReview.evidenceImagePath,
-                              up3: (originalReview.up3 as any) || { name: "-" },
-                              ulp: (originalReview.ulp as any) || { name: "-" },
-                              appVersion: (originalReview.appVersion as any) || { version: "-" },
-                              confidenceScore: originalReview.confidenceScore,
-                              ocrStatus: "COMPLETED",
-                              validationStatus: originalReview.validationStatus,
-                              isDuplicate: false,
-                              fieldNotes: null,
-                              reviewRemarks: null,
-                              extractedOcrText: originalReview.extractedOcrText || null,
-                            })
-                          }
+                          onClick={() => setLightboxItem(originalReview)}
                           className="p-1 hover:bg-white/10 rounded transition-colors cursor-pointer"
                           title="Buka Resolusi Penuh"
                         >
@@ -1070,12 +1004,12 @@ export function DuplicateSplitViewModal({
                       <span
                         className={cn(
                           "text-xs font-semibold px-2 py-0.5 rounded-md border font-mono shrink-0",
-                          textSimilarity >= 70
+                          assessment.isTextMatch
                             ? "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]"
                             : "bg-[#ecfdf5] text-[#15803d] border-[#a7f3d0]"
                         )}
                       >
-                        Kemiripan: {textSimilarity}%
+                        Kemiripan: {assessment.textSimilarity}%
                       </span>
                     </div>
                     <div className="p-2.5 rounded-xl bg-[#faf5ff] border border-[#e9d5ff] text-xs font-mono text-[#334155] max-h-20 overflow-y-auto whitespace-pre-wrap leading-relaxed">

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { calculateHammingDistance } from "@/lib/similarity";
+import { assessDuplicatePair } from "@/lib/duplicateAssessment";
 import { rustVisionEngineAdapter } from "@/server/services/evidenceVerification";
 import prisma from "@/lib/prisma";
 
@@ -40,9 +40,24 @@ describe("Anti-Fraud Perceptual Hashing & Hamming Distance Service", () => {
   const hashFar = "00000000ffffffff";       // Completely different
 
   it("should calculate exact Hamming distance between 64-bit hex hashes", () => {
-    expect(calculateHammingDistance(hashOriginal, hashIdentical)).toBe(0);
-    expect(calculateHammingDistance(hashOriginal, hashNearDup)).toBe(1);
-    expect(calculateHammingDistance(hashOriginal, hashFar)).toBeGreaterThan(15);
+    expect(
+      assessDuplicatePair(
+        { evidenceImageHash: hashOriginal },
+        { evidenceImageHash: hashIdentical }
+      ).hammingDistance
+    ).toBe(0);
+    expect(
+      assessDuplicatePair(
+        { evidenceImageHash: hashOriginal },
+        { evidenceImageHash: hashNearDup }
+      ).hammingDistance
+    ).toBe(1);
+    expect(
+      assessDuplicatePair(
+        { evidenceImageHash: hashOriginal },
+        { evidenceImageHash: hashFar }
+      ).hammingDistance
+    ).toBeGreaterThan(15);
   });
 
   describe("Database Anti-Fraud Check", () => {

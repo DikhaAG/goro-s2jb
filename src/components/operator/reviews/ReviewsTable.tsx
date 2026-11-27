@@ -17,6 +17,7 @@ import {
   resolveEvidenceImageUrl,
   getValidationStatusMeta,
 } from "@/lib/evidenceDisplay";
+import { normalizeDuplicateSourcePreview } from "@/lib/duplicateAssessment";
 import {
   ChevronLeft,
   ChevronRight,
@@ -435,33 +436,22 @@ export function ReviewsTable({
                     )}
                   </div>
 
-                  {item.duplicateOf ? (
+                  {item.duplicateOf ? (() => {
+                    const openDuplicateSource = (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      const preview = normalizeDuplicateSourcePreview(item.duplicateOf);
+                      if (preview) {
+                        table.options.meta?.onOpenDetail?.(preview);
+                      }
+                    };
+                    return (
                     <div className="flex items-center justify-between gap-2 pt-0.5">
                       <span className="text-xs text-[#6b21a8] flex items-center gap-1 truncate">
                         <span className="text-[#9333ea]">Sumber:</span>
                         <button
                           type="button"
                           aria-haspopup="dialog"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            table.options.meta?.onOpenDetail?.({
-                              id: item.duplicateOf!.id,
-                              playstoreReviewerName: item.duplicateOf!.playstoreReviewerName,
-                              originalReviewerName: item.duplicateOf!.originalReviewerName || null,
-                              entryDate: item.duplicateOf!.entryDate,
-                              up3: (item.duplicateOf!.up3 as any) || { id: "", code: "", name: "" },
-                              ulp: (item.duplicateOf!.ulp as any) || { id: "", code: "", name: "" },
-                              appVersion: { id: "", version: "" },
-                              confidenceScore: item.duplicateOf!.confidenceScore ?? null,
-                              ocrStatus: "COMPLETED",
-                              validationStatus: (item.duplicateOf!.validationStatus as any) || "PENDING",
-                              isDuplicate: false,
-                              fieldNotes: null,
-                              reviewRemarks: null,
-                              extractedOcrText: null,
-                              evidenceImagePath: item.duplicateOf!.evidenceImagePath,
-                            });
-                          }}
+                          onClick={openDuplicateSource}
                           className="font-bold underline decoration-dotted hover:decoration-solid text-[#6b21a8] hover:text-[#4c1d95] truncate text-left cursor-pointer"
                           title="Klik untuk membuka ulasan pertama yang identik"
                         >
@@ -471,33 +461,15 @@ export function ReviewsTable({
                       <button
                         type="button"
                         aria-haspopup="dialog"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          table.options.meta?.onOpenDetail?.({
-                            id: item.duplicateOf!.id,
-                            playstoreReviewerName: item.duplicateOf!.playstoreReviewerName,
-                            originalReviewerName: item.duplicateOf!.originalReviewerName || null,
-                            entryDate: item.duplicateOf!.entryDate,
-                            up3: (item.duplicateOf!.up3 as any) || { id: "", code: "", name: "" },
-                            ulp: (item.duplicateOf!.ulp as any) || { id: "", code: "", name: "" },
-                            appVersion: { id: "", version: "" },
-                            confidenceScore: item.duplicateOf!.confidenceScore ?? null,
-                            ocrStatus: "COMPLETED",
-                            validationStatus: (item.duplicateOf!.validationStatus as any) || "PENDING",
-                            isDuplicate: false,
-                            fieldNotes: null,
-                            reviewRemarks: null,
-                            extractedOcrText: null,
-                            evidenceImagePath: item.duplicateOf!.evidenceImagePath,
-                          });
-                        }}
+                        onClick={openDuplicateSource}
                         className="shrink-0 p-1 rounded-md text-[#7e22ce] hover:bg-[#ede9fe] transition-colors cursor-pointer"
                         title="Buka ulasan asli"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  ) : item.duplicateOfId ? (
+                    );
+                  })() : item.duplicateOfId ? (
                     <div className="text-xs font-mono text-[#7e22ce] bg-white px-2 py-0.5 rounded border border-[#ddd6fe] truncate">
                       Ref ID: {item.duplicateOfId}
                     </div>

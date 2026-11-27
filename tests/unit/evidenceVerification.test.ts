@@ -466,5 +466,45 @@ describe("Verifikasi Eviden (evidenceVerification deep module)", () => {
         global.fetch = originalFetch;
       }
     });
+
+    it("falls back to in-process duplicate assessment when Rust HTTP engine is unreachable", async () => {
+      const originalFetch = global.fetch;
+      global.fetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED")) as any;
+
+      try {
+        const res = await rustVisionEngineAdapter.checkBatchDuplicates({
+          reviewId: "rev-fallback",
+          imageHash: "aa853f6a4a5af207",
+          threshold: 5,
+          extractedText: "Layanan PLN cepat dan responsif",
+          reviewerName: "Budi Santoso",
+          evidenceImagePath: "evidence/2026/11/27/budi.jpg",
+          candidates: [
+            {
+              id: "rev-template",
+              evidenceImageHash: "aa853f6a4a5af206",
+              duplicateOfId: null,
+              extractedOcrText: "Listrik padam lama sekali",
+              playstoreReviewerName: "Siti Aminah",
+              evidenceImagePath: "evidence/2026/11/26/siti.jpg",
+            },
+            {
+              id: "rev-orig",
+              evidenceImageHash: "aa853f6a4a5af207",
+              duplicateOfId: null,
+              extractedOcrText: "Layanan PLN cepat dan responsif",
+              playstoreReviewerName: "Budi Santoso",
+              evidenceImagePath: "evidence/2026/11/25/budi.jpg",
+            },
+          ],
+        });
+
+        expect(res.isDuplicate).toBe(true);
+        expect(res.duplicateOfId).toBe("rev-orig");
+        expect(res.matchReason).toBe("Nama Pengulas & Visual Identik");
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
   });
 });
