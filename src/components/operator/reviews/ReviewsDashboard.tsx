@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
@@ -12,9 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Trash2,
-  X,
   Zap,
-  RotateCcw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ReviewsKpiRibbon } from "./ReviewsKpiRibbon";
@@ -33,14 +32,9 @@ import { OperatorPipelineStatusBar } from "./OperatorPipelineStatusBar";
 import { useTriageHotkeys } from "@/hooks/useTriageHotkeys";
 import { SessionUser } from "@/types";
 
-interface UndoState {
-  reviewId: string;
-  reviewerName: string;
-  decision: "APPROVED" | "REJECTED";
-  previousStatus: ReviewItem["validationStatus"];
-  item: ReviewItem;
-  expiresAt: number;
-}
+type TriageDecision = "APPROVED" | "REJECTED";
+
+const UNDO_WINDOW_MS = 5000;
 
 export interface ReviewsDashboardProps {
   initialSession?: SessionUser | null;
@@ -84,10 +78,6 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
   const [rejectDialogItem, setRejectDialogItem] = useState<ReviewItem | null>(null);
   const [duplicateSplitViewItem, setDuplicateSplitViewItem] = useState<ReviewItem | null>(null);
 
-  // Optimistic 5-Second Undo Toast State
-  const [undoState, setUndoState] = useState<UndoState | null>(null);
-  const [undoSecondsLeft, setUndoSecondsLeft] = useState<number>(5);
-
   // Drawer & Modals State
   const [selectedReviewForDrawer, setSelectedReviewForDrawer] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -100,16 +90,6 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
 
   const [isBulkReassignModalOpen, setIsBulkReassignModalOpen] = useState(false);
   const [retryingSingleId, setRetryingSingleId] = useState<string | null>(null);
-
-  // Notification Toast State
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  const showToast = (type: "success" | "error", message: string) => {
-    setToast({ type, message });
-    setTimeout(() => {
-      setToast(null);
-    }, 4000);
-  };
 
   // Queries
   const { data: filterOptions } = trpc.reviews.getFilterOptions.useQuery();
@@ -170,119 +150,129 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal memperbarui status verifikasi.");
+      toast.error(err.message || "Gagal memperbarui status verifikasi.");
     },
   });
 
   const undoDecisionMutation = trpc.reviews.undoDecision.useMutation({
     onSuccess: () => {
-      showToast("success", "Keputusan verifikasi berhasil dibatalkan.");
+      toast.success("Keputusan verifikasi berhasil dibatalkan.");
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal membatalkan keputusan verifikasi.");
+      toast.error(err.message || "Gagal membatalkan keputusan verifikasi.");
     },
   });
 
   const retryOcrMutation = trpc.reviews.retryOcr.useMutation({
     onSuccess: () => {
-      showToast("success", "Pekerjaan OCR berhasil di-enqueue ulang ke worker.");
+      toast.success("Pekerjaan OCR berhasil di-enqueue ulang ke worker.");
       setRetryingSingleId(null);
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal memicu ulang OCR.");
+      toast.error(err.message || "Gagal memicu ulang OCR.");
       setRetryingSingleId(null);
     },
   });
 
   const bulkRetryOcrMutation = trpc.reviews.bulkRetryOcr.useMutation({
     onSuccess: (res) => {
-      showToast("success", `${res.count} pekerjaan OCR berhasil dimasukkan ke antrean.`);
+      toast.success(`${res.count} pekerjaan OCR berhasil dimasukkan ke antrean.`);
       setSelectedIds([]);
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal memicu ulang OCR massal.");
+      toast.error(err.message || "Gagal memicu ulang OCR massal.");
     },
   });
 
   const bulkUpdateMutation = trpc.reviews.bulkUpdate.useMutation({
     onSuccess: (res) => {
-      showToast("success", `${res.count} baris data ulasan berhasil diperbarui.`);
+      toast.success(`${res.count} baris data ulasan berhasil diperbarui.`);
       setSelectedIds([]);
       setIsBulkReassignModalOpen(false);
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal memperbarui ulasan massal.");
+      toast.error(err.message || "Gagal memperbarui ulasan massal.");
     },
   });
 
   const deleteMutation = trpc.reviews.delete.useMutation({
     onSuccess: (res) => {
       if (res.mode === "PERMANENT") {
-        showToast("success", "Ulasan berhasil dihapus secara permanen dari basis data.");
+        toast.success("Ulasan berhasil dihapus secara permanen dari basis data.");
       } else {
-        showToast("success", "Ulasan berhasil ditandai REJECTED (kuratif).");
+        toast.success("Ulasan berhasil ditandai REJECTED (kuratif).");
       }
       setIsDeleteModalOpen(false);
       setReviewToDelete(null);
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal melakukan tindakan kuratif.");
+      toast.error(err.message || "Gagal melakukan tindakan kuratif.");
     },
   });
 
   const bulkDeleteMutation = trpc.reviews.bulkDelete.useMutation({
     onSuccess: (res) => {
       if (res.mode === "PERMANENT") {
-        showToast("success", `${res.count} baris ulasan berhasil dihapus secara permanen.`);
+        toast.success(`${res.count} baris ulasan berhasil dihapus secara permanen.`);
       } else {
-        showToast("success", `${res.count} baris ulasan berhasil ditandai REJECTED (kuratif massal).`);
+        toast.success(`${res.count} baris ulasan berhasil ditandai REJECTED (kuratif massal).`);
       }
       setIsBulkDeleteModalOpen(false);
       setSelectedIds([]);
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal melakukan tindakan kuratif massal.");
+      toast.error(err.message || "Gagal melakukan tindakan kuratif massal.");
     },
   });
 
   const deleteAllMutation = trpc.reviews.deleteAll.useMutation({
     onSuccess: (res) => {
       if (res.mode === "PERMANENT") {
-        showToast("success", `Seluruh data ulasan (${res.count} baris) berhasil dihapus permanen.`);
+        toast.success(`Seluruh data ulasan (${res.count} baris) berhasil dihapus permanen.`);
       } else {
-        showToast("success", `Seluruh data ulasan (${res.count} baris) berhasil ditandai REJECTED.`);
+        toast.success(`Seluruh data ulasan (${res.count} baris) berhasil ditandai REJECTED.`);
       }
       setIsPurgeAllModalOpen(false);
       setSelectedIds([]);
       refetchList();
     },
     onError: (err) => {
-      showToast("error", err.message || "Gagal melakukan tindakan pada seluruh data ulasan.");
+      toast.error(err.message || "Gagal melakukan tindakan pada seluruh data ulasan.");
     },
   });
 
-  // Undo Timer Countdown
-  useEffect(() => {
-    if (!undoState) return;
-
-    const interval = setInterval(() => {
-      const remainingMs = undoState.expiresAt - Date.now();
-      const seconds = Math.ceil(remainingMs / 1000);
-      if (seconds <= 0) {
-        setUndoState(null);
-      } else {
-        setUndoSecondsLeft(seconds);
+  // The decision is saved right away; the toast only offers a short window to revert it.
+  const showUndoToast = (item: ReviewItem, decision: TriageDecision) => {
+    const approved = decision === "APPROVED";
+    toast(
+      <span className="font-normal">
+        Ulasan <span className="font-semibold text-[#f59e0b] font-mono">{item.playstoreReviewerName}</span>{" "}
+        {approved ? "disetujui" : "ditolak"}.
+      </span>,
+      {
+        duration: UNDO_WINDOW_MS,
+        icon: approved ? (
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" aria-hidden />
+        ) : (
+          <AlertCircle className="w-4 h-4 text-rose-400" aria-hidden />
+        ),
+        action: {
+          label: "Batalkan",
+          onClick: () =>
+            undoDecisionMutation.mutate({
+              reviewId: item.id,
+              previousStatus: item.validationStatus,
+            }),
+        },
       }
-    }, 200);
-
-    return () => clearInterval(interval);
-  }, [undoState]);
+    );
+  };
 
   // Triage Quick Action Handlers
   const handleApprove = (id: string) => {
@@ -295,15 +285,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       setActiveId(currentItems[currentIndex + 1].id);
     }
 
-    setUndoState({
-      reviewId: id,
-      reviewerName: targetItem.playstoreReviewerName,
-      decision: "APPROVED",
-      previousStatus: targetItem.validationStatus,
-      item: targetItem,
-      expiresAt: Date.now() + 5000,
-    });
-    setUndoSecondsLeft(5);
+    showUndoToast(targetItem, "APPROVED");
 
     submitDecisionMutation.mutate({
       reviewId: id,
@@ -328,31 +310,12 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       setActiveId(currentItems[currentIndex + 1].id);
     }
 
-    setUndoState({
-      reviewId: id,
-      reviewerName: targetItem.playstoreReviewerName,
-      decision: "REJECTED",
-      previousStatus: targetItem.validationStatus,
-      item: targetItem,
-      expiresAt: Date.now() + 5000,
-    });
-    setUndoSecondsLeft(5);
+    showUndoToast(targetItem, "REJECTED");
 
     submitDecisionMutation.mutate({
       reviewId: id,
       decision: "REJECTED",
       remarks: reason,
-    });
-  };
-
-  const handleUndo = () => {
-    if (!undoState) return;
-    const { reviewId, previousStatus } = undoState;
-    setUndoState(null);
-
-    undoDecisionMutation.mutate({
-      reviewId,
-      previousStatus,
     });
   };
 
@@ -574,7 +537,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
       : currentItems;
 
     if (recordsToExport.length === 0) {
-      showToast("error", "Tidak ada baris data untuk diekspor.");
+      toast.error("Tidak ada baris data untuk diekspor.");
       return;
     }
 
@@ -619,37 +582,11 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
     link.click();
     document.body.removeChild(link);
 
-    showToast("success", `${recordsToExport.length} baris ulasan berhasil diekspor ke CSV.`);
+    toast.success(`${recordsToExport.length} baris ulasan berhasil diekspor ke CSV.`);
   };
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-4">
-      {/* Toast Notification (Matching Triage Undo Banner) */}
-      {toast && (
-        <div
-          className={cn(
-            "fixed bottom-4 sm:bottom-6 inset-x-4 sm:inset-x-auto sm:right-6 z-50 max-w-[calc(100vw-2rem)] sm:max-w-md flex items-center justify-between gap-3 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl p-4 text-xs animate-in slide-in-from-bottom-5 duration-200"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {toast.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-[#16a34a] shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-[#ef4444] shrink-0" />
-            )}
-            <span className="text-[#f8fafc] font-medium">{toast.message}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setToast(null)}
-            className="p-1 text-[#94a3b8] hover:text-white rounded-lg transition-colors cursor-pointer"
-            title="Tutup notifikasi"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
       {/* Top Header Banner */}
       <div className="rounded-2xl p-5 sm:p-6 lg:p-8 bg-white border border-[#e2e8f0] shadow-xs relative overflow-hidden">
         <div className="flex flex-col 2xl:flex-row 2xl:items-start justify-between gap-5">
@@ -832,7 +769,7 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
           handleOpenDetail(item);
         }}
         onActionComplete={() => {
-          showToast("success", "Tindakan verifikasi pada ulasan duplikat berhasil diproses.");
+          toast.success("Tindakan verifikasi pada ulasan duplikat berhasil diproses.");
           refetchList();
         }}
       />
@@ -942,32 +879,6 @@ export function ReviewsDashboard({ initialSession }: ReviewsDashboardProps = {})
         }}
         isDeleting={deleteMutation.isPending}
       />
-
-      {/* Optimistic 5-Second Undo Toast */}
-      {undoState && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-[#0f172a] text-white border border-[#334155] shadow-2xl rounded-2xl p-4 text-xs animate-in slide-in-from-bottom-5 duration-200">
-          <div className="flex items-center gap-2">
-            {undoState.decision === "APPROVED" ? (
-              <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-[#ef4444]" />
-            )}
-            <span className="text-[#f8fafc]">
-              Ulasan <span className="font-semibold text-[#f59e0b] font-mono">{undoState.reviewerName}</span>{" "}
-              {undoState.decision === "APPROVED" ? "disetujui" : "ditolak"}.
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleUndo}
-            className="h-8 px-3 text-xs bg-[#1e293b] hover:bg-[#334155] text-[#38bdf8] border border-[#0284c7]/40 gap-1 font-semibold rounded-lg flex items-center transition cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5 mr-1" />
-            <span>Batalkan ({undoSecondsLeft}s)</span>
-          </button>
-        </div>
-      )}
     </div>
   );
 }
