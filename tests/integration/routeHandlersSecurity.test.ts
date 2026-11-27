@@ -79,7 +79,7 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
     });
   }
 
-  describe("1. POST /api/upload (Evidence & Migration Uploads)", () => {
+  describe("1. POST /api/upload (Batch Migrasi uploads only)", () => {
     it("should reject unauthenticated request with 401 Unauthorized", async () => {
       const formData = new FormData();
       formData.append("file", new Blob(["test"], { type: "image/jpeg" }), "test.jpg");
@@ -92,29 +92,35 @@ describe("Task 12.2: Layer 3 HTTP Route Handlers Direct Security Test Suite", ()
       expect(data.error).toContain("Autentikasi diperlukan");
     });
 
-    it("should reject PEGAWAI and MANAGER with 403 Forbidden on standard evidence upload", async () => {
-      const formData = new FormData();
-      formData.append("file", new Blob(["test"], { type: "image/jpeg" }), "test.jpg");
+    it("should reject any upload type other than 'migration' with 400, including a missing type", async () => {
+      for (const type of [undefined, "evidence", "../../x"]) {
+        const formData = new FormData();
+        if (type !== undefined) formData.append("type", type);
+        formData.append("file", new Blob(["test"], { type: "image/jpeg" }), "test.jpg");
 
-      const reqOperator = createRequest("http://localhost:3000/api/upload", "POST", operatorToken, formData);
-      const resOperator = await postUpload(reqOperator);
-      expect(resOperator.status).toBe(403);
-
-      const reqManager = createRequest("http://localhost:3000/api/upload", "POST", managerToken, formData);
-      const resManager = await postUpload(reqManager);
-      expect(resManager.status).toBe(403);
+        const req = createRequest("http://localhost:3000/api/upload", "POST", adminToken, formData);
+        const res = await postUpload(req);
+        expect(res.status).toBe(400);
+      }
     });
 
-    it("should allow PETUGAS_LAPANGAN and SUPER_ADMIN to pass upload authorization", async () => {
-      // Empty form to test that auth succeeds and it reaches validation (status 400 instead of 401/403)
-      const emptyForm = new FormData();
-      const reqField = createRequest("http://localhost:3000/api/upload", "POST", fieldToken, emptyForm);
-      const resField = await postUpload(reqField);
-      expect(resField.status).toBe(400);
+    it("should not write outside the upload directory when type contains a traversal sequence", async () => {
+      const fs = await import("fs");
+      const path = await import("path");
+      const { BASE_UPLOAD_DIR } = await import("@/lib/storage");
+      const escapedDir = path.resolve(BASE_UPLOAD_DIR, "..", "traversal_probe");
 
-      const reqAdmin = createRequest("http://localhost:3000/api/upload", "POST", adminToken, emptyForm);
-      const resAdmin = await postUpload(reqAdmin);
-      expect(resAdmin.status).toBe(400);
+      const formData = new FormData();
+      formData.append("type", "../traversal_probe");
+      formData.append("file", new Blob(["x"], { type: "image/jpeg" }), "probe.jpg");
+
+      const req = createRequest("http://localhost:3000/api/upload", "POST", fieldToken, formData);
+      try {
+        await postUpload(req);
+        expect(fs.existsSync(escapedDir)).toBe(false);
+      } finally {
+        await fs.promises.rm(escapedDir, { recursive: true, force: true });
+      }
     });
 
     it("should restrict type='migration' uploads to PEGAWAI and SUPER_ADMIN", async () => {
